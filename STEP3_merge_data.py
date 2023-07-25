@@ -10,7 +10,7 @@ This function automatically marges the data collected in different detector dist
 
 
 # this path should be updated to where the data is being analyzed located in your computer
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_2581_Andrea/'
+path_dir = 'C:\Users\lutzbueno_v\Documents\Analysis\SANS-darep\'
 
 # %% function
 

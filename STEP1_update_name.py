@@ -10,7 +10,7 @@ import numpy as np
 import os
 
 # path where the raw data is saved: usually AFS
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_2581_Connor/raw_data'
+path_hdf_raw = 'C:\Users\lutzbueno_v\Documents\Analysis\SANS-darep/raw_data'
 
 files_change = range( 45626, 45646)
 subscript = 'temp'
