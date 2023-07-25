@@ -6,11 +6,11 @@ Created on Sat Jun 11 14:20:44 2022
 """
 
 # path where the raw data is saved: usually AFS
-path_dir_raw = 'C:\Users\lutzbueno_v\Documents\Analysis\SANS-darep/raw_data'
+path_dir_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/SANS-darep/raw_data'
 # path where to save the data: working directory
-path_dir = 'C:\Users\lutzbueno_v\Documents\Analysis\SANS-darep/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/SANS-darep/'
 # path where codes are located
-path_codes = 'C:\Users\lutzbueno_v\Documents\Analysis\SANS-darep/codes/'
+path_codes = 'C:/Users/lutzbueno_v/Documents/Analysis/SANS-darep/codes/'
 
 
 # distance where transmission has been calculated
