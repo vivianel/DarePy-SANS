@@ -13,7 +13,8 @@ import organize_hdf_files as org
 from load_hdf import load_hdf
 import corrections as corr
 import pyFAI
-from plot_integration import plot_integ
+import plot_integration as plot_integ
+import cv2
 
 
 def set_radial_int(config, result):
@@ -74,9 +75,6 @@ def prepare_ai(config, beam_center, name_hdf, result):
     # calculate the beam center
     counts = load_hdf(path_hdf_raw, name_hdf, 'counts')
     bc_x, bc_y = calculate_beam_center(config, counts, name_hdf)
-    # correction
-    bc_y = bc_y + 0.7
-    bc_x = bc_x + 1
     poni2 = bc_x*pixel1
     poni1 = bc_y*pixel2
     result['integration']['beam_center_x'] = bc_x
@@ -88,23 +86,24 @@ def prepare_ai(config, beam_center, name_hdf, result):
     beam_stop = load_hdf(path_hdf_raw, name_hdf, 'beam_stop')
     list_bs = config['instrument']['list_bs']
     beam_stopper = list_bs[str(int(beam_stop))]
-    beam_stopper = (beam_stopper/(pixel1*1000)/2)
-    # increase a bit the size for small distances
-    if dist < 3:
+    beam_stopper = (beam_stopper/(pixel1*1000)/2)+1
+    # increase the size for large detector distances distances
+    if dist > 10:
         beam_stopper = beam_stopper + 2
     # remove those pixels around the beam stopper
-    #mask[int(bc_y-beam_stopper):int(bc_y+beam_stopper), int(bc_x-beam_stopper):int(bc_x+beam_stopper)] = 1
-    # I modified this line to mask the edge scattering
-    mask[int(bc_y-beam_stopper-4):int(bc_y+beam_stopper+4), int(bc_x-beam_stopper-1):int(bc_x+beam_stopper+1)] = 1
-    if dist > 15:
-        # remove the lines around the detector frame
-        lines = 4
-    else:
-        lines = 2
+    mask[int(bc_y-beam_stopper):int(bc_y+beam_stopper), int(bc_x-beam_stopper):int(bc_x+beam_stopper)] = 1
+
+    # remove the lines around the detector
+    lines = 2
     mask[:, 0:lines] = 1
-    mask[:, detector_size - lines:detector_size + 1] = 1
+    mask[:, detector_size - lines : detector_size + 1] = 1
     mask[0:lines, :] = 1
     mask[detector_size - lines:detector_size + 1, :] = 1
+    # remove the last thick line - only for SANS-I
+    if dist > 15:
+        lines = 6
+        mask[:, detector_size - lines : detector_size + 1] = 1
+
     # remove the corners
     corner = 10
     mask[0:corner, 0:corner] = 1
@@ -123,11 +122,14 @@ def prepare_ai(config, beam_center, name_hdf, result):
     return (ai, mask, result)
 
 
-def calculate_beam_center(config, counts, name_hdf):
-    # Read in the image
+def calculate_beam_center(config, counts0, name_hdf):
+    interpolation_factor = 2
+    # reshape the image
+    sizeX = counts0.shape[0]*interpolation_factor
+    sizeY = counts0.shape[1]*interpolation_factor
+    counts = cv2.resize(counts0, dsize=(sizeX, sizeY), interpolation=cv2.INTER_NEAREST)
     counts = np.where(counts <= 0, 1e-8, counts)
-    counts = np.log(counts)
-    cutoff = counts[counts > 0].max() / 1.5  #
+    cutoff = counts[counts > 0].max()/1.3
     counts = np.where(counts < cutoff, 0, counts)
     im = np.where(counts >= cutoff, 1, counts)
     # Find coordinates of thresholded image
@@ -136,14 +138,19 @@ def calculate_beam_center(config, counts, name_hdf):
     # Find average
     xmean = x.mean()
     ymean = y.mean()
+    bc_x = xmean/interpolation_factor
+    bc_y = ymean/interpolation_factor
 
+    # turn off the interactivity
+    plt.ioff()
     # Plot on figure
     plt.figure()
-    plt.imshow(np.dstack([im, im, im]))
-    plt.plot(xmean, ymean, 'r+', markersize=10)
+    #plt.imshow(np.dstack([im, im, im]))
 
-    bc_x = xmean
-    bc_y = ymean
+    plt.imshow(counts0)
+    plt.plot(bc_x, bc_y, 'r+', markersize=10)
+
+
     plt.title('x_center = ' + str(round(bc_x, 2)) + ', y_center =' + str(round(bc_y, 2)) + ' pixels')
 
     # Show image and make sure axis is removed
@@ -182,7 +189,6 @@ def load_standards(config, result, det):
             print('There is no ' + value + ' measurement for this configuration: ' + det + ' m')
             print('###########################################################')
             sys.exit('Please load a ' + value + ' measurement.')
-
     # subtract cadmium
     for key, value in calibration.items():
         if key != 'cadmium':
@@ -197,8 +203,15 @@ def load_standards(config, result, det):
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
     # used for the correction factor
-    q_h2o, I_h2o, sigma_h2o = ai.integrate1d(img_h2o,  200, correctSolidAngle=True, mask=mask,
-                          method = 'nosplit_csr', unit = 'q_A^-1', safe=True, error_model="azimuthal")
+    q_h2o, I_h2o, sigma_h2o = ai.integrate1d(img_h2o,  200,
+                                             correctSolidAngle=True,
+                                             mask=mask,
+                                             method = 'nosplit_csr',
+                                             unit = 'q_A^-1',
+                                             safe=True,
+                                             error_model="azimuthal",
+                                             flat = None,
+                                             dark = None)
     # replace the water at 18 m
     replace_h2o_18m = config['analysis']['replace_h2o_18m']
     if det == '18p0' and replace_h2o_18m > 0:
@@ -210,29 +223,32 @@ def load_standards(config, result, det):
         idx = class_file['sample_name'].index(calibration.get('water_cell'))
         name_hdf = class_file['name_hdf'][idx]
         img_cell_corr = load_and_correct(config, result, name_hdf)
-
+        img_h2o_corr = np.subtract(img_h2o_corr, result['integration']['cadmium'])
         img_h2o_corr = np.subtract(img_h2o_corr,img_cell_corr)
         # get correction factor
-        q_h2o_corr, I_h2o_corr, sigma_h2o_corr = ai.integrate1d(img_h2o_corr,  200, correctSolidAngle=True, mask=mask,
-                              method = 'nosplit_csr', unit = 'q_A^-1', safe=True, error_model="azimuthal")
+        q_h2o_corr, I_h2o_corr, sigma_h2o_corr = ai.integrate1d(img_h2o_corr,  200,
+                                                                correctSolidAngle=True,
+                                                                mask=mask,
+                                                                method = 'nosplit_csr',
+                                                                unit = 'q_A^-1',
+                                                                safe=True,
+                                                                error_model="azimuthal",
+                                                                flat = None,
+                                                                dark = None)
         scaling_factor = (I_h2o[50:-10]/I_h2o_corr[50:-10]).mean()
         img_h2o = img_h2o_corr
         result['integration']['scaling_factor']= scaling_factor
     else:
         result['integration']['scaling_factor'] = 1
+    # avoid negative numbers and zeros
+    img_h2o[img_h2o <= 0] = 1e-8
     result['integration']['water'] = img_h2o
     path_dir_an = org.create_analysis_folder(config)
     org.save_results(path_dir_an, result)
     return result
 
 
-def std_calc(sigmaA, A, sigmaB, B):
-    A = np.divide(sigmaA, A)
-    B = np.divide(sigmaB, B)
-    sigma = np.sqrt(np.square(A) + np.square(B))
-    return sigma
-
-def divide_water(config, result, ii, det, img):
+def normalize_water(config, result, ii, det, img):
     scaling_factor = result['integration']['scaling_factor']
     list_cs = config['instrument']['list_abs_calib']
     class_file = result['overview']['det_files_'+ det]
@@ -240,11 +256,11 @@ def divide_water(config, result, ii, det, img):
     correction = float(list_cs[str(wl)])
     if det == '18p0':
         img = img/scaling_factor
-    img_h2o = result['integration']['water']
-    img1 = np.divide(img,img_h2o) * correction
+    img1 = np.divide(img, result['integration']['water']) * correction
     return img1
 
 def radial_integration(config, result, det, path_rad_int):
+    plt.ioff()
     path_hdf_raw = config['analysis']['path_hdf_raw']
     class_file = result['overview']['det_files_'+ det]
     # correct to absolute scale
@@ -253,10 +269,10 @@ def radial_integration(config, result, det, path_rad_int):
     perform_radial = config['analysis']['perform_radial']
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
+    dark =  result['integration']['cadmium']
     class_file = result['overview']['det_files_'+ det]
-    plot_azimuthal = config['analysis']['plot_azimuthal']
-    plot_radial = config['analysis']['plot_radial']
-    save_plots = config['analysis']['save_plots']
+    pixel_range = range(0, 200)
+    result['integration']['pixel_range'] = pixel_range
     # execute the corrections for all
     print('DOING ' + str(det) + 'm')
     for ii in range(0, len(class_file['sample_name'])):
@@ -264,18 +280,19 @@ def radial_integration(config, result, det, path_rad_int):
         sample_name = class_file['sample_name'][ii]
         scan_nr = class_file['scan'][ii]
         scanNr = f"{scan_nr:07d}"
-        pixel_range = range(0, 200)
         # do radial integration for each frame
         for ff in range(0, class_file['frame_nr'][ii]):
             if perform_abs_calib == 1:
                 img = load_and_correct(config, result, name_hdf)
-                # Subtract empty cell
+                # Subtract empty cell and Cadmium
                 img_cell = result['integration']['empty_cell']
                 # subraction of empty cell
                 if class_file['frame_nr'][ii] > 1:
-                    img1 =  np.subtract(img[ff,:,:], img_cell)
+                    img1 =  np.subtract(img[ff,:,:], dark)
+                    img1 =  np.subtract(img1, img_cell)
                 else:
-                    img1 =  np.subtract(img, img_cell)
+                    img1 =  np.subtract(img, dark)
+                    img1 =  np.subtract(img1, img_cell)
                 print('Corrected scan ' + class_file['name_hdf'][ii] + ', Frame: ' + str(ff) )
             else:
                 img = load_hdf(path_hdf_raw, name_hdf, 'counts')
@@ -286,52 +303,100 @@ def radial_integration(config, result, det, path_rad_int):
                 print('NOT corrected scan ' + class_file['name_hdf'][ii] + ', Frame: ' + str(ff) )
             img1= np.squeeze(img1)
             # get the frame number
-            frame = f"{ff:04d}"
+            frame_name = f"{ff:04d}"
+            frame = ff
             if perform_abs_calib == 1:
-                img1 = divide_water(config, result, ii, det, img1)
+                img1 = normalize_water(config, result, ii, det, img1)
             # save the 2D image
-            file_name = path_rad_int + 'pattern2D_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame +'.dat'
+            file_name = path_rad_int + 'pattern2D_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame_name +'.dat'
             np.savetxt(file_name, img1, delimiter=',')
+
+            # azimuthal integration
             if perform_azimuthal == 1:
+                # define the number of sectors
+                sectors_nr = 12
                 # integrate for azimuthal plots
-                npt_azim = range(0, 370, 30)
+                npt_azim = range(0, 370, int(360/sectors_nr))
                 for rr in range(0, len(npt_azim)-1):
                     azim_start = npt_azim[rr]
                     azim_end = npt_azim[rr+1]
 
-                    q, I, sigma = ai.integrate1d(img1, 200,
+                    q, I, sigma = ai.integrate1d(img1, len(pixel_range),
                                                  correctSolidAngle = True,
-                                                 mask = mask, method = 'nosplit_csr',
-                                                 unit = 'q_A^-1', safe=True,
-                                                 error_model="azimuthal",
-                                                 azimuth_range = [azim_start, azim_end])
+                                                 mask = mask,
+                                                 method = 'nosplit_csr',
+                                                 unit = 'q_A^-1',
+                                                 safe = True,
+                                                 error_model = "azimuthal",
+                                                 azimuth_range = [azim_start, azim_end],
+                                                 flat = None,
+                                                 dark = None)
+                    if perform_abs_calib == 1:
+                        # correct for the number of pixels
+                        test = np.ones(img1.shape)
+                        q_test, I_test, sigma_test = ai.integrate1d(test,  len(pixel_range),
+                                                                 correctSolidAngle = True,
+                                                                 mask = mask,
+                                                                 method = 'nosplit_csr',
+                                                                 unit = 'q_A^-1',
+                                                                 safe = True,
+                                                                 error_model = "azimuthal",
+                                                                 azimuth_range = [azim_start, azim_end],
+                                                                 flat = None,
+                                                                 dark = None)
+                        I_test[I_test <= 0] = 1
+                        I = np.divide(I,I_test)
                     if rr == 0:
                         I_all = I
-                        #sigma_all = sigma
+                        sigma_all = sigma
                     else:
                        I_all = np.column_stack((I_all,I))
-                       #sigma_all = np.column_stack((sigma_all, sigma))
-                data_save = np.column_stack((q, I_all)) #, sigma_all))
-                file_name = path_rad_int + 'azim_integ_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame +'.dat'
-                #header_text = 'This file contains: q in Angstroms-1, absolute intensity in 1/cm, and standard deviation.'
-                np.savetxt(file_name, data_save, delimiter=',')  # , header = header_text)
-                # plot and save the results
+                       sigma_all = np.column_stack((sigma_all, sigma))
+                #save the data
+                data_save = np.column_stack((q, I_all, sigma_all))
+                file_name = path_rad_int + 'azim_integ_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame_name +'.dat'
+                header_text = 'q (A-1), ' + str(sectors_nr) + ' columns for absolute intensity  I (1/cm), '+ str(sectors_nr) + ' columns for standard deviation'
+                np.savetxt(file_name, data_save, delimiter=',' , header = header_text)
+                result['integration']['npt_azim'] = npt_azim
+                plot_integ.plot_integ_azimuthal(config, result, scan_nr, frame)
+                # save result
                 path_dir_an = org.create_analysis_folder(config)
-                plot_integ(path_dir_an, scan_nr, ff, 0, plot_azimuthal, save_plots, pixel_range)
+                org.save_results(path_dir_an, result)
+
+            # for the radial integration
             if perform_radial == 1:
                 # integrate for radial plots
-                q, I, sigma = ai.integrate1d(img1, 200,
+                q, I, sigma = ai.integrate1d(img1, len(pixel_range),
                                              correctSolidAngle = True,
-                                             mask = mask, method = 'nosplit_csr',
-                                             unit = 'q_A^-1', safe=True,
-                                             error_model="azimuthal")
+                                             mask = mask,
+                                             method = 'nosplit_csr',
+                                             unit = 'q_A^-1',
+                                             safe = True,
+                                             error_model="azimuthal",
+                                             flat = None,
+                                             dark = None)
+                if perform_abs_calib == 1:
+                    # correct for the number of pixels
+                    test = np.ones(img1.shape)
+                    q_test, I_test, sigma_test = ai.integrate1d(test,  len(pixel_range),
+                                                             correctSolidAngle = True,
+                                                             mask = mask,
+                                                             method = 'nosplit_csr',
+                                                             unit = 'q_A^-1',
+                                                             safe = True,
+                                                             error_model="azimuthal",
+                                                             flat = None,
+                                                             dark = None)
+                    I_test[I_test == 0] = 1
+                    I = I/I_test
                 data_save = np.column_stack((q, I, sigma))
-                file_name = path_rad_int + 'radial_integ_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame +'.dat'
-                #header_text = 'This file contains: q in Angstroms-1, absolute intensity in 1/cm, and standard deviation.'
-                np.savetxt(file_name, data_save, delimiter=',')  # , header = header_text)
+                file_name = path_rad_int + 'radial_integ_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame_name +'.dat'
+                header_text = 'q (A-1), absolute intensity  I (1/cm), standard deviation'
+                np.savetxt(file_name, data_save, delimiter=',' , header = header_text)
                 # plot and save the results
                 path_dir_an = org.create_analysis_folder(config)
-                plot_integ(path_dir_an, scan_nr, ff, plot_radial, 0, save_plots, pixel_range)
-    path_dir_an = org.create_analysis_folder(config)
-    org.save_results(path_dir_an, result)
+                plot_integ.plot_integ_radial(config, result, scan_nr, frame)
+                # save result
+                path_dir_an = org.create_analysis_folder(config)
+                org.save_results(path_dir_an, result)
     return result

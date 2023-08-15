@@ -54,6 +54,7 @@ def correct_transmission(config, hdf_name, result, counts):
         trans = class_trans['transmission'][idx_trans]
         if isinstance(trans, float) and trans > 0:
             counts = counts/trans
+        print('%%')
         print('Sample ' + class_trans['sample_name'][idx_trans]+ ' is corrected by Transmission = ' + str(trans))
     else:
         print('No transmission found, and data not corrected!')

@@ -9,8 +9,8 @@ import calculate_transmission as trans
 import radial_integration as ri
 
 
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_2282_LutzBueno_3mm/Matt/raw_data/'
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_2282_LutzBueno_3mm/Matt/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/SANS-darep/raw_data/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/SANS-darep/'
 
 
 instrument = 'SANS-I'
@@ -18,18 +18,18 @@ instrument = 'SANS-I'
 cadmium = 'Cd'
 water = 'H2O'
 water_cell = 'EC'
-empty_cell = 'MW_background'
+empty_cell = 'EC'
 empty_beam = 'EB'
 beam_center = 'EB'
 
 exclude_files = [ ] #+ list(range(23177, 28000)) # we need to solve the transit position problem, they should be all lists
 
-perform_abs_calib = 0
+perform_abs_calib = 1
 perform_azimuthal = 1
 trans_dist = 18 #use negative values to deactivate
 perform_radial = 1
 force_reintegrate = 1
-replace_h2o_18m = 6.0 # it needs the .0
+replace_h2o_18m = 4.5 # it needs the .0
 plot_azimuthal = 1
 plot_radial = 1
 save_plots = 1

@@ -26,9 +26,9 @@ def check_dimension(prop):
         if prop.ndim == 1:
             return round(float(np.mean(prop)),2)
         elif prop.ndim == 2:
-            return prop
+            return np.float32(prop)
         elif prop.ndim > 2:
-            return prop
+            return np.float32(prop)
 
 
 
@@ -100,7 +100,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
     if  which_property == 'counts':
         prop = np.array(file_hdf['entry1/SANS/detector/counts'])
         res = check_dimension(prop)
-        res[res < 0] = np.median(res)
+        res[res < 0] = np.mean(res)
 
     file_hdf.close()
     return res
