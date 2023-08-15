@@ -23,7 +23,7 @@ def list_files(config, result):
     # create a list for containing all the measurements
     # classify measurements with the following info
     class_files = {'name_hdf':[ ], 'scan':[], 'sample_name':[],'att':[], 'coll_m':[], 'wl_A':[],
-                    'detx_m':[], 'dety_m':[],  'moni_e4':[], 'time_s':[], 'abs_time':[], 'frame_nr':[], 'temp_C':[]}
+                    'detx_m':[], 'dety_m':[],  'moni_e4':[], 'time_s':[], 'thickness_mm':[], 'frame_nr':[], 'temp_C':[]}
 
     path_hdf_raw = config['analysis']['path_hdf_raw']
     exclude_files = config['analysis']['exclude_files']
@@ -50,7 +50,6 @@ def list_files(config, result):
             class_files['att'].append(load_hdf(path_hdf_raw, files[ii], 'att'))
             class_files['coll_m'].append(load_hdf(path_hdf_raw, files[ii], 'coll'))
             class_files['time_s'].append(load_hdf(path_hdf_raw, files[ii], 'time'))
-            class_files['abs_time'].append(load_hdf(path_hdf_raw, files[ii], 'abs_time'))
             class_files['moni_e4'].append(load_hdf(path_hdf_raw, files[ii], 'moni'))
             class_files['temp_C'].append(load_hdf(path_hdf_raw, files[ii], 'temp'))
             class_files['detx_m'].append(load_hdf(path_hdf_raw, files[ii], 'detx'))
@@ -62,6 +61,17 @@ def list_files(config, result):
                 class_files['frame_nr'].append(res.shape[0])
             else:
                 class_files['frame_nr'].append(1)
+            sample_name = class_files['sample_name'][ii]
+            list_thickness = config['experiment']['sample_thickness']
+            if sample_name in list_thickness:
+                thickness = list_thickness[sample_name]
+                class_files['thickness_mm'].append(thickness)
+            elif 'all' in list_thickness:
+                thickness = list_thickness['all']
+                class_files['thickness_mm'].append(thickness)
+            else:
+                thickness = 1
+                class_files['thickness_mm'].append(thickness)
 
     # save list of files as text
     path_dir_an = create_analysis_folder(config)

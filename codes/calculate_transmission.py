@@ -10,7 +10,6 @@ import corrections as corr
 def select_transmission(config, class_files, result):
     #generate the analysis folder
     path_hdf_raw = config['analysis']['path_hdf_raw']
-    path_dir = config['analysis']['path_dir']
     trans_dist = config['experiment']['trans_dist']
     empty_beam = config['experiment']['calibration']['empty_beam']
     path_dir_an = org.create_analysis_folder(config)
@@ -36,11 +35,12 @@ def select_transmission(config, class_files, result):
     org.save_list_files(path_transmission, path_dir_an, class_trans, 'trans_files', result)
     return class_trans
 
-def correct_input_trans(config, hdf_name, counts):
+def correct_input_trans(config, result, hdf_name, counts):
     counts = corr.normalize_time(config, hdf_name, counts)
     counts = corr.deadtime_corrections(config, hdf_name, counts)
     #counts = corr.normalize_flux(config, hdf_name, counts)
     counts = corr.correct_attenuator(config, hdf_name, counts)
+    counts, sigma = corr.normalize_thickness(config, hdf_name, result, counts, 0)
     return counts
 
 def trans_calc_reference(config, result):
@@ -61,7 +61,7 @@ def trans_calc_reference(config, result):
             scan_nr = class_trans['scan'][ii]
             hdf_name = class_trans['name_hdf'][ii]
             counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
-            img = correct_input_trans(config, hdf_name, counts)
+            img = correct_input_trans(config, result, hdf_name, counts)
 
 
             # calculation of the cuttoff value for the mask
@@ -115,7 +115,7 @@ def trans_calc(config, result):
     for ii in range(0, len(class_trans['sample_name'])):
         hdf_name = class_trans['name_hdf'][ii]
         counts = load_hdf(path_hdf_raw, hdf_name , 'counts')
-        img = correct_input_trans(config, hdf_name, counts)
+        img = correct_input_trans(config, result, hdf_name, counts)
 
         sum_counts = int(np.sum(np.multiply(img, mask)))
         list_counts.append(sum_counts)

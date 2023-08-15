@@ -8,11 +8,13 @@ Created on Mon Jun 27 12:38:56 2022
 import numpy as np
 from load_hdf import load_hdf
 
+
+
 def normalize_time(config, hdf_name, counts):
     # normalize by detector deadtime
     path_hdf_raw = config['analysis']['path_hdf_raw']
     meas_time = load_hdf(path_hdf_raw, hdf_name, 'time')
-    counts = np.where(counts <=0, 1e-8, counts)
+    #counts = np.where(counts <=0, 1e-8, counts)
     # normalize by detector time
     counts = (counts/meas_time)
     return counts
@@ -59,3 +61,27 @@ def correct_transmission(config, hdf_name, result, counts):
     else:
         print('No transmission found, and data not corrected!')
     return counts
+
+
+def normalize_thickness(config, hdf_name, result, counts, sigma):
+    # correct transmission
+    class_all = result['overview']['all_files']
+    if hdf_name in class_all['name_hdf']:
+        idx = list(class_all['name_hdf']).index(str(hdf_name))
+        sample_name = class_all['sample_name'][idx]
+    list_thickness = config['experiment']['sample_thickness']
+    if sample_name in list_thickness:
+        thickness = list_thickness[sample_name]
+        counts = counts/thickness
+        sigma = sigma/thickness
+    elif 'all' in list_thickness:
+        thickness = list_thickness['all']
+        counts = counts/thickness
+        sigma = sigma/thickness
+    else:
+        thickness = 1
+        counts = counts/thickness
+        sigma = sigma/thickness
+
+    #print('Sample'+ sample_name +' corrected by thickness = ' + str(thickness) + ' mm')
+    return counts, sigma

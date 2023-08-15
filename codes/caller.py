@@ -24,6 +24,8 @@ beam_center = 'EB'
 
 exclude_files = [ ] #+ list(range(23177, 28000)) # we need to solve the transit position problem, they should be all lists
 
+sample_thickness = {'AS_100D2O':2, 'AS_75D2O':2} # provide a list of the sample name and thickness in mm. Otherwise, we assume that the thickness is 1 mm. Is all cells differ than 1 mm, but are equal, please indicate with {'all':x}, where x is the thickness.
+
 perform_abs_calib = 1
 perform_azimuthal = 1
 trans_dist = 18 #use negative values to deactivate
@@ -43,7 +45,7 @@ result = {'transmission':{},
 
 
 configuration = {'SANS-I':{'instrument': {'deadtime': 6.6e-7, 'list_attenuation': {'0':1, '1':1/485,'2':1/88,'3':1/8, '4':1/3.5,'5':1/8.3}, 'pixel_size':7.5e-3, 'detector_size': 128, 'list_bs': {'1':40, '2':70,'3':85,'4':100}, 'list_abs_calib': {'0.5':0.909, '0.6':0.989, '0.8':1.090, '1.0':1.241, '1.2':1.452}},
-                           'experiment': {'trans_dist': trans_dist, 'calibration':calibration},
+                           'experiment': {'trans_dist': trans_dist, 'calibration':calibration, 'sample_thickness':sample_thickness},
                            'analysis': {'path_dir': path_dir, 'path_hdf_raw':path_hdf_raw, 'exclude_files':exclude_files, 'perform_abs_calib':perform_abs_calib, 'perform_azimuthal':perform_azimuthal, 'perform_radial':perform_radial, 'force_reintegrate': force_reintegrate, 'replace_h2o_18m':replace_h2o_18m, "plot_azimuthal":plot_azimuthal, "plot_radial":plot_radial, "save_plots":save_plots }},
           'SANS-LLB':{'instrument': {'deadtime':1e5},
                     'experiment': {},

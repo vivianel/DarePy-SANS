@@ -4,9 +4,6 @@ import matplotlib.pyplot as plt
 #import pickle
 import organize_hdf_files as org
 
-#path_analysis = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_2282_LutzBueno_3mm/analysis/'
-#ScanNr = 23148
-#Frame = 0
 
 def plot_integ_radial(config, result, ScanNr, Frame):
     path_analysis = org.create_analysis_folder(config)
@@ -99,11 +96,6 @@ def plot_integ_radial(config, result, ScanNr, Frame):
 def plot_integ_azimuthal(config, result, ScanNr, Frame):
     path_analysis = org.create_analysis_folder(config)
     save_fig = config['analysis']['save_plots']
-
-    # load results
-    #file_name = os.path.join(path_analysis, 'result.npy')
-    #with open(file_name, 'rb') as handle:
-    #    result = pickle.load(handle)
     q_range = result['integration']['pixel_range']
 
 

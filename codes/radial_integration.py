@@ -169,7 +169,7 @@ def load_and_correct(config, result, name_hdf):
     counts = load_hdf(path_hdf_raw, name_hdf, 'counts')
     counts = corr.normalize_time(config, name_hdf, counts)
     counts = corr.deadtime_corrections(config, name_hdf, counts)
-    counts = corr.normalize_flux(config, name_hdf, counts)
+    #counts = corr.normalize_flux(config, name_hdf, counts)
     counts = corr.correct_attenuator(config, name_hdf, counts)
     counts = corr.correct_transmission(config, name_hdf, result, counts)
     return counts
@@ -248,16 +248,17 @@ def load_standards(config, result, det):
     return result
 
 
-def normalize_water(config, result, ii, det, img):
+def normalize_water(config, result, ii, det, I_corr, I, sigma_corr, sigma):
     scaling_factor = result['integration']['scaling_factor']
     list_cs = config['instrument']['list_abs_calib']
     class_file = result['overview']['det_files_'+ det]
     wl = class_file['wl_A'][ii]/10 # from A into nm
     correction = float(list_cs[str(wl)])
     if det == '18p0':
-        img = img/scaling_factor
-    img1 = np.divide(img, result['integration']['water']) * correction
-    return img1
+        I = I/scaling_factor
+    I = np.divide(I, I_corr) * correction
+    sigma = np.divide(sigma, I_corr)
+    return (I, sigma)
 
 def radial_integration(config, result, det, path_rad_int):
     plt.ioff()
@@ -269,6 +270,7 @@ def radial_integration(config, result, det, path_rad_int):
     perform_radial = config['analysis']['perform_radial']
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
+    flat = result['integration']['water']
     dark =  result['integration']['cadmium']
     class_file = result['overview']['det_files_'+ det]
     pixel_range = range(0, 200)
@@ -305,9 +307,6 @@ def radial_integration(config, result, det, path_rad_int):
             # get the frame number
             frame_name = f"{ff:04d}"
             frame = ff
-            if perform_abs_calib == 1:
-                img1 = normalize_water(config, result, ii, det, img1)
-            # save the 2D image
             file_name = path_rad_int + 'pattern2D_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame_name +'.dat'
             np.savetxt(file_name, img1, delimiter=',')
 
@@ -333,8 +332,8 @@ def radial_integration(config, result, det, path_rad_int):
                                                  dark = None)
                     if perform_abs_calib == 1:
                         # correct for the number of pixels
-                        test = np.ones(img1.shape)
-                        q_test, I_test, sigma_test = ai.integrate1d(test,  len(pixel_range),
+                        test = flat
+                        q_test, I_corr, sigma_corr = ai.integrate1d(test,  len(pixel_range),
                                                                  correctSolidAngle = True,
                                                                  mask = mask,
                                                                  method = 'nosplit_csr',
@@ -344,8 +343,9 @@ def radial_integration(config, result, det, path_rad_int):
                                                                  azimuth_range = [azim_start, azim_end],
                                                                  flat = None,
                                                                  dark = None)
-                        I_test[I_test <= 0] = 1
-                        I = np.divide(I,I_test)
+                        I_corr[I_corr <= 0] = 1
+                        I, sigma = normalize_water(config, result, ii, det, I_corr, I, sigma_corr, sigma)
+                        I, sigma = corr.normalize_thickness(config, name_hdf, result, I, sigma)
                     if rr == 0:
                         I_all = I
                         sigma_all = sigma
@@ -377,8 +377,8 @@ def radial_integration(config, result, det, path_rad_int):
                                              dark = None)
                 if perform_abs_calib == 1:
                     # correct for the number of pixels
-                    test = np.ones(img1.shape)
-                    q_test, I_test, sigma_test = ai.integrate1d(test,  len(pixel_range),
+                    test = flat
+                    q_test, I_corr, sigma_test = ai.integrate1d(test,  len(pixel_range),
                                                              correctSolidAngle = True,
                                                              mask = mask,
                                                              method = 'nosplit_csr',
@@ -387,8 +387,9 @@ def radial_integration(config, result, det, path_rad_int):
                                                              error_model="azimuthal",
                                                              flat = None,
                                                              dark = None)
-                    I_test[I_test == 0] = 1
-                    I = I/I_test
+                    I_corr[I_corr <= 0] = 1
+                    I, sigma = normalize_water(config, result, ii, det, I_corr, I, sigma_corr, sigma)
+                    I, sigma = corr.normalize_thickness(config, name_hdf, result, I, sigma)
                 data_save = np.column_stack((q, I, sigma))
                 file_name = path_rad_int + 'radial_integ_'  + sample_name + '_' +'det' + det + 'm_'+ scanNr + '_'+ frame_name +'.dat'
                 header_text = 'q (A-1), absolute intensity  I (1/cm), standard deviation'
