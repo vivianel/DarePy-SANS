@@ -36,11 +36,11 @@ replace_18m = 4.5
 
 # %% ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/SANS-darep/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_2581_Andrea/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/SANS-darep/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_2581_Andrea/'
 # id to the analysis folder. Use '' to aboid it
-add_id = 'test'
+add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
 exclude_files = [ ]

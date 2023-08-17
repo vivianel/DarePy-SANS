@@ -55,7 +55,7 @@ def set_integration(config, result):
     return result
 
 def make_file_name(path, prefix, sufix, sample_name, det, scanNr, frame):
-    file_n = path + prefix + '_'  + sample_name + '_' +'det' + det + 'm_'+ f"{scanNr:07d}" + '_'+ f"{frame:04d}" +'.' + sufix
+    file_n = path + prefix + '_'  + sample_name + '_' +'det' + det + 'm_'+ f"{scanNr:07d}" + '_'+ f"{frame:05d}" +'.' + sufix
     return file_n
 
 def integrate(config, result, det, path_rad_int):
@@ -159,7 +159,7 @@ def radial_integ(config, result, img1, file_name):
     # plot and save the results
     if config['analysis']['plot_radial'] ==1:
         ScanNr = int(re.findall(r"\D(\d{7})\D", file_name)[0])
-        Frame = int(re.findall(r"\D(\d{4})\D", file_name)[0])
+        Frame = int(re.findall(r"\D(\d{5})\D", file_name)[0])
         plot_integ.plot_integ_radial(config, result, ScanNr, Frame)
 
 def azimuthal_integ(config, result, img1, file_name):
@@ -214,5 +214,5 @@ def azimuthal_integ(config, result, img1, file_name):
     save_results(path_dir_an, result)
     if config['analysis']['plot_azimuthal'] ==1:
         ScanNr = int(re.findall(r"\D(\d{7})\D", file_name)[0])
-        Frame = int(re.findall(r"\D(\d{4})\D", file_name)[0])
+        Frame = int(re.findall(r"\D(\d{5})\D", file_name)[0])
         plot_integ.plot_integ_azimuthal(config, result, ScanNr, Frame)
