@@ -6,8 +6,7 @@ Created on Mon Jun 27 12:38:56 2022
 """
 
 import numpy as np
-from load_hdf import load_hdf
-
+from utils import load_hdf
 
 
 def normalize_time(config, hdf_name, counts):
@@ -20,7 +19,7 @@ def normalize_time(config, hdf_name, counts):
     return counts
 
 
-def deadtime_corrections(config, hdf_name, counts):
+def normalize_deadtime(config, hdf_name, counts):
     detector_deadtime = config['instrument']['deadtime'] # in s
     total_counts = np.sum(counts)
     path_hdf_raw = config['analysis']['path_hdf_raw']
@@ -35,7 +34,7 @@ def normalize_flux(config, hdf_name, counts):
     counts = (counts/flux_mon)
     return counts
 
-def correct_attenuator(config, hdf_name, counts):
+def normalize_attenuator(config, hdf_name, counts):
     # correct by attenuation
     path_hdf_raw = config['analysis']['path_hdf_raw']
     attenuator = int(load_hdf(path_hdf_raw, hdf_name, 'att'))
@@ -48,7 +47,7 @@ def correct_attenuator(config, hdf_name, counts):
     return counts
 
 
-def correct_transmission(config, hdf_name, result, counts):
+def normalize_transmission(config, hdf_name, result, counts):
     # correct transmission
     class_trans = result['overview']['all_files']
     if hdf_name in class_trans['name_hdf']:
@@ -63,7 +62,7 @@ def correct_transmission(config, hdf_name, result, counts):
     return counts
 
 
-def normalize_thickness(config, hdf_name, result, counts, sigma):
+def normalize_thickness(config, hdf_name, result, counts):
     # correct transmission
     class_all = result['overview']['all_files']
     if hdf_name in class_all['name_hdf']:
@@ -73,15 +72,11 @@ def normalize_thickness(config, hdf_name, result, counts, sigma):
     if sample_name in list_thickness:
         thickness = list_thickness[sample_name]
         counts = counts/thickness
-        sigma = sigma/thickness
     elif 'all' in list_thickness:
         thickness = list_thickness['all']
         counts = counts/thickness
-        sigma = sigma/thickness
     else:
-        thickness = 1
+        thickness = 0.1
         counts = counts/thickness
-        sigma = sigma/thickness
-
     #print('Sample'+ sample_name +' corrected by thickness = ' + str(thickness) + ' mm')
-    return counts, sigma
+    return counts

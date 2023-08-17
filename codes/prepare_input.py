@@ -1,34 +1,29 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Mar  9 09:11:44 2022
+Created on Wed Aug 16 10:21:49 2023
 
 @author: lutzbueno_v
-This function saves all the files in assorted detector distances
 """
-
-
 import os
 import re
-from load_hdf import load_hdf
+import numpy as np
 import pandas as pd
 from tabulate import tabulate
 from contextlib import redirect_stdout
-import pickle
-import numpy as np
 import shutil
+import pickle
+from utils import load_hdf
+from utils import create_analysis_folder
+from utils import save_results
 
 
 def list_files(config, result):
-
     # create a list for containing all the measurements
     # classify measurements with the following info
     class_files = {'name_hdf':[ ], 'scan':[], 'sample_name':[],'att':[], 'coll_m':[], 'wl_A':[],
-                    'detx_m':[], 'dety_m':[],  'moni_e4':[], 'time_s':[], 'thickness_mm':[], 'frame_nr':[], 'temp_C':[]}
-
+                    'detx_m':[], 'dety_m':[],  'moni_e4':[], 'time_s':[], 'thickness_cm':[], 'frame_nr':[], 'temp_C':[]}
     path_hdf_raw = config['analysis']['path_hdf_raw']
     exclude_files = config['analysis']['exclude_files']
-
-
     # find all hdf files in the path_hdf_raw folder
     files = []
     # r=root, d=directories, f = files
@@ -36,8 +31,6 @@ def list_files(config, result):
         for file in f:
             if '.hdf' in file:
                 files.append(os.path.join(file))
-
-
     # go through all measured data, check wheter it is a scan or not
     for ii in range(0, len(files)):
         # exclude some of the files if needed
@@ -65,14 +58,13 @@ def list_files(config, result):
             list_thickness = config['experiment']['sample_thickness']
             if sample_name in list_thickness:
                 thickness = list_thickness[sample_name]
-                class_files['thickness_mm'].append(thickness)
+                class_files['thickness_cm'].append(thickness)
             elif 'all' in list_thickness:
                 thickness = list_thickness['all']
-                class_files['thickness_mm'].append(thickness)
+                class_files['thickness_cm'].append(thickness)
             else:
-                thickness = 1
-                class_files['thickness_mm'].append(thickness)
-
+                thickness = 0.1
+                class_files['thickness_cm'].append(thickness)
     # save list of files as text
     path_dir_an = create_analysis_folder(config)
     save_list_files(path_dir_an, path_dir_an, class_files, 'all_files', result)
@@ -83,15 +75,6 @@ def list_files(config, result):
     return class_files
 
 
-
-def create_analysis_folder(config):
-    # create the analysis folder to save the results
-    path_dir = config['analysis']['path_dir']
-    path_dir_an = os.path.join(path_dir, 'analysis/')
-    if not os.path.exists(path_dir_an):
-        os.mkdir(path_dir_an)
-    return path_dir_an
-
 # print the list and save files
 # name is'trans_files.json'
 def save_list_files(path_save, path_dir_an, class_files, name, result):
@@ -101,35 +84,8 @@ def save_list_files(path_save, path_dir_an, class_files, name, result):
     with open(save_file, 'w') as f:
         with redirect_stdout(f):
             print(data)
-
     result['overview'][name] = class_files
     save_results(path_dir_an, result)
-
-def save_results(path_save, result):
-    # also save as json
-    save_file = os.path.join(path_save, 'result.npy')
-    # Store data (serialize)
-    with open(save_file, 'wb') as handle:
-        pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    return result
-
-
-
-
-
-def list_calib(file_id, class_det):
-    if file_id in class_det['sample_name']:
-        #open the file for the beam center and radial integrator
-        array = np.array(class_det['sample_name'])
-        indices = np.where(array == file_id)[0]
-        scan_nr = []
-        for jj in indices:
-            scan_nr.append(int(class_det['scan'][jj]))
-        print('     Calibration: ' + file_id + ', Scan: ' + str(scan_nr))
-        return(scan_nr)
-    else:
-        print('     Calibration: ' + file_id + ', Scan: MISSING')
-        return
 
 
 def  select_detector_distances(config, class_files, result):
@@ -137,12 +93,10 @@ def  select_detector_distances(config, class_files, result):
     empty_beam = config['experiment']['calibration']['empty_beam']
     calibration = config['experiment']['calibration']
     path_hdf_raw = config['analysis']['path_hdf_raw']
-
     # select the unique detector distance values
     unique_det = np.unique(class_files['detx_m'])
     #generate the analysis folder
     path_dir_an = create_analysis_folder(config)
-
     for jj in unique_det:
         string = str(jj)
         string = string.replace('.', 'p')
@@ -160,8 +114,6 @@ def  select_detector_distances(config, class_files, result):
                 shutil.copyfile(source, destination+class_files['name_hdf'][ii])
                 for iii in list_det:
                     class_det[iii].append(class_files[iii][ii])
-
-
         print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
         print('For sample-detector distance: ' + string + 'm')
         # print the calibration files
@@ -169,3 +121,17 @@ def  select_detector_distances(config, class_files, result):
             list_calib(kk, class_det)
         save_list_files(path_det, path_dir_an, class_det, 'det_files_' + string, result)
     return result
+
+def list_calib(file_id, class_det):
+    if file_id in class_det['sample_name']:
+        #open the file for the beam center and radial integrator
+        array = np.array(class_det['sample_name'])
+        indices = np.where(array == file_id)[0]
+        scan_nr = []
+        for jj in indices:
+            scan_nr.append(int(class_det['scan'][jj]))
+        print('     Calibration: ' + file_id + ', Scan: ' + str(scan_nr))
+        return(scan_nr)
+    else:
+        print('     Calibration: ' + file_id + ', Scan: MISSING')
+        return

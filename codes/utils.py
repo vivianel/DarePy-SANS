@@ -1,43 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 26 10:05:35 2023
+Created on Wed Aug 16 09:23:28 2023
 
 @author: lutzbueno_v
 """
+
 
 import numpy as np
 import h5py
 import os
 import math
-
-def check_dimension(prop):
-    if isinstance(prop,np.bytes_):
-        prop = prop.decode()
-        if prop == '':
-            prop = ''
-        elif all(i.isdigit() for i in prop):
-            prop = round(float(prop), 2)
-        return prop
-    elif isinstance (prop,np.int32):
-        return round(float(prop), 2)
-    elif isinstance (prop,np.float64):
-        return round(prop, 2)
-    elif isinstance (prop,np.ndarray):
-        if prop.ndim == 1:
-            return round(float(np.mean(prop)),2)
-        elif prop.ndim == 2:
-            return np.float32(prop)
-        elif prop.ndim > 2:
-            return np.float32(prop)
+import pickle
 
 
+
+# functions to load various values from hdf files
 
 def load_hdf(path_hdf_raw, hdf_name, which_property):
     name_hdf = os.path.join(path_hdf_raw, hdf_name)
-
     # open the hdf files
     file_hdf = h5py.File(name_hdf, 'r')
-
     # those are only scalars
     if which_property == 'att':
         prop = file_hdf['entry1/SANS/attenuator/selection'][0]
@@ -76,12 +58,10 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
         except:
             prop = file_hdf['/entry1/sample/name'][0]
             res = check_dimension(prop)
-
     # those values can be arrays
     if which_property == 'time':
         prop = np.asarray(file_hdf['/entry1/SANS/detector/counting_time'])
         res = check_dimension(prop)  # in s
-
     elif which_property == 'moni':
         prop = np.asarray(file_hdf['/entry1/SANS/detector/preset'])
         res = check_dimension(prop)/1e4 #to have monitors as 1e4
@@ -94,13 +74,47 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 res = check_dimension(prop)# in s
         except:
             res = ''
-
-
     #load the data
     if  which_property == 'counts':
         prop = np.array(file_hdf['entry1/SANS/detector/counts'])
         res = check_dimension(prop)
-        res[res < 0] = np.mean(res)
-
+        res[res < 0] = 1e-20
     file_hdf.close()
     return res
+
+def check_dimension(prop):
+    if isinstance(prop,np.bytes_):
+        prop = prop.decode()
+        if prop == '':
+            prop = ''
+        elif all(i.isdigit() for i in prop):
+            prop = round(float(prop), 2)
+        return prop
+    elif isinstance (prop,np.int32):
+        return round(float(prop), 2)
+    elif isinstance (prop,np.float64):
+        return round(prop, 2)
+    elif isinstance (prop,np.ndarray):
+        if prop.ndim == 1:
+            return round(float(np.mean(prop)),2)
+        elif prop.ndim == 2:
+            return np.float32(prop)
+        elif prop.ndim > 2:
+            return np.float32(prop)
+
+def create_analysis_folder(config):
+    add_id = config['analysis']['add_id']
+    # create the analysis folder to save the results
+    path_dir = config['analysis']['path_dir']
+    path_dir_an = os.path.join(path_dir, 'analysis_%s/' % add_id)
+    if not os.path.exists(path_dir_an):
+        os.mkdir(path_dir_an)
+    return path_dir_an
+
+def save_results(path_save, result):
+    # also save as json
+    save_file = os.path.join(path_save, 'result.npy')
+    # Store data (serialize)
+    with open(save_file, 'wb') as handle:
+        pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    return result
