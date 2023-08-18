@@ -15,10 +15,9 @@ from scipy.interpolate import interp1d
 import scipy.optimize
 import os
 
-# %% function to read and organize all data into 3 detector disctances
+# %% plot_all_data
 
-def merging_data(path_dir_an):
-
+def plot_all_data(path_dir_an):
     # create all paths for the merged data
     path_merged = os.path.join(path_dir_an, 'merged/')
     if not os.path.exists(path_merged):
@@ -88,13 +87,17 @@ def merging_data(path_dir_an):
             plt.title('Sample: '+  keys)
             file_name = path_merged_fig + keys + '_all_det_dist' + '.jpeg'
             plt.savefig(file_name)
+    return merged_files
 
+# %% merging_data
+def merging_data(path_dir_an, merged_files, skip_start, skip_end):
     #  merge the files
     # low to high q
-    skip_start = [0, 15, 20]
-    skip_end = [80, 20, 1]
-    range_pt = 5
-    exp_range = 2
+    path_merged = os.path.join(path_dir_an, 'merged/')
+    path_merged_fig = os.path.join(path_merged, 'figures/')
+    if not os.path.exists(path_merged_fig):
+        os.mkdir(path_merged_fig)
+    path_merged_txt = os.path.join(path_merged, 'data_txt/')
     interp_points = 200
     interp_type = 'log' # 'log' or 'linear'
 
@@ -111,11 +114,15 @@ def merging_data(path_dir_an):
                 q = q[skip_start[count]:len(q)-skip_end[count]]
                 I = merged_files[keys][ii,:]
                 I = I[skip_start[count]:len(I)-skip_end[count]]
-                if ii == range_det[0] or ii == range_det[1]:
+                if ii == range_det[0]:
                     q_all = np.concatenate((q_all, q), axis = None)
                     I_all = np.concatenate((I_all, I), axis = None)
                 else:
-                    scaling = np.mean(I_all[-range_pt*exp_range:])/np.mean(I[:range_pt])
+                    start_pt = np.where(np.round(q_all, 2) == np.round(q[0], 2))
+                    start_pt = start_pt[0][-1]
+                    end_pt = np.where(np.round(q, 2) == np.round(q_all[-1], 2))
+                    end_pt = end_pt[0][0]
+                    scaling = np.median(I_all[start_pt:])/np.median(I[:end_pt])
                     if np.isnan(scaling):
                         scaling = 1
                     I = np.multiply(I, scaling)
@@ -167,10 +174,9 @@ def merging_data(path_dir_an):
                 np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
 # %%
-def subtract_incoherent(path_dir_an):
+def subtract_incoherent(path_dir_an, var_offset):
     path_merged = path_dir_an + '/merged'
     path_merged_txt = path_merged +  '/data_txt/'
-
     file_name = os.path.join(path_dir_an, 'config.npy')
     with open(file_name, 'rb') as handle:
         config = pickle.load(handle)
@@ -206,7 +212,7 @@ def subtract_incoherent(path_dir_an):
                 init = range_bins[jj]
                 end = range_bins[jj+1]
                 var.append(np.var(np.abs(diff_I[init:end])))
-            idx = np.where(np.array(var) > 1e-3)
+            idx = np.where(np.array(var) > var_offset)
             off_set = range_bins[idx[0][-2]]
             plt.loglog(range_bins[1:], var, 'o')
             #plt.ylim([0, 0.25])
@@ -222,10 +228,12 @@ def subtract_incoherent(path_dir_an):
             def porod(q, coef, slope, incoherent):
                 return (coef * q**(slope-4) + incoherent)
 
+            base = np.polyfit(fitting_q, fitting_I, 0)
+            base = np.float64(base)
             # perform the fit
-            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I)
+            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I, p0 = [0.01, 3, base], bounds = ((-np.inf, -5, 1e-5),(np.inf, 5, base+0.1 )))
             m, t, b = params
-            incoherent = b*0.99
+            incoherent = b * 0.95
             slope = t
             coeff = m
 
