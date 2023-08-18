@@ -227,8 +227,8 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
                 off_set = len(I)-fitting_range
 
             # slip the first points
-            fitting_I = I[off_set:]
-            fitting_q = q[off_set:]
+            fitting_I = I[off_set:-3]
+            fitting_q = q[off_set:-3]
 
             def porod(q, coef, slope, incoherent):
                 return (coef * q**(slope-4) + incoherent)
