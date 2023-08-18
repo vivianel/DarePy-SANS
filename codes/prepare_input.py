@@ -54,7 +54,8 @@ def list_files(config, result):
                 class_files['frame_nr'].append(res.shape[0])
             else:
                 class_files['frame_nr'].append(1)
-            sample_name = class_files['sample_name'][ii]
+            # save sample thickness
+            sample_name = class_files['sample_name'][-1]
             list_thickness = config['experiment']['sample_thickness']
             if sample_name in list_thickness:
                 thickness = list_thickness[sample_name]
