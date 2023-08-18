@@ -53,8 +53,8 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
         res = file_hdf['/entry1/SANS/beam_stop/out_flag'][0]
     elif which_property == 'sample_name':
         try:
-            prop = file_hdf['/entry1/sample/name_new'][0]
-            res = check_dimension(prop)
+            prop = file_hdf['/entry1/sample/name_new']
+            res = prop.asstr()[()]
         except:
             prop = file_hdf['/entry1/sample/name'][0]
             res = check_dimension(prop)
@@ -93,6 +93,8 @@ def check_dimension(prop):
     elif isinstance (prop,np.int32):
         return round(float(prop), 2)
     elif isinstance (prop,np.float64):
+        return round(prop, 2)
+    elif isinstance (prop,np.float32):
         return round(prop, 2)
     elif isinstance (prop,np.ndarray):
         if prop.ndim == 1:
