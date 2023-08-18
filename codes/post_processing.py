@@ -76,9 +76,10 @@ def merging_data(path_dir_an):
         plt.close('all')
         plt.ioff()
         for ii in range(merged_files['q'].shape[0]):
-            q = merged_files['q'][ii, :]
-            I = merged_files[keys][ii,:]
-            plt.loglog(q, I, lw = 0.3, marker = 'o',  ms = 2)
+            if merged_files[keys].ndim > 1:
+                q = merged_files['q'][ii, :]
+                I = merged_files[keys][ii,:]
+                plt.loglog(q, I, lw = 0.3, marker = 'o',  ms = 2)
         if keys != 'q':
             plt.xlabel(r'Scattering vector q [$\AA^{-1}$]')
             plt.xscale('log')
@@ -105,63 +106,65 @@ def merging_data(path_dir_an):
         range_det = (range(merged_files['q'].shape[0]-1, -1, -1))
         count = 0
         for ii in range_det:
-            q = merged_files['q'][ii, :]
-            q = q[skip_start[count]:len(q)-skip_end[count]]
-            I = merged_files[keys][ii,:]
-            I = I[skip_start[count]:len(I)-skip_end[count]]
-            if ii == range_det[0] or ii == range_det[1]:
-                q_all = np.concatenate((q_all, q), axis = None)
-                I_all = np.concatenate((I_all, I), axis = None)
-            else:
-                scaling = np.mean(I_all[-range_pt*exp_range:])/np.mean(I[:range_pt])
-                if np.isnan(scaling):
-                    scaling = 1
-                I = np.multiply(I, scaling)
-                q_all = np.concatenate((q_all, q), axis = None)
-                I_all = np.concatenate((I_all, I), axis = None)
-            count = count + 1
+            if merged_files[keys].ndim > 1:
+                q = merged_files['q'][ii, :]
+                q = q[skip_start[count]:len(q)-skip_end[count]]
+                I = merged_files[keys][ii,:]
+                I = I[skip_start[count]:len(I)-skip_end[count]]
+                if ii == range_det[0] or ii == range_det[1]:
+                    q_all = np.concatenate((q_all, q), axis = None)
+                    I_all = np.concatenate((I_all, I), axis = None)
+                else:
+                    scaling = np.mean(I_all[-range_pt*exp_range:])/np.mean(I[:range_pt])
+                    if np.isnan(scaling):
+                        scaling = 1
+                    I = np.multiply(I, scaling)
+                    q_all = np.concatenate((q_all, q), axis = None)
+                    I_all = np.concatenate((I_all, I), axis = None)
+                count = count + 1
         if keys != 'q':
-            idx = np.argsort(q_all)
-            q_all = q_all[idx]
-            I_all = I_all[idx]
-            plt.loglog(q_all, I_all, lw = 0, marker = 'o',  ms = 10, color = 'black', alpha = 0.2, label = 'merged')
-            if interp_type == 'log':
-                # Interpolate it to new time points
-                interpolation_pts = np.logspace(np.log10(np.min(q_all)*1.01), np.log10(round(np.max(q_all), 3)), interp_points)
-                linear_interp = interp1d(q_all, I_all)
-                linear_results = linear_interp(interpolation_pts)
-                interpolation_pts = np.append(q_all[:2], interpolation_pts)
-                linear_results = np.append(I_all[:2], linear_results)
-                plt.loglog(interpolation_pts, linear_results, lw = 0.3,
-                           marker = 'o',  ms = 4, color = 'red', label = 'interpolated')
-            if interp_type == 'linear':
-                # Interpolate it to new time points
-                interpolation_pts = np.linspace(np.min(q_all), np.max(q_all), interp_points)
-                linear_interp = interp1d(q_all, I_all)
-                linear_results = linear_interp(interpolation_pts)
-                interpolation_pts = np.append(q_all[:2], interpolation_pts)
-                linear_results = np.append(I_all[:2], linear_results)
-                plt.loglog(interpolation_pts, linear_results, lw = 0.3,
-                           marker = 'o',  ms = 4, color = 'red', label = 'interpolated')
+            if merged_files[keys].ndim > 1:
+                idx = np.argsort(q_all)
+                q_all = q_all[idx]
+                I_all = I_all[idx]
+                plt.loglog(q_all, I_all, lw = 0, marker = 'o',  ms = 10, color = 'black', alpha = 0.2, label = 'merged')
+                if interp_type == 'log':
+                    # Interpolate it to new time points
+                    interpolation_pts = np.logspace(np.log10(np.min(q_all)*1.01), np.log10(round(np.max(q_all), 3)), interp_points)
+                    linear_interp = interp1d(q_all, I_all)
+                    linear_results = linear_interp(interpolation_pts)
+                    interpolation_pts = np.append(q_all[:2], interpolation_pts)
+                    linear_results = np.append(I_all[:2], linear_results)
+                    plt.loglog(interpolation_pts, linear_results, lw = 0.3,
+                               marker = 'o',  ms = 4, color = 'red', label = 'interpolated')
+                if interp_type == 'linear':
+                    # Interpolate it to new time points
+                    interpolation_pts = np.linspace(np.min(q_all), np.max(q_all), interp_points)
+                    linear_interp = interp1d(q_all, I_all)
+                    linear_results = linear_interp(interpolation_pts)
+                    interpolation_pts = np.append(q_all[:2], interpolation_pts)
+                    linear_results = np.append(I_all[:2], linear_results)
+                    plt.loglog(interpolation_pts, linear_results, lw = 0.3,
+                               marker = 'o',  ms = 4, color = 'red', label = 'interpolated')
 
-            plt.xlabel(r'Scattering vector q [$\AA^{-1}$]')
-            plt.xscale('log')
-            plt.yscale('log')
-            plt.ylabel(r'Intensity I [cm$^{-1}$]')
-            plt.title('Sample: '+  keys)
-            plt.legend()
+                plt.xlabel(r'Scattering vector q [$\AA^{-1}$]')
+                plt.xscale('log')
+                plt.yscale('log')
+                plt.ylabel(r'Intensity I [cm$^{-1}$]')
+                plt.title('Sample: '+  keys)
+                plt.legend()
 
-            file_name = path_merged_fig + keys + '_merged' + '.jpeg'
-            plt.savefig(file_name)
+                file_name = path_merged_fig + keys + '_merged' + '.jpeg'
+                plt.savefig(file_name)
 
-            header_text = 'q (A-1), I (1/cm)'
-            file_name = path_merged_txt + 'merged_'  + keys + '.dat'
-            data_save = np.column_stack((q_all, I_all))
-            np.savetxt(file_name, data_save, delimiter=',', header=header_text)
+                header_text = 'q (A-1), I (1/cm)'
+                file_name = path_merged_txt + 'merged_'  + keys + '.dat'
+                data_save = np.column_stack((q_all, I_all))
+                np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
-            file_name = path_merged_txt + 'interpolated_'  + keys + '.dat'
-            data_save = np.column_stack((interpolation_pts, linear_results))
-            np.savetxt(file_name, data_save, delimiter=',', header=header_text)
+                file_name = path_merged_txt + 'interpolated_'  + keys + '.dat'
+                data_save = np.column_stack((interpolation_pts, linear_results))
+                np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
 # %%
 def subtract_incoherent(path_dir_an):
@@ -186,7 +189,7 @@ def subtract_incoherent(path_dir_an):
             plt.close('all')
             plt.ioff()
             file_name =  path_merged_txt + files[ii]
-
+            print(file_name)
             I = np.genfromtxt(file_name,
                                  dtype = None,
                                  delimiter = ',',
@@ -196,13 +199,25 @@ def subtract_incoherent(path_dir_an):
                                  delimiter = ',',
                                  usecols = 0)
 
-            diff_I = np.diff(I)
-            off_set = np.median(np.abs(diff_I))/5
-            select_diff = np.where(np.abs(diff_I) < off_set )
+            diff_I = np.diff(np.subtract(I, np.min(I)))
+            range_bins = range(0, len(diff_I), 10)
+            var = []
+            for jj in range(len(range_bins)-1):
+                init = range_bins[jj]
+                end = range_bins[jj+1]
+                var.append(np.var(np.abs(diff_I[init:end])))
+            idx = np.where(np.array(var) > 1e-3)
+            off_set = range_bins[idx[0][-2]]
+            plt.loglog(range_bins[1:], var, 'o')
+            #plt.ylim([0, 0.25])
+            path_merged_fig = path_merged +  '/figures/'
+            file_name = path_merged_fig + files[ii][13:-4] + '_diff' + '.jpeg'
+            plt.savefig(file_name)
+            plt.close('all')
+
             # slip the first points
-            select_diff = select_diff[0]
-            fitting_I = I[select_diff[0]:-2]
-            fitting_q = q[select_diff[0]:-2]
+            fitting_I = I[off_set:]
+            fitting_q = q[off_set:]
 
             def porod(q, coef, slope, incoherent):
                 return (coef * q**(slope-4) + incoherent)
@@ -210,7 +225,7 @@ def subtract_incoherent(path_dir_an):
             # perform the fit
             params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I)
             m, t, b = params
-            incoherent = b
+            incoherent = b*0.99
             slope = t
             coeff = m
 
