@@ -36,7 +36,7 @@ replace_18m = 4.5
 
 # %% ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2021_1391_0-Rossana/raw_data/'
+path_hdf_raw = 'C:/Users/Sinquser/Documents/Python_Scripts/2022-2562_Scotti/DarePy-SANS/'
 # path to the working directory (where the analysis will be saved)
 path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2021_1391_0-Rossana/'
 # id to the analysis folder. Use '' to aboid it
