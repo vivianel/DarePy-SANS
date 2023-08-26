@@ -122,6 +122,7 @@ def integrate(config, result, det, path_rad_int):
 
 
 def radial_integ(config, result, img1, file_name):
+    # radial
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
     pixel_range = result['integration']['pixel_range']
@@ -136,19 +137,20 @@ def radial_integ(config, result, img1, file_name):
                                  error_model="azimuthal",
                                  flat = None,
                                  dark = None)
-    if perform_abs_calib == 1:
+    # we don't ned the absoliute calibration with water
+    #if perform_abs_calib == 1:
         # correct for the number of pixels
-        flat =     flat = result['integration']['water']
-        q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  len(pixel_range),
-                                                 correctSolidAngle = True,
-                                                 mask = mask,
-                                                 method = 'nosplit_csr',
-                                                 unit = 'q_A^-1',
-                                                 safe = True,
-                                                 error_model="azimuthal",
-                                                 flat = None,
-                                                 dark = None)
-        I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat)
+        #flat =     flat = result['integration']['water']
+        #q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  len(pixel_range),
+        #                                         correctSolidAngle = True,
+        #                                         mask = mask,
+        #                                         method = 'nosplit_csr',
+        #                                         unit = 'q_A^-1',
+        #                                         safe = True,
+        #                                         error_model="azimuthal",
+        #                                         flat = None,
+         #                                        dark = None)
+        #I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat)
     # save the integrated files
     data_save = np.column_stack((q, I, sigma))
     header_text = 'q (A-1), absolute intensity  I (1/cm), standard deviation'
@@ -156,19 +158,13 @@ def radial_integ(config, result, img1, file_name):
     # save result
     path_dir_an = create_analysis_folder(config)
     save_results(path_dir_an, result)
-    # plot and save the results
-    if config['analysis']['plot_radial'] ==1:
-        ScanNr = int(re.findall(r"\D(\d{7})\D", file_name)[0])
-        Frame = int(re.findall(r"\D(\d{5})\D", file_name)[0])
-        plot_integ.plot_integ_radial(config, result, ScanNr, Frame)
-
-def azimuthal_integ(config, result, img1, file_name):
+    # azimuthal 
+    # for the second part of the analysis
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
     pixel_range = result['integration']['pixel_range']
-    perform_abs_calib = config['analysis']['perform_abs_calib']
     # define the number of sectors
-    sectors_nr = 12
+    sectors_nr = 8
     # integrate for azimuthal plots
     npt_azim = range(0, 370, int(360/sectors_nr))
     result['integration']['npt_azim'] = npt_azim
@@ -185,20 +181,78 @@ def azimuthal_integ(config, result, img1, file_name):
                                      azimuth_range = [azim_start, azim_end],
                                      flat = None,
                                      dark = None)
-        if perform_abs_calib == 1:
-            # correct for the number of pixels
-            flat = result['integration']['water']
-            q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  len(pixel_range),
-                                                     correctSolidAngle = True,
-                                                     mask = mask,
-                                                     method = 'nosplit_csr',
-                                                     unit = 'q_A^-1',
-                                                     safe = True,
-                                                     error_model = "azimuthal",
-                                                     azimuth_range = [azim_start, azim_end],
-                                                     flat = None,
-                                                     dark = None)
-            I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat)
+        # we don't need absolue calibration with water for this beamtime
+        # if perform_abs_calib == 1:
+        #     # correct for the number of pixels
+        #     flat = result['integration']['water']
+        #     q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  len(pixel_range),
+        #                                              correctSolidAngle = True,
+        #                                              mask = mask,
+        #                                              method = 'nosplit_csr',
+        #                                              unit = 'q_A^-1',
+        #                                              safe = True,
+        #                                              error_model = "azimuthal",
+        #                                              azimuth_range = [azim_start, azim_end],
+        #                                              flat = None,
+        #                                              dark = None)
+        #     I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat)
+        if rr == 0:
+            I_all = I
+            sigma_all = sigma
+        else:
+           I_all = np.column_stack((I_all,I))
+           sigma_all = np.column_stack((sigma_all, sigma))
+    #save the integrated data
+    data_save = np.column_stack((q, I_all, sigma_all))
+    file_name1 = file_name.replace('radial', 'azim')
+    header_text = 'q (A-1), ' + str(sectors_nr) + ' columns for absolute intensity  I (1/cm), '+ str(sectors_nr) + ' columns for standard deviation'
+    np.savetxt(file_name1, data_save, delimiter=',' , header = header_text)
+    # save result
+    path_dir_an = create_analysis_folder(config)
+    save_results(path_dir_an, result)
+    if config['analysis']['plot_radial'] ==1:
+        ScanNr = int(re.findall(r"\D(\d{7})\D", file_name)[0])
+        Frame = int(re.findall(r"\D(\d{5})\D", file_name)[0])
+        plot_integ.plot_integ_radial(config, result, ScanNr, Frame)
+
+def azimuthal_integ(config, result, img1, file_name):
+    ai = result['integration']['ai']
+    mask = result['integration']['int_mask']
+    pixel_range = result['integration']['pixel_range']
+    perform_abs_calib = config['analysis']['perform_abs_calib']
+    # define the number of sectors
+    sectors_nr = 8
+    # integrate for azimuthal plots
+    npt_azim = range(0, 370, int(360/sectors_nr))
+    result['integration']['npt_azim'] = npt_azim
+    for rr in range(0, len(npt_azim)-1):
+        azim_start = npt_azim[rr]
+        azim_end = npt_azim[rr+1]
+        q, I, sigma = ai.integrate1d(img1, len(pixel_range),
+                                     correctSolidAngle = True,
+                                     mask = mask,
+                                     method = 'nosplit_csr',
+                                     unit = 'q_A^-1',
+                                     safe = True,
+                                     error_model = "azimuthal",
+                                     azimuth_range = [azim_start, azim_end],
+                                     flat = None,
+                                     dark = None)
+        # we don't need absolue calibration with water for this beamtime
+        # if perform_abs_calib == 1:
+        #     # correct for the number of pixels
+        #     flat = result['integration']['water']
+        #     q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  len(pixel_range),
+        #                                              correctSolidAngle = True,
+        #                                              mask = mask,
+        #                                              method = 'nosplit_csr',
+        #                                              unit = 'q_A^-1',
+        #                                              safe = True,
+        #                                              error_model = "azimuthal",
+        #                                              azimuth_range = [azim_start, azim_end],
+        #                                              flat = None,
+        #                                              dark = None)
+        #     I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat)
         if rr == 0:
             I_all = I
             sigma_all = sigma

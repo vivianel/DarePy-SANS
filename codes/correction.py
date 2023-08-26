@@ -46,6 +46,11 @@ def prepare_ai(config, beam_center, name_hdf, result):
     # calculate the beam center
     counts = load_hdf(path_hdf_raw, name_hdf, 'counts')
     bc_x, bc_y = calculate_beam_center(config, counts, name_hdf)
+    
+    # corerction to the beamcenter
+    bc_x = bc_x 
+    bc_y = bc_y +1
+    
     poni2 = bc_x*pixel1
     poni1 = bc_y*pixel2
     result['integration']['beam_center_x'] = bc_x
@@ -60,9 +65,9 @@ def prepare_ai(config, beam_center, name_hdf, result):
     beam_stopper = (beam_stopper/(pixel1*1000)/2)+1
     # increase the size for large detector distances distances
     if dist > 10:
-        beam_stopper = beam_stopper + 2
+        beam_stopper = 7
     # remove those pixels around the beam stopper
-    mask[int(bc_y-beam_stopper):int(bc_y+beam_stopper), int(bc_x-beam_stopper):int(bc_x+beam_stopper)] = 1
+    mask[int(bc_y-beam_stopper):int(bc_y+beam_stopper-1), int(bc_x-beam_stopper-1):int(bc_x+beam_stopper)] = 1
     # remove the lines around the detector
     lines = 2
     mask[:, 0:lines] = 1
@@ -130,6 +135,7 @@ def calculate_beam_center(config, counts0, name_hdf):
 def load_standards(config, result, det):
     calibration = config['experiment']['calibration']
     class_file = result['overview']['det_files_' + det]
+    perform_abs_calib = config['analysis']['perform_abs_calib']
     path_dir_an = create_analysis_folder(config)
     for key, value in calibration.items():
         idx = class_file['sample_name'].index(value)
@@ -146,57 +152,58 @@ def load_standards(config, result, det):
     for key, value in calibration.items():
         if key != 'cadmium':
             result['integration'][key] = correct_dark(result['integration'][key], result['integration']['cadmium'])
-
-    # subtract empty cell
-    img_h2o = result['integration']['water']
-    img_cell = result['integration']['water_cell']
-    img_h2o = correct_EC(img_h2o, img_cell)
-
-    # determine the scaling factor to replace water at 18 m
-    ai = result['integration']['ai']
-    mask = result['integration']['int_mask']
-    # used for the correction factor
-    q_h2o, I_h2o, sigma_h2o = ai.integrate1d(img_h2o,  200,
-                                             correctSolidAngle=True,
-                                             mask=mask,
-                                             method = 'nosplit_csr',
-                                             unit = 'q_A^-1',
-                                             safe=True,
-                                             error_model="azimuthal",
-                                             flat = None,
-                                             dark = None)
-    # replace the water at 18 m
-    replace_18m = config['analysis']['replace_18m']
-    if det == '18p0' and replace_18m > 0:
-        replace_18m = round(replace_18m, 1)
-        det_m = str(replace_18m).replace('.', 'p')
-        class_file = result['overview']['det_files_' + det_m]
-        idx = class_file['sample_name'].index(calibration.get('water'))
-        name_hdf = class_file['name_hdf'][idx]
-        img_h2o_corr = load_and_normalize(config, result, name_hdf)
-        idx = class_file['sample_name'].index(calibration.get('water_cell'))
-        name_hdf = class_file['name_hdf'][idx]
-        img_cell_corr = load_and_normalize(config, result, name_hdf)
-        img_h2o_corr = np.subtract(img_h2o_corr, result['integration']['cadmium'])
-        img_h2o_corr = np.subtract(img_h2o_corr,img_cell_corr)
-        # get correction factor
-        q_h2o_corr, I_h2o_corr, sigma_h2o_corr = ai.integrate1d(img_h2o_corr,  200,
-                                                                correctSolidAngle=True,
-                                                                mask=mask,
-                                                                method = 'nosplit_csr',
-                                                                unit = 'q_A^-1',
-                                                                safe=True,
-                                                                error_model="azimuthal",
-                                                                flat = None,
-                                                                dark = None)
-        scaling_factor = (I_h2o[50:-10]/I_h2o_corr[50:-10]).mean()
-        img_h2o = img_h2o_corr
-        result['integration']['scaling_factor']= scaling_factor
-    else:
-        result['integration']['scaling_factor'] = 1
-    # avoid negative numbers and zeros
-    img_h2o[img_h2o <= 0] = 1e-8
-    result['integration']['water'] = img_h2o
+    # we don't need the absolute water calibration for this beamtime
+    # if perform_abs_calib == 1:
+    #     # subtract empty cell
+    #     img_h2o = result['integration']['water']
+    #     img_cell = result['integration']['water_cell']
+    #     img_h2o = correct_EC(img_h2o, img_cell)
+    
+    #     # determine the scaling factor to replace water at 18 m
+    #     ai = result['integration']['ai']
+    #     mask = result['integration']['int_mask']
+    #     # used for the correction factor
+    #     q_h2o, I_h2o, sigma_h2o = ai.integrate1d(img_h2o,  200,
+    #                                              correctSolidAngle=True,
+    #                                              mask=mask,
+    #                                              method = 'nosplit_csr',
+    #                                              unit = 'q_A^-1',
+    #                                              safe=True,
+    #                                              error_model="azimuthal",
+    #                                              flat = None,
+    #                                              dark = None)
+    #     # replace the water at 18 m
+    #     replace_18m = config['analysis']['replace_18m']
+    #     if det == '18p0' and replace_18m > 0:
+    #         replace_18m = round(replace_18m, 1)
+    #         det_m = str(replace_18m).replace('.', 'p')
+    #         class_file = result['overview']['det_files_' + det_m]
+    #         idx = class_file['sample_name'].index(calibration.get('water'))
+    #         name_hdf = class_file['name_hdf'][idx]
+    #         img_h2o_corr = load_and_normalize(config, result, name_hdf)
+    #         idx = class_file['sample_name'].index(calibration.get('water_cell'))
+    #         name_hdf = class_file['name_hdf'][idx]
+    #         img_cell_corr = load_and_normalize(config, result, name_hdf)
+    #         img_h2o_corr = np.subtract(img_h2o_corr, result['integration']['cadmium'])
+    #         img_h2o_corr = np.subtract(img_h2o_corr,img_cell_corr)
+    #         # get correction factor
+    #         q_h2o_corr, I_h2o_corr, sigma_h2o_corr = ai.integrate1d(img_h2o_corr,  200,
+    #                                                                 correctSolidAngle=True,
+    #                                                                 mask=mask,
+    #                                                                 method = 'nosplit_csr',
+    #                                                                 unit = 'q_A^-1',
+    #                                                                 safe=True,
+    #                                                                 error_model="azimuthal",
+    #                                                                 flat = None,
+    #                                                                 dark = None)
+    #         scaling_factor = (I_h2o[50:-10]/I_h2o_corr[50:-10]).mean()
+    #         img_h2o = img_h2o_corr
+    #         result['integration']['scaling_factor']= scaling_factor
+    #     else:
+    #         result['integration']['scaling_factor'] = 1
+    #     # avoid negative numbers and zeros
+    #     img_h2o[img_h2o <= 0] = 1e-8
+    #     result['integration']['water'] = img_h2o
 
     save_results(path_dir_an, result)
     return result
@@ -210,7 +217,8 @@ def load_and_normalize(config, result, name_hdf):
     counts = norm.normalize_attenuator(config, name_hdf, counts)
     if config['experiment']['trans_dist'] > 0:
         counts = norm.normalize_transmission(config, name_hdf, result, counts)
-    counts = norm.normalize_thickness(config, name_hdf, result, counts)
+    # we don't want to normalize by the thicknes, since we are undure about the coil
+    #counts = norm.normalize_thickness(config, name_hdf, result, counts)
     return counts
 
 def correct_dark(img, dark):
