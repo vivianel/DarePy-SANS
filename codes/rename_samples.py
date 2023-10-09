@@ -12,9 +12,9 @@ import os
 # path where the raw data is saved: usually AFS
 path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2021_1391_0-Rossana/raw_data/'
 
-files_change = range( 45604, 45646)
+files_change = [52343]#range( 45604, 45646)
 subscript = 'temp'
-replace = 0
+replace = 'AP5_100_077'
 
 files = []
 for r, d, f in os.walk(path_hdf_raw):
