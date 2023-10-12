@@ -46,11 +46,6 @@ def prepare_ai(config, beam_center, name_hdf, result):
     # calculate the beam center
     counts = load_hdf(path_hdf_raw, name_hdf, 'counts')
     bc_x, bc_y = calculate_beam_center(config, counts, name_hdf)
-    # this seems to be needed for smaller distances
-    if dist < 15:
-        bc_x = bc_x + 1
-        bc_y = bc_y + 1
-
     poni2 = bc_x*pixel1
     poni1 = bc_y*pixel2
     result['integration']['beam_center_x'] = bc_x
@@ -65,7 +60,12 @@ def prepare_ai(config, beam_center, name_hdf, result):
     beam_stopper = (beam_stopper/(pixel1*1000)/2)
 
     # remove those pixels around the beam stopper
-    mask[int(bc_y-beam_stopper):int(bc_y+beam_stopper), int(bc_x-beam_stopper):int(bc_x+beam_stopper)] = 1
+    y_p = int(bc_y + beam_stopper)
+    y_n = int(bc_y - beam_stopper)
+    x_p = int(bc_x + beam_stopper)
+    x_n = int(bc_x - beam_stopper)
+
+    mask[y_n:y_p, x_n:x_p] = 1
     # remove the lines around the detector
     lines = 2
     mask[:, 0:lines] = 1
@@ -95,6 +95,8 @@ def prepare_ai(config, beam_center, name_hdf, result):
 
 
 def calculate_beam_center(config, counts0, name_hdf):
+    path_hdf_raw = config['analysis']['path_hdf_raw']
+    dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
     interpolation_factor = 2
     # reshape the image
     sizeX = counts0.shape[0]*interpolation_factor
@@ -111,6 +113,10 @@ def calculate_beam_center(config, counts0, name_hdf):
     ymean = y.mean()
     bc_x = xmean/interpolation_factor
     bc_y = ymean/interpolation_factor
+    # this seems to be needed for smaller detector distances
+    if dist < 10:
+        bc_x = bc_x + 1
+        bc_y = bc_y + 1
     # turn off the interactivity
     plt.ioff()
     # Plot on figure
@@ -121,8 +127,6 @@ def calculate_beam_center(config, counts0, name_hdf):
     plt.title('x_center = ' + str(round(bc_x, 2)) + ', y_center =' + str(round(bc_y, 2)) + ' pixels')
     # Show image and make sure axis is removed
     plt.axis('off')
-    path_hdf_raw = config['analysis']['path_hdf_raw']
-    dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
     path_dir_an = create_analysis_folder(config)
     file_name = path_dir_an + 'beamcenter_' + str(dist).replace('.', 'p') + 'm.jpg'
     plt.savefig(file_name)

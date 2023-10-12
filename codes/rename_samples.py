@@ -10,11 +10,15 @@ import numpy as np
 import os
 
 # path where the raw data is saved: usually AFS
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2021_1391_0-Rossana/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_0546_RheoSANS/DarePy-SANStest/raw_data/'
 
-files_change = range( 45604, 45646)
-subscript = 'temp'
-replace = 0
+# for a single file you need to add the quotes
+files_change = [57218]
+
+# if you want to replace with temparature call the subscript 'temp', otherwise keep it empty ''
+subscript = ''
+# name to be replaced
+replace_with = 'GA_SiC_fibres'
 
 files = []
 for r, d, f in os.walk(path_hdf_raw):
@@ -35,8 +39,8 @@ for ii in range(0, len(files)):
             name = name + '_' + str(temp)
         else:
             name = name + str(subscript)
-        if replace != 0:
-            name = replace
+        if replace_with != 0:
+            name = replace_with
         try:
             del file_hdf['/entry1/sample/name_new']
             file_hdf.create_dataset('/entry1/sample/name_new', data = np.bytes_(name))
@@ -44,3 +48,5 @@ for ii in range(0, len(files)):
             file_hdf.create_dataset('/entry1/sample/name_new', data = np.bytes_(name))
 
         file_hdf.close()
+
+file_hdf.close()
