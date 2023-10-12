@@ -46,6 +46,11 @@ def prepare_ai(config, beam_center, name_hdf, result):
     # calculate the beam center
     counts = load_hdf(path_hdf_raw, name_hdf, 'counts')
     bc_x, bc_y = calculate_beam_center(config, counts, name_hdf)
+    # this seems to be needed for smaller distances
+    if dist < 15:
+        bc_x = bc_x + 1
+        bc_y = bc_y + 1
+
     poni2 = bc_x*pixel1
     poni1 = bc_y*pixel2
     result['integration']['beam_center_x'] = bc_x
@@ -53,14 +58,12 @@ def prepare_ai(config, beam_center, name_hdf, result):
     # create a mask
     detector_size = config['instrument']['detector_size']
     mask = np.zeros([detector_size, detector_size])
-    # find the size of the beam stopper
+    # find the size of the beam stopper, based on the list
     beam_stop = load_hdf(path_hdf_raw, name_hdf, 'beam_stop')
     list_bs = config['instrument']['list_bs']
     beam_stopper = list_bs[str(int(beam_stop))]
-    beam_stopper = (beam_stopper/(pixel1*1000)/2)+1
-    # increase the size for large detector distances distances
-    if dist > 10:
-        beam_stopper = beam_stopper + 2
+    beam_stopper = (beam_stopper/(pixel1*1000)/2)
+
     # remove those pixels around the beam stopper
     mask[int(bc_y-beam_stopper):int(bc_y+beam_stopper), int(bc_x-beam_stopper):int(bc_x+beam_stopper)] = 1
     # remove the lines around the detector
