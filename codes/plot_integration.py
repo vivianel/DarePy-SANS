@@ -41,6 +41,21 @@ def plot_integ_radial(config, result, ScanNr, Frame):
                          dtype = None,
                          delimiter = ',',
                          usecols = 2)
+
+    npt_azim = result['integration']['npt_azim']
+    sectors_nr = result['integration']['sectors_nr']
+    q_range = result['integration']['pixel_range']
+    # load azimuthal files
+    prefix = 'azim_integ'
+    sufix = 'dat'
+    file_name = integ.make_file_name(path_integ, prefix, sufix, sample_name, det, ScanNr, Frame)
+    data = np.genfromtxt(file_name,
+                         dtype=None,
+                         delimiter=',')
+    q_a = data[:,0]
+    I_a = data[:, 1:len(npt_azim)]
+
+
     # plots
     # Convert pixel coordinates starting at the beam center to coordinates in the inverse space (unit: nm ^ -1)
     ai = result['integration']['ai']
@@ -52,30 +67,93 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     else:
         detector_size = config['instrument']['detector_size']
         mask_inv = np.ones([detector_size, detector_size])
-    if img1.mean() > 0:
-        mean_img =  (img1*mask_inv).mean()
-        clim1 = (0, 3*(mean_img))
-    else:
-        clim1 = (0, 1)
+
+    img1[img1<=0] = np.mean(img1[1:20, :])
+
     # define the extent of the image in q
     def x2q(x, wl, dist, pixelsize):
        return 4*np.pi/wl*np.sin(np.arctan(pixelsize*x/dist)/2)
+
+    # caked images
+    res2d = ai.integrate2d(img1, 200, 360,   method = 'BBox', unit = 'q_A^-1')
+    I_c, tth, chi = res2d
+
+
+    # reduce the size of the image for plotting
+    #img1 = img1[35:-40, 35:-40]
+    #mask_inv = mask_inv[35:-40, 35:-40]
+
     #calculate the extent of the image in q
     qx = x2q(np.arange(img1.shape[1])-bc_x, ai.wavelength, ai.dist, ai.pixel1)
     qy = x2q(np.arange(img1.shape[0])-bc_y, ai.wavelength, ai.dist, ai.pixel2)
     extent = [qx.min(), qx.max(), qy.min(), qy.max()]
     plt.ioff()
+
     # define the figure axis
-    fig1, ((axs0, axs1))  = plt.subplots(1, 2,  figsize=(10, 6))
-    im1 = axs0.imshow(img1*mask_inv, origin='lower', aspect = 'equal', clim = clim1, cmap = 'turbo', extent = np.divide(extent,1e9)) # to have in A
-    fig1.colorbar(im1, ax = axs0, orientation = 'horizontal', shrink = 0.75).set_label(r'Intensity I [cm$^{-1}$]')
+    fig1, ([[axs0, axs1], [axs2, axs3], [axs4, axs5]])  = plt.subplots(3, 2,  figsize=(12, 17))
+
+    scale = 'log'
+    if scale == 'log':
+        clim = (0, np.max(np.log(img1)))
+        im1 = axs0.imshow(np.log(img1)*mask_inv, origin='lower', aspect = 'equal', clim = clim, cmap = 'jet', extent = np.divide(extent,1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
+        fig1.colorbar(im1, ax = axs0, orientation = 'horizontal', shrink = 0.75).set_label(r'log(I) [cm$^{-1}$]')
+        im2=axs2.imshow(np.log(I_c), origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  cmap='jet', clim = clim)
+    else:
+        clim = (0, np.max(img1)/2)
+        im1 = axs0.imshow(img1*mask_inv, origin='lower', aspect = 'equal', clim = clim, cmap = 'jet', extent = np.divide(extent, 1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
+        fig1.colorbar(im1, ax = axs0, orientation = 'horizontal', shrink = 0.75).set_label(r'intensity (I) [cm$^{-1}$]')
+        im2=axs2.imshow(I_c, origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  cmap='jet', clim = clim)
+
     axs0.grid(color = 'white', linestyle = '--', linewidth = 0.25)
     axs0.set(ylabel = r'q$_{y}$ [$\AA$$^{-1}$]', xlabel = r'q$_{x}$ [$\AA$$^{-1}$]')
-    axs1.plot(q, I, 'ok', label = 'total')
+    axs1.plot(q, I, 'ok', label = 'total', markersize=2)
     axs1.set(xlabel = r'Scattering vector q [$\AA^{-1}$]', ylabel = r'Intensity I [cm$^{-1}$]', xscale = 'log',
                 yscale = 'log', title = 'Sample: '+ sample_name)
     axs1.grid(color = 'gray', linestyle = '--', linewidth = 0.5)
     axs1.errorbar(q, I, yerr = sigma, color = 'black', lw = 1)
+
+    # add caked imges to the files
+
+    fig1.colorbar(im2, ax = axs2, orientation = 'horizontal', shrink = 0.75).set_label(r'Intensity I [cm$^{-1}$]')
+    axs2.set(ylabel = r'Azimuthal angle $\chi$ [degrees]', xlabel = r'q [$\AA^{-1}$]')
+    axs2.grid(color='w', linestyle='--', linewidth=1)
+    axs2.set_title('2D integration')
+
+    #
+    sectors = sectors_nr
+    range_sectors = int(sectors/4)
+    I_h_range = (0,sectors-1, int(2*range_sectors), int((2*range_sectors)-1))
+    I_h = np.sum(I_a[:,I_h_range], axis = 1)/2
+    I_v_range = (int(range_sectors), int(range_sectors)-1, int(3*range_sectors), int(3*range_sectors)-1)
+    I_v = np.sum(I_a[:,(I_v_range)], axis = 1)/2
+
+    axs3.plot(q_a, I_h, 'ob', label = 'horizontal, 0 and 180', markersize=2)
+
+    axs3.plot(q_a, I_v, 'or', label = 'vertical, 90 and 270', markersize=2)
+    axs3.set(xlabel = r'Scattering vector q [$\AA^{-1}$]', ylabel = r'Intensity I [cm$^{-1}$]', xscale = 'log',
+                yscale = 'log')
+    axs3.grid(color = 'gray', linestyle = '--', linewidth = 0.5)
+    axs3.set_title('Anisotropy I_v/I_h = ' + str(np.round((np.sum(I_v)/np.sum(I_h)), 2)))
+    axs3.legend()
+
+    #sigma = data[:,int((data.shape[1]-1)/2):]
+    I_select = I_a[q_range, :]
+    colors = plt.cm.plasma(np.linspace(0, 1 , I_select.shape[1]))
+    for ii in range(I_select.shape[1]):
+        axs4.loglog(q_a[q_range], I_select[:, ii], marker = 'o', color = colors[ii], markersize=3, alpha=0.5)
+    axs4.set_xlabel(r'Scattering vector q [$\AA^{-1}$]')
+    axs4.set_ylabel(r'Intensity I [cm$^{-1}$]')
+    axs4.grid(color = 'gray', linestyle = '--', linewidth = 0.5)
+    #axs0.set_ylim([1e-2, 1e1])
+    I_sum = np.sum(I_select, 0)
+    range_angle = list(npt_azim[1:])
+    axs5.semilogy(range_angle, I_sum - np.min(I_sum)*0.99, color=colors[0], linestyle = '--')
+    for ii in range(I_select.shape[1]):
+        axs5.semilogy(range_angle[ii], I_sum[ii]-np.min(I_sum)*0.99, marker = 'o', markersize=10, color=colors[ii])
+    axs5.set_xlabel(r'Azimuthal angle $\chi$ [$^o$]')
+    axs5.set_ylabel(r'Sum intensity I($\chi$) [cm$^{-1}$]')
+    axs5.grid(color = 'gray', linestyle = '--', linewidth = 0.5)
+
     # save the plots
     prefix = 'radial_integ'
     sufix = 'jpeg'

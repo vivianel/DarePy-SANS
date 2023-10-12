@@ -105,7 +105,7 @@ def  select_detector_distances(config, class_files, result):
         list_det = list(class_files.keys())
         class_det = {key: [] for key in list_det}
         for ii in range(0, len(class_files['detx_m'])):
-            if ((class_files['detx_m'][ii] == jj) and class_files['att'][ii] <= 1 and class_files['time_s'][ii] > 0) or ((class_files['detx_m'][ii] == jj) and class_files['sample_name'][ii] == empty_beam and class_files['time_s'][ii] > 0) :
+            if ((class_files['detx_m'][ii] == jj) and (class_files['att'][ii] == 0 or class_files['att'][ii] == 3) and class_files['time_s'][ii] > 0) or ((class_files['detx_m'][ii] == jj) and class_files['sample_name'][ii] == empty_beam and class_files['time_s'][ii] > 0) :
                 if not os.path.exists(path_det):
                     os.mkdir(path_det)
                 source = os.path.join(path_hdf_raw, class_files['name_hdf'][ii])

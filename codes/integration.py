@@ -55,7 +55,7 @@ def set_integration(config, result):
     return result
 
 def make_file_name(path, prefix, sufix, sample_name, det, scanNr, frame):
-    file_n = path + prefix + '_'  + sample_name + '_' +'det' + det + 'm_'+ f"{scanNr:07d}" + '_'+ f"{frame:05d}" +'.' + sufix
+    file_n = path + prefix + '_' + f"{scanNr:07d}" + '_'+ f"{frame:05d}"  + sample_name + '_' +'det' + det + 'm'+ '.' + sufix
     return file_n
 
 def integrate(config, result, det, path_rad_int):
@@ -118,6 +118,7 @@ def integrate(config, result, det, path_rad_int):
                 sufix = 'dat'
                 file_name = make_file_name(path_rad_int, prefix, sufix,  sample_name, det, scanNr, frame)
                 azimuthal_integ(config, result, img1, file_name)
+            plot_radial_integ(config, result, file_name)
     return result
 
 
@@ -156,11 +157,7 @@ def radial_integ(config, result, img1, file_name):
     # save result
     path_dir_an = create_analysis_folder(config)
     save_results(path_dir_an, result)
-    # plot and save the results
-    if config['analysis']['plot_radial'] ==1:
-        ScanNr = int(re.findall(r"\D(\d{7})\D", file_name)[0])
-        Frame = int(re.findall(r"\D(\d{5})\D", file_name)[0])
-        plot_integ.plot_integ_radial(config, result, ScanNr, Frame)
+
 
 def azimuthal_integ(config, result, img1, file_name):
     ai = result['integration']['ai']
@@ -168,9 +165,10 @@ def azimuthal_integ(config, result, img1, file_name):
     pixel_range = result['integration']['pixel_range']
     perform_abs_calib = config['analysis']['perform_abs_calib']
     # define the number of sectors
-    sectors_nr = 12
+    sectors_nr = 16
     # integrate for azimuthal plots
     npt_azim = range(0, 370, int(360/sectors_nr))
+    result['integration']['sectors_nr'] = sectors_nr
     result['integration']['npt_azim'] = npt_azim
     for rr in range(0, len(npt_azim)-1):
         azim_start = npt_azim[rr]
@@ -212,7 +210,15 @@ def azimuthal_integ(config, result, img1, file_name):
     # save result
     path_dir_an = create_analysis_folder(config)
     save_results(path_dir_an, result)
+
+def plot_radial_integ(config, result, file_name):
+    # plot and save the results
     if config['analysis']['plot_azimuthal'] ==1:
         ScanNr = int(re.findall(r"\D(\d{7})\D", file_name)[0])
         Frame = int(re.findall(r"\D(\d{5})\D", file_name)[0])
         plot_integ.plot_integ_azimuthal(config, result, ScanNr, Frame)
+
+    if config['analysis']['plot_radial'] ==1:
+        ScanNr = int(re.findall(r"\D(\d{7})\D", file_name)[0])
+        Frame = int(re.findall(r"\D(\d{5})\D", file_name)[0])
+        plot_integ.plot_integ_radial(config, result, ScanNr, Frame)
