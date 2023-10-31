@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from utils import create_analysis_folder
 import integration as integ
@@ -77,6 +78,8 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     # caked images
     res2d = ai.integrate2d(img1, 200, 360,   method = 'BBox', unit = 'q_A^-1')
     I_c, tth, chi = res2d
+    
+    I_c[I_c<=0] = np.nan
 
 
     # reduce the size of the image for plotting
@@ -91,11 +94,17 @@ def plot_integ_radial(config, result, ScanNr, Frame):
 
     # define the figure axis
     fig1, ([[axs0, axs1], [axs2, axs3], [axs4, axs5]])  = plt.subplots(3, 2,  figsize=(12, 17))
+    
 
     scale = 'log'
     if scale == 'log':
-        clim = (0, np.max(np.log(img1)))
-        im1 = axs0.imshow(np.log(img1)*mask_inv, origin='lower', aspect = 'equal', clim = clim, cmap = 'jet', extent = np.divide(extent,1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
+        bool_mask = mask.astype('bool')
+        img1[bool_mask] = np.nan
+        clim = (np.min(np.log(img1[~bool_mask])),np.max(np.log(img1[~bool_mask])))
+        cmap_mask = mpl.colormaps.get_cmap('jet')
+        cmap_mask.set_bad(color='white')
+        
+        im1 = axs0.imshow(np.log(img1), origin='lower', aspect = 'equal', clim = clim, cmap = cmap_mask, extent = np.divide(extent,1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
         fig1.colorbar(im1, ax = axs0, orientation = 'horizontal', shrink = 0.75).set_label(r'log(I) [cm$^{-1}$]')
         im2=axs2.imshow(np.log(I_c), origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  cmap='jet', clim = clim)
     else:

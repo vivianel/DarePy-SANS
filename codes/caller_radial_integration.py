@@ -25,25 +25,25 @@ empty_cell = 'EC'
 # provide a dictionary with the list of the sample name and thickness in cm. Otherwise,
 # it is assumed that the thickness is 0.1 cm. If all cells differ than 0.1 cm,
 # but are equal to X, please indicate with {'all':X}, where x is the thickness.
-sample_thickness = {'all':0.2}
+sample_thickness = {'all':0.1}
 # indicate the distance in meters where the transmission has been measured.
 # if transmission correction is not needed, provide a negative value, such as -1
 trans_dist = 18
 # for the case of flat field correction at large detector distances, indicate which
 # detctor distance to use instead in m
-replace_18m = 6.0
+replace_18m = -1
 
 
 # %% ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_0546_RheoSANS/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/gruene_e/Documents/Gittest/DarePy-SANS/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_0546_RheoSANS/DarePy-SANS/'
+path_dir = 'C:/Users/gruene_e/Documents/Gittest/DarePy-SANS/'
 # id to the analysis folder. Use '' to aboid it
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = [57096 ] + list(range(57099, 57103))
+exclude_files = list(range(65303, 65339)) + list(range(65375, 65380))
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1
@@ -52,10 +52,19 @@ perform_azimuthal = 1
 plot_azimuthal = 0
 # perform_abs_calib = 1 to perform the absolute calibration of the data
 # perform_abs_calib = 0 to deactivate
-perform_abs_calib = 0
+perform_abs_calib = 1
 # force_reintegrate = 1 the radial integration will run again for all files
 # if force_reintegrate = 0, only the new files will be integrated
 force_reintegrate = 1
+#Set offsets for the mask
+x_mask_center_offset = 0
+y_mask_center_offset = 0
+# Note: positive values make mask larger
+x_pos_edge_offset = 0 # RIGHT edge
+x_neg_edge_offset = 0 # LEFT
+y_pos_edge_offset = 1 # BOTTOM
+y_neg_edge_offset = 0 # TOP
+
 
 # %% run for starting the data analysis pipeline
 
@@ -91,7 +100,8 @@ configuration = {'SANS-I':{
                  'replace_18m':replace_18m,
                  "plot_azimuthal":plot_azimuthal,
                  "plot_radial":plot_radial,
-                 'add_id':add_id}},
+                 'add_id':add_id,
+                 'mask_offsets':[x_mask_center_offset,y_mask_center_offset,x_pos_edge_offset,x_neg_edge_offset,y_pos_edge_offset,y_neg_edge_offset]}},
                   'SANS-LLB':{
     'instrument': {'deadtime':1e5},
                     'experiment': {},
