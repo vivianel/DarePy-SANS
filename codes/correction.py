@@ -58,12 +58,14 @@ def prepare_ai(config, beam_center, name_hdf, result):
     list_bs = config['instrument']['list_bs']
     beam_stopper = list_bs[str(int(beam_stop))]
     beam_stopper = (beam_stopper/(pixel1*1000)/2)
+    # load manual offsets for the mask
+    [d_bc_x,d_bc_y,d_x_p,d_x_n,d_y_p,d_y_n] = config['analysis']['mask_offsets']
 
     # remove those pixels around the beam stopper
-    y_p = int(bc_y + beam_stopper)
-    y_n = int(bc_y - beam_stopper)
-    x_p = int(bc_x + beam_stopper)
-    x_n = int(bc_x - beam_stopper)
+    y_p = int(bc_y + d_bc_y + beam_stopper) + d_y_p
+    y_n = int(bc_y + d_bc_y - beam_stopper) - d_y_n
+    x_p = int(bc_x + d_bc_x + beam_stopper) + d_x_p
+    x_n = int(bc_x + d_bc_x - beam_stopper) - d_x_n
 
     mask[y_n:y_p, x_n:x_p] = 1
     # remove the lines around the detector
@@ -211,9 +213,9 @@ def load_standards(config, result, det):
 def load_and_normalize(config, result, name_hdf):
     path_hdf_raw = config['analysis']['path_hdf_raw']
     counts = load_hdf(path_hdf_raw, name_hdf, 'counts')
-    counts = norm.normalize_time(config, name_hdf, counts)
+    # counts = norm.normalize_time(config, name_hdf, counts)
     counts = norm.normalize_deadtime(config, name_hdf, counts)
-    #counts = .normalize_flux(config, name_hdf, counts)
+    counts = norm.normalize_flux(config, name_hdf, counts)
     counts = norm.normalize_attenuator(config, name_hdf, counts)
     if config['experiment']['trans_dist'] > 0:
         counts = norm.normalize_transmission(config, name_hdf, result, counts)

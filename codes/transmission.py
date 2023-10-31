@@ -110,8 +110,9 @@ def trans_calc_sample(config, result):
 
 
 def normalize_trans(config, result, hdf_name, counts):
-    counts = norm.normalize_time(config, hdf_name, counts)
+    # counts = norm.normalize_time(config, hdf_name, counts)
     counts = norm.normalize_deadtime(config, hdf_name, counts)
+    counts = norm.normalize_flux(config, hdf_name, counts)
     counts = norm.normalize_attenuator(config, hdf_name, counts)
     counts = norm.normalize_thickness(config, hdf_name, result, counts)
     return counts
