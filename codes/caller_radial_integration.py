@@ -31,19 +31,19 @@ sample_thickness = {'all':0.1}
 trans_dist = 18
 # for the case of flat field correction at large detector distances, indicate which
 # detctor distance to use instead in m
-replace_18m = -1
+replace_18m = 4.5
 
 
-# %% ANALYSIS PARAMETERS
+#  ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/gruene_e/Documents/Gittest/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/gruene_e/Documents/Gittest/DarePy-SANS/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/'
 # id to the analysis folder. Use '' to aboid it
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = list(range(65303, 65339)) + list(range(65375, 65380))
+exclude_files = [65303, 65304]
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1
@@ -56,17 +56,18 @@ perform_abs_calib = 1
 # force_reintegrate = 1 the radial integration will run again for all files
 # if force_reintegrate = 0, only the new files will be integrated
 force_reintegrate = 1
-#Set offsets for the mask
-x_mask_center_offset = 0
-y_mask_center_offset = 0
-# Note: positive values make mask larger
+
+#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
+beam_center_guess = {'1.6':[62.2, 66.3], '4.5':[62.5, 66], '18.0':[62, 66.2]}
+
+# Add offsets to the mask
 x_pos_edge_offset = 0 # RIGHT edge
 x_neg_edge_offset = 0 # LEFT
-y_pos_edge_offset = 1 # BOTTOM
+y_pos_edge_offset = 0 # BOTTOM
 y_neg_edge_offset = 0 # TOP
 
 
-# %% run for starting the data analysis pipeline
+# run for starting the data analysis pipeline
 
 import prepare_input as org
 from transmission import trans_calc
@@ -101,14 +102,18 @@ configuration = {'SANS-I':{
                  "plot_azimuthal":plot_azimuthal,
                  "plot_radial":plot_radial,
                  'add_id':add_id,
-                 'mask_offsets':[x_mask_center_offset,y_mask_center_offset,x_pos_edge_offset,x_neg_edge_offset,y_pos_edge_offset,y_neg_edge_offset]}},
+                 'beam_center_guess': beam_center_guess,
+                 'mask_offsets':[x_pos_edge_offset,x_neg_edge_offset,y_pos_edge_offset,y_neg_edge_offset]}},
                   'SANS-LLB':{
     'instrument': {'deadtime':1e5},
                     'experiment': {},
                     'analysis': {}}}
 
+# %%
 config = configuration[instrument]
 class_files = org.list_files(config, result)
+
+# %%
 
 #select the transmission measurements if they are present. Otherwise, keep it with -1
 if trans_dist > 0:

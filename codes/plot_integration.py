@@ -63,6 +63,7 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     bc_x = result['integration']['beam_center_x']
     bc_y = result['integration']['beam_center_y']
     mask = result['integration']['int_mask']
+    pixel_range = len(result['integration']['pixel_range'])
     if attenuator == 0:
         mask_inv =  (mask == 0).astype(int)
     else:
@@ -76,9 +77,9 @@ def plot_integ_radial(config, result, ScanNr, Frame):
        return 4*np.pi/wl*np.sin(np.arctan(pixelsize*x/dist)/2)
 
     # caked images
-    res2d = ai.integrate2d(img1, 200, 360,   method = 'BBox', unit = 'q_A^-1')
+    res2d = ai.integrate2d(img1*mask_inv, pixel_range, 360,   method = 'BBox', unit = 'q_A^-1')
     I_c, tth, chi = res2d
-    
+
     I_c[I_c<=0] = np.nan
 
 
@@ -94,7 +95,7 @@ def plot_integ_radial(config, result, ScanNr, Frame):
 
     # define the figure axis
     fig1, ([[axs0, axs1], [axs2, axs3], [axs4, axs5]])  = plt.subplots(3, 2,  figsize=(12, 17))
-    
+
 
     scale = 'log'
     if scale == 'log':
@@ -102,11 +103,11 @@ def plot_integ_radial(config, result, ScanNr, Frame):
         img1[bool_mask] = np.nan
         clim = (np.min(np.log(img1[~bool_mask])),np.max(np.log(img1[~bool_mask])))
         cmap_mask = mpl.colormaps.get_cmap('jet')
-        cmap_mask.set_bad(color='white')
-        
+        cmap_mask.set_bad(color='black')
+
         im1 = axs0.imshow(np.log(img1), origin='lower', aspect = 'equal', clim = clim, cmap = cmap_mask, extent = np.divide(extent,1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
         fig1.colorbar(im1, ax = axs0, orientation = 'horizontal', shrink = 0.75).set_label(r'log(I) [cm$^{-1}$]')
-        im2=axs2.imshow(np.log(I_c), origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  cmap='jet', clim = clim)
+        im2=axs2.imshow(np.log(I_c), origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  clim = clim, cmap = cmap_mask)
     else:
         clim = (0, np.max(img1)/2)
         im1 = axs0.imshow(img1*mask_inv, origin='lower', aspect = 'equal', clim = clim, cmap = 'jet', extent = np.divide(extent, 1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
@@ -122,7 +123,6 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     axs1.errorbar(q, I, yerr = sigma, color = 'black', lw = 1)
 
     # add caked imges to the files
-
     fig1.colorbar(im2, ax = axs2, orientation = 'horizontal', shrink = 0.75).set_label(r'Intensity I [cm$^{-1}$]')
     axs2.set(ylabel = r'Azimuthal angle $\chi$ [degrees]', xlabel = r'q [$\AA^{-1}$]')
     axs2.grid(color='w', linestyle='--', linewidth=1)
