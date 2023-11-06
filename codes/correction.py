@@ -102,12 +102,11 @@ def prepare_ai(config, beam_center, name_hdf, result):
 def calculate_beam_center(config, counts0, name_hdf):
     path_hdf_raw = config['analysis']['path_hdf_raw']
     dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
-    #interpolation_factor = 1
+    interpolation_factor = 2
     # reshape the image
-    #sizeX = counts0.shape[0]*interpolation_factor
-    #sizeY = counts0.shape[1]*interpolation_factor
-    #counts = cv2.resize(counts0, dsize=(sizeX, sizeY), interpolation=cv2.INTER_NEAREST)
-    counts = counts0
+    sizeX = counts0.shape[0]*interpolation_factor
+    sizeY = counts0.shape[1]*interpolation_factor
+    counts = cv2.resize(counts0, dsize=(sizeX, sizeY), interpolation=cv2.INTER_NEAREST)
     counts = np.where(counts <= 0, 1e-8, counts)
     cutoff = counts[counts > 0].max()/1.3
     counts = np.where(counts < cutoff, 0, counts)
@@ -119,8 +118,8 @@ def calculate_beam_center(config, counts0, name_hdf):
         # Find average
         xmean = x.mean()
         ymean = y.mean()
-        bc_x = xmean#/interpolation_factor
-        bc_y = ymean#/interpolation_factor
+        bc_x = xmean/interpolation_factor
+        bc_y = ymean/interpolation_factor
         # this seems to be needed for smaller detector distances
     elif np.size(beam_center_guess[str(dist)]) == 2:
         bc_x = beam_center_guess[str(dist)][0]
