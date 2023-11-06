@@ -104,7 +104,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
     if not os.path.exists(path_merged_fig):
         os.mkdir(path_merged_fig)
     path_merged_txt = os.path.join(path_merged, 'data_txt/')
-    interp_points = 200
+    interp_points = 100
     interp_type = 'log' # 'log' or 'linear'
 
     for keys in merged_files:
@@ -143,7 +143,9 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
                     plt.loglog(q_all, I_all, lw = 0, marker = 'o',  ms = 10, color = 'black', alpha = 0.2, label = 'merged')
                     if interp_type == 'log':
                         # Interpolate it to new time points
-                        interpolation_pts = np.logspace(np.log10(np.min(q_all)*1.01), np.log10(round(np.max(q_all), 3)), interp_points)
+                        min_pt = np.round(np.log10(np.min(q_all))/1.01, 3)
+                        max_pt = np.round(np.log10(np.max(q_all))*1.01, 3)
+                        interpolation_pts = np.logspace(min_pt, max_pt, interp_points)
                         linear_interp = interp1d(q_all, I_all)
                         linear_results = linear_interp(interpolation_pts)
                         interpolation_pts = np.append(q_all[:2], interpolation_pts)

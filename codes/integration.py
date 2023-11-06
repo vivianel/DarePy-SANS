@@ -67,7 +67,9 @@ def integrate(config, result, det, path_rad_int):
     perform_azimuthal = config['analysis']['perform_azimuthal']
     perform_radial = config['analysis']['perform_radial']
     class_file = result['overview']['det_files_'+ det]
-    pixel_range = range(0, 200)
+
+    # pixel range defines how many q the final curve will contain
+    pixel_range = range(0, 100)
     result['integration']['pixel_range'] = pixel_range
     # execute the corrections for all
     print('DOING ' + str(det) + 'm')

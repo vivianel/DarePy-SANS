@@ -59,15 +59,18 @@ def prepare_ai(config, beam_center, name_hdf, result):
     beam_stopper = list_bs[str(int(beam_stop))]
     beam_stopper = (beam_stopper/(pixel1*1000)/2)
     # load manual offsets for the mask
-    [d_bc_x,d_bc_y,d_x_p,d_x_n,d_y_p,d_y_n] = config['analysis']['mask_offsets']
+    [d_x_p,d_x_n,d_y_p,d_y_n] = config['analysis']['mask_offsets']
 
     # remove those pixels around the beam stopper
-    y_p = int(bc_y + d_bc_y + beam_stopper) + d_y_p
-    y_n = int(bc_y + d_bc_y - beam_stopper) - d_y_n
-    x_p = int(bc_x + d_bc_x + beam_stopper) + d_x_p
-    x_n = int(bc_x + d_bc_x - beam_stopper) - d_x_n
+    y_p = int(bc_y + beam_stopper) + d_y_p
+    y_n = int(bc_y - beam_stopper) - d_y_n
+    x_p = int(bc_x + beam_stopper) + d_x_p
+    x_n = int(bc_x - beam_stopper) - d_x_n
 
-    mask[y_n:y_p, x_n:x_p] = 1
+    if dist < 4:
+        mask[y_n-1:y_p+1, x_n-1:x_p+1] = 1
+    else:
+        mask[y_n:y_p, x_n:x_p] = 1
     # remove the lines around the detector
     lines = 2
     mask[:, 0:lines] = 1
@@ -99,36 +102,37 @@ def prepare_ai(config, beam_center, name_hdf, result):
 def calculate_beam_center(config, counts0, name_hdf):
     path_hdf_raw = config['analysis']['path_hdf_raw']
     dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
-    interpolation_factor = 2
+    #interpolation_factor = 1
     # reshape the image
-    sizeX = counts0.shape[0]*interpolation_factor
-    sizeY = counts0.shape[1]*interpolation_factor
-    counts = cv2.resize(counts0, dsize=(sizeX, sizeY), interpolation=cv2.INTER_NEAREST)
+    #sizeX = counts0.shape[0]*interpolation_factor
+    #sizeY = counts0.shape[1]*interpolation_factor
+    #counts = cv2.resize(counts0, dsize=(sizeX, sizeY), interpolation=cv2.INTER_NEAREST)
+    counts = counts0
     counts = np.where(counts <= 0, 1e-8, counts)
     cutoff = counts[counts > 0].max()/1.3
     counts = np.where(counts < cutoff, 0, counts)
     im = np.where(counts >= cutoff, 1, counts)
-    # Find coordinates of thresholded image
-    y, x = np.nonzero(im)
-    # Find average
-    xmean = x.mean()
-    ymean = y.mean()
-    bc_x = xmean/interpolation_factor
-    bc_y = ymean/interpolation_factor
-    # this seems to be needed for smaller detector distances
-    if dist < 10:
-        bc_x = bc_x + 1
-        bc_y = bc_y + 1
+    beam_center_guess = config['analysis']['beam_center_guess']
+    if beam_center_guess[str(dist)] == 'auto':
+        # Find coordinates of thresholded image
+        y, x = np.nonzero(im)
+        # Find average
+        xmean = x.mean()
+        ymean = y.mean()
+        bc_x = xmean#/interpolation_factor
+        bc_y = ymean#/interpolation_factor
+        # this seems to be needed for smaller detector distances
+    elif np.size(beam_center_guess[str(dist)]) == 2:
+        bc_x = beam_center_guess[str(dist)][0]
+        bc_y = beam_center_guess[str(dist)][1]
     # turn off the interactivity
     plt.ioff()
     # Plot on figure
     plt.figure()
     #plt.imshow(np.dstack([im, im, im]))
-    plt.imshow(counts0)
+    plt.imshow(counts0, origin='lower', aspect = 'equal', clim=[0, 10])
     plt.plot(bc_x, bc_y, 'r+', markersize=10)
     plt.title('x_center = ' + str(round(bc_x, 2)) + ', y_center =' + str(round(bc_y, 2)) + ' pixels')
-    # Show image and make sure axis is removed
-    plt.axis('off')
     path_dir_an = create_analysis_folder(config)
     file_name = path_dir_an + 'beamcenter_' + str(dist).replace('.', 'p') + 'm.jpg'
     plt.savefig(file_name)
