@@ -96,7 +96,7 @@ def plot_all_data(path_dir_an):
     return merged_files
 
 # %% merging_data
-def merging_data(path_dir_an, merged_files, skip_start, skip_end):
+def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type):
     #  merge the files
     # low to high q
     path_merged = os.path.join(path_dir_an, 'merged/')
@@ -104,8 +104,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
     if not os.path.exists(path_merged_fig):
         os.mkdir(path_merged_fig)
     path_merged_txt = os.path.join(path_merged, 'data_txt/')
-    interp_points = 100
-    interp_type = 'log' # 'log' or 'linear'
+    interp_points = 80
 
     for keys in merged_files:
         I_all = []
@@ -216,6 +215,11 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
 
             diff_I = np.diff(np.subtract(I, np.min(I)))
 
+            off_set1 = 0
+            if fitting_range > 0:
+                off_set1 = len(I)-fitting_range
+
+            off_set2 = 0
             if var_offset > 0:
                 var = []
                 range_bins = range(0, len(diff_I), 10)
@@ -224,11 +228,13 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
                     end = range_bins[jj+1]
                     var.append(np.var(np.abs(diff_I[init:end])))
                 idx = np.where(np.array(var) > var_offset)
-                off_set = range_bins[idx[0][-2]]
+                off_set2 = range_bins[idx[0][-2]]
+            if off_set2 > off_set1:
+                off_set = off_set2
             else:
-                off_set = len(I)-fitting_range
+                off_set = off_set1
 
-            # slip the first points
+            # skip the first points
             fitting_I = I[off_set:-3]
             fitting_q = q[off_set:-3]
 
