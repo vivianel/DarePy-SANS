@@ -96,7 +96,7 @@ def plot_all_data(path_dir_an):
     return merged_files
 
 # %% merging_data
-def merging_data(path_dir_an, merged_files, skip_start, skip_end):
+def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type):
     #  merge the files
     # low to high q
     path_merged = os.path.join(path_dir_an, 'merged/')
@@ -104,8 +104,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
     if not os.path.exists(path_merged_fig):
         os.mkdir(path_merged_fig)
     path_merged_txt = os.path.join(path_merged, 'data_txt/')
-    interp_points = 100
-    interp_type = 'log' # 'log' or 'linear'
+    interp_points = 200
 
     for keys in merged_files:
         I_all = []
@@ -202,7 +201,7 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
     for ii in range(0, len(files)):
         if files[ii][13:-4] not in calibration.values():
             plt.close('all')
-            plt.ioff()
+            #plt.ioff()
             file_name =  path_merged_txt + files[ii]
             print(file_name)
             I = np.genfromtxt(file_name,
@@ -216,7 +215,10 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
 
             diff_I = np.diff(np.subtract(I, np.min(I)))
 
-            if var_offset > 0:
+
+            if fitting_range > 0:
+                off_set = len(I)-fitting_range
+            elif var_offset > 0:
                 var = []
                 range_bins = range(0, len(diff_I), 10)
                 for jj in range(len(range_bins)-1):
@@ -226,11 +228,11 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
                 idx = np.where(np.array(var) > var_offset)
                 off_set = range_bins[idx[0][-2]]
             else:
-                off_set = len(I)-fitting_range
+                print('One value must be larger than zero.')
 
-            # slip the first points
-            fitting_I = I[off_set:-3]
-            fitting_q = q[off_set:-3]
+            # skip the first points
+            fitting_I = I[off_set:]
+            fitting_q = q[off_set:]
 
             def porod(q, coef, slope, incoherent):
                 return (coef * q**(slope-4) + incoherent)
@@ -238,8 +240,7 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
             base = np.polyfit(fitting_q, fitting_I, 0)
             base = np.float64(base)
             # perform the fit
-            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I, p0 = [0.01, -5, 0])#,
-                                                  #bounds = ((-np.inf, -5, 1e-5),(np.inf, 5, base )))
+            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I)
             m, t, b = params
             incoherent = b * 0.95
             slope = t
