@@ -32,7 +32,7 @@ def trans_calc_reference(config, result):
             counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
             img = normalize_trans(config, result, hdf_name, counts)
             # calculation of the cuttoff value for the mask
-            cutoff = 1.5*img[img>0].mean()
+            cutoff = img[img>0].mean()
             plt.figure()
             plt.imshow(img, clim=[0, round(cutoff)], cmap='jet', origin='lower')
             plt.colorbar(orientation = 'vertical', shrink = 0.5).set_label('log(Intensity)')
