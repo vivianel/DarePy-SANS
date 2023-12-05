@@ -55,7 +55,7 @@ def set_integration(config, result):
     return result
 
 def make_file_name(path, prefix, sufix, sample_name, det, scanNr, frame):
-    file_n = path + prefix + '_' + f"{scanNr:07d}" + '_'+ f"{frame:05d}"  + sample_name + '_' +'det' + det + 'm'+ '.' + sufix
+    file_n = path + prefix + '_' + f"{scanNr:07d}" + '_'+ f"{frame:05d}_"  + sample_name + '_' +'det' + det + 'm'+ '.' + sufix
     return file_n
 
 def integrate(config, result, det, path_rad_int):
