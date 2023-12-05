@@ -33,6 +33,9 @@ trans_dist = 18
 # detctor distance to use instead in m
 replace_18m = 4.5
 
+# used wavelength
+wl = 'auto' # in Angstrons or 'auto'
+
 
 #  ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
@@ -84,7 +87,8 @@ configuration = {'SANS-I':{
                    'list_abs_calib': {'5':0.909, '6':0.989, '8':1.090, '10':1.241, '12':1.452}},
     'experiment': {'trans_dist': trans_dist,
                    'calibration':calibration,
-                   'sample_thickness':sample_thickness},
+                   'sample_thickness':sample_thickness,
+                   'wl_input': wl},
     'analysis': {'path_dir': path_dir,
                  'path_hdf_raw':path_hdf_raw,
                  'exclude_files':exclude_files,

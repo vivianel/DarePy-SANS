@@ -41,6 +41,7 @@ def prepare_ai(config, beam_center, name_hdf, result):
     pixel1 = config['instrument']['pixel_size']
     pixel2 = pixel1
     path_hdf_raw = config['analysis']['path_hdf_raw']
+    wl_input = config['experiment']['wl_input']
     path_dir_an = create_analysis_folder(config)
     dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
     # calculate the beam center
@@ -90,7 +91,10 @@ def prepare_ai(config, beam_center, name_hdf, result):
     mask[-corner:-1, -corner:-1] = 1
     mask[0:corner, -corner:-1] = 1
     result['integration']['int_mask'] = mask
-    wl = load_hdf(path_hdf_raw, name_hdf, 'wl')*1e-10  # from A to m
+    if wl_input == 'auto':
+        wl = load_hdf(path_hdf_raw, name_hdf, 'wl')*1e-10  # from A to m
+    else:
+        wl = wl_input*1e-10  # from A to m
     # create the radial integrator
     ai = pyFAI.AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,rot1=0,
                                    rot2=0, rot3=0, pixel1=pixel1, pixel2=pixel2,
