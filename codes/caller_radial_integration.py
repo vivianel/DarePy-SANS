@@ -31,19 +31,19 @@ sample_thickness = {'all':0.1}
 trans_dist = 18
 # for the case of flat field correction at large detector distances, indicate which
 # detctor distance to use instead in m
-replace_18m = 6.0
+replace_18m = 4.5
 
 
 #  ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_1026/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_2581/DarePy-SANS/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_1026/DarePy-SANS/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_2581/DarePy-SANS/'
 # id to the analysis folder. Use '' to aboid it
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = [81549, 81550, 81578, 81579, 81580, 81635]
+exclude_files = [ ]
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1
@@ -58,18 +58,11 @@ perform_abs_calib = 1
 force_reintegrate = 1
 
 # add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
-#beam_center_guess = {'1.6':'auto', '6.0':'auto', '18.0':'auto'}
-beam_center_guess = {'1.6':[60+0.5, 63.5+1], '6.0':[59.07+1, 63.71+1], '18.0':[58.78, 62.33]}
-
-# Add offsets to the mask
-x_pos_edge_offset = 0 # RIGHT edge
-x_neg_edge_offset = 0 # LEFT
-y_pos_edge_offset = 0 # BOTTOM
-y_neg_edge_offset = 0 # TOP
+#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
+beam_center_guess = {'1.6':[61.5+0.5, 64+1], '4.5':[61.73, 64.27+1], '18.0':[61+1, 63.15+0.5]}
 
 
 # run for starting the data analysis pipeline
-
 import prepare_input as org
 from transmission import trans_calc
 import integration as ri
@@ -104,7 +97,7 @@ configuration = {'SANS-I':{
                  "plot_radial":plot_radial,
                  'add_id':add_id,
                  'beam_center_guess': beam_center_guess,
-                 'mask_offsets':[x_pos_edge_offset,x_neg_edge_offset,y_pos_edge_offset,y_neg_edge_offset]}},
+                 }},
                   'SANS-LLB':{
     'instrument': {'deadtime':1e5},
                     'experiment': {},

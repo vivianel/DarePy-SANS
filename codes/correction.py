@@ -58,20 +58,22 @@ def prepare_ai(config, beam_center, name_hdf, result):
     list_bs = config['instrument']['list_bs']
     beam_stopper = list_bs[str(int(beam_stop))]
     beam_stopper = (beam_stopper/(pixel1*1000)/2)
-    # load manual offsets for the mask
-    [d_x_p,d_x_n,d_y_p,d_y_n] = config['analysis']['mask_offsets']
 
     # remove those pixels around the beam stopper
-    y_p = int(bc_y + beam_stopper) + d_y_p
-    y_n = int(bc_y - beam_stopper) - d_y_n
-    x_p = int(bc_x + beam_stopper) + d_x_p
-    x_n = int(bc_x - beam_stopper) - d_x_n
+    y_p = int(bc_y + beam_stopper)
+    y_n = int(bc_y - beam_stopper)
+    x_p = int(bc_x + beam_stopper)
+    x_n = int(bc_x - beam_stopper)
 
+    # the bemstopper must be larger at lower detector distances
     if dist < 4:
+        mask[y_n-4:y_p+4, x_n-4:x_p+4] = 1
+    elif dist < 10 and dist > 4:
         mask[y_n-1:y_p+1, x_n-1:x_p+1] = 1
     else:
         mask[y_n:y_p, x_n:x_p] = 1
-    # remove the lines around the detector
+
+    # remove the edge lines around the detector
     lines = 2
     mask[:, 0:lines] = 1
     mask[:, detector_size - lines : detector_size + 1] = 1

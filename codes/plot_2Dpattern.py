@@ -6,10 +6,10 @@ conda activate spyder-env
 
 This is a temporary script file.
 """
-list_scan = [65339]#list(range(45319,45328))#[45220, 45291]#list(range(45219,45221))
+list_scan = [22051, 22028, 22005]#list(range(45319,45328))#[45220, 45291]#list(range(45219,45221))
 
 
-path_dir_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_2581/DarePy-SANS/raw_data/'
 
 import h5py
 import numpy as np
@@ -19,7 +19,7 @@ plt.close('all')
 plt.ion()
 
 for jj in range(0, len(list_scan)):
-    name_hdf = path_dir_raw + '/sans2023n0' + str(list_scan[jj]) +'.hdf'
+    name_hdf = path_hdf_raw + '/sans2023n0' + str(list_scan[jj]) +'.hdf'
     file_hdf = h5py.File(name_hdf, 'r')
     img = np.array(file_hdf['entry1/SANS/detector/counts'])
     img1 = np.where(img==0, 1e-4, img)

@@ -182,7 +182,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type):
                         np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
 # %%
-def subtract_incoherent(path_dir_an, var_offset, fitting_range):
+def subtract_incoherent(path_dir_an, fitting_range):
     path_merged = path_dir_an + '/merged'
     path_merged_txt = path_merged +  '/data_txt/'
 
@@ -214,23 +214,8 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
                                  delimiter = ',',
                                  usecols = 0)
 
-            diff_I = np.diff(np.subtract(I, np.min(I)))
 
-
-            if fitting_range > 0:
-                off_set = len(I)-fitting_range
-            elif var_offset > 0:
-                var = []
-                range_bins = range(0, len(diff_I), 10)
-                for jj in range(len(range_bins)-1):
-                    init = range_bins[jj]
-                    end = range_bins[jj+1]
-                    var.append(np.var(np.abs(diff_I[init:end])))
-                idx = np.where(np.array(var) > var_offset)
-                off_set = range_bins[idx[0][-2]]
-            else:
-                print('One value must be larger than zero.')
-
+            off_set = len(I) - fitting_range
             # skip the first points
             fitting_I = I[off_set:]
             fitting_q = q[off_set:]
@@ -241,11 +226,11 @@ def subtract_incoherent(path_dir_an, var_offset, fitting_range):
             base = np.polyfit(fitting_q, fitting_I, 0)
             base = np.float64(base)
             # perform the fit
-            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I)
+            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I, bounds = ((0, -4, 1e-4),(np.inf, 1, base*2 )))
             m, t, b = params
-            incoherent = b * 0.95
-            slope = t
             coeff = m
+            slope = t
+            incoherent = b *0.999
 
             # determine quality of the fit
             squaredDiffs = np.square(fitting_I - porod(fitting_q, m, t, b))
