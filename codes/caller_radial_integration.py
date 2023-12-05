@@ -31,19 +31,19 @@ sample_thickness = {'all':0.1}
 trans_dist = 18
 # for the case of flat field correction at large detector distances, indicate which
 # detctor distance to use instead in m
-replace_18m = 4.5
+replace_18m = 6.0
 
 
 #  ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_1026/DarePy-SANS/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_1026/DarePy-SANS/'
 # id to the analysis folder. Use '' to aboid it
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = [65303, 65304]
+exclude_files = [81549, 81550, 81578, 81579, 81580, 81635]
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1
@@ -57,8 +57,9 @@ perform_abs_calib = 1
 # if force_reintegrate = 0, only the new files will be integrated
 force_reintegrate = 1
 
-#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beam_center_guess = {'1.6':[62.2, 66.3], '4.5':[62.5, 66], '18.0':[62, 66.2]}
+# add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
+#beam_center_guess = {'1.6':'auto', '6.0':'auto', '18.0':'auto'}
+beam_center_guess = {'1.6':[60+0.5, 63.5+1], '6.0':[59.07+1, 63.71+1], '18.0':[58.78, 62.33]}
 
 # Add offsets to the mask
 x_pos_edge_offset = 0 # RIGHT edge
