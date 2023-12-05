@@ -29,11 +29,11 @@ def plot_all_data(path_dir_an):
     if not os.path.exists(path_merged_txt):
         os.mkdir(path_merged_txt)
 
-    file_name = os.path.join(path_dir_an, 'result.npy')
-    with open(file_name, 'rb') as handle:
+    file_results = os.path.join(path_dir_an, 'result.npy')
+    with open(file_results, 'rb') as handle:
         result = pickle.load(handle)
-    file_name = os.path.join(path_dir_an, 'config.npy')
-    with open(file_name, 'rb') as handle:
+    file_config = os.path.join(path_dir_an, 'config.npy')
+    with open(file_config, 'rb') as handle:
         config = pickle.load(handle)
 
     calibration = config['experiment']['calibration']
@@ -66,10 +66,10 @@ def plot_all_data(path_dir_an):
                         merged_files[sample_name] =  np.vstack((temp, I))
                     else:
                         merged_files[sample_name] = I
-                q = np.genfromtxt(file_name,
-                                     dtype = None,
-                                     delimiter = ',',
-                                     usecols = 0)
+                    q = np.genfromtxt(file_name,
+                                         dtype = None,
+                                         delimiter = ',',
+                                         usecols = 0)
             if 'q' in merged_files:
                 temp = merged_files['q']
                 merged_files['q'] = np.vstack((temp, q))
@@ -176,9 +176,10 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type):
                     data_save = np.column_stack((q_all, I_all))
                     np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
-                    file_name = path_merged_txt + 'interpolated_'  + keys + '.dat'
-                    data_save = np.column_stack((interpolation_pts, linear_results))
-                    np.savetxt(file_name, data_save, delimiter=',', header=header_text)
+                    if interp_type == 'linear' or interp_type == 'log':
+                        file_name = path_merged_txt + 'interpolated_'  + keys + '.dat'
+                        data_save = np.column_stack((interpolation_pts, linear_results))
+                        np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
 # %%
 def subtract_incoherent(path_dir_an, var_offset, fitting_range):
