@@ -195,9 +195,9 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type):
                     file_name = path_merged_fig + keys + '_merged' + '.jpeg'
                     plt.savefig(file_name)
 
-                    header_text = 'q (A-1), I (1/cm)'
+                    header_text = 'q (A-1), I (1/cm), standard deviation'
                     file_name = path_merged_txt + 'merged_'  + keys + '.dat'
-                    data_save = np.column_stack((q_all, I_all))
+                    data_save = np.column_stack((q_all, I_all, sigma_all))
                     np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
                     if interp_type == 'linear' or interp_type == 'log':
