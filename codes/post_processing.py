@@ -226,11 +226,11 @@ def subtract_incoherent(path_dir_an, fitting_range):
             base = np.polyfit(fitting_q, fitting_I, 0)
             base = np.float64(base)
             # perform the fit
-            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I, bounds = ((0, -4, 1e-4),(np.inf, 1, base*2 )))
+            params, cv = scipy.optimize.curve_fit(porod, fitting_q, fitting_I, bounds = ((0, -10, 0),(np.inf, 1, base )))
             m, t, b = params
             coeff = m
             slope = t
-            incoherent = b *0.999
+            incoherent = b
 
             # determine quality of the fit
             squaredDiffs = np.square(fitting_I - porod(fitting_q, m, t, b))

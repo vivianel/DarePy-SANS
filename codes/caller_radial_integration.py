@@ -32,12 +32,17 @@ trans_dist = 18
 # for the case of flat field correction at large detector distances, indicate which
 # detctor distance to use instead in m
 replace_18m = 4.5
-
 # used wavelength
 wl = 'auto' # in Angstrons or 'auto'
+# add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
+#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
+beam_center_guess = {'1.6':[61.53, 64.28], '4.5':[60.95, 64.05], '18.0':[61.4, 63.55]}
+# add the size of the beamstopper as a dictionary: {'detector_distance':[size_x, size_y]} in pixels
+#beamstopper_size = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
+beamstopper_coordinates = {'1.6':[57, 73, 53, 70], '4.5':[58, 71, 55, 68], '18.0':[58, 70, 55, 67]}
 
 
-#  ANALYSIS PARAMETERS
+# ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
 path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_2581/DarePy-SANS/raw_data/'
 # path to the working directory (where the analysis will be saved)
@@ -60,9 +65,7 @@ perform_abs_calib = 1
 # if force_reintegrate = 0, only the new files will be integrated
 force_reintegrate = 1
 
-# add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
-#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beam_center_guess = {'1.6':[61.5+0.5, 64+1], '4.5':[61.73, 64.27+1], '18.0':[61+1, 63.15+0.5]}
+
 
 
 # run for starting the data analysis pipeline
@@ -101,6 +104,7 @@ configuration = {'SANS-I':{
                  "plot_radial":plot_radial,
                  'add_id':add_id,
                  'beam_center_guess': beam_center_guess,
+                 'beamstopper_coordinates': beamstopper_coordinates,
                  }},
                   'SANS-LLB':{
     'instrument': {'deadtime':1e5},
