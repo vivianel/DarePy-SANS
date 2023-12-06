@@ -109,9 +109,9 @@ def create_analysis_folder(config):
     # create the analysis folder to save the results
     path_dir = config['analysis']['path_dir']
     if add_id != '':
-        path_dir_an = os.path.join(path_dir, 'analysis_%s/' % add_id)
+        path_dir_an = os.path.join(path_dir, 'Analysis_%s/' % add_id)
     else:
-        path_dir_an = os.path.join(path_dir, 'analysis/')
+        path_dir_an = os.path.join(path_dir, 'Analysis/')
     if not os.path.exists(path_dir_an):
         os.mkdir(path_dir_an)
     return path_dir_an
