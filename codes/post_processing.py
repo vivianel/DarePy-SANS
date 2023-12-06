@@ -66,6 +66,18 @@ def plot_all_data(path_dir_an):
                         merged_files[sample_name] =  np.vstack((temp, I))
                     else:
                         merged_files[sample_name] = I
+                        
+                    sigma = np.genfromtxt(file_name,
+                                         dtype = None,
+                                         delimiter = ',',
+                                         usecols = 2)
+                    
+                    if 'sigma' in merged_files:
+                        temp = merged_files['sigma']
+                        merged_files['sigma'] =  np.vstack((temp, sigma))
+                    else:
+                        merged_files['sigma'] = sigma
+                            
                     q = np.genfromtxt(file_name,
                                          dtype = None,
                                          delimiter = ',',
@@ -84,7 +96,8 @@ def plot_all_data(path_dir_an):
             for ii in range(merged_files['q'].shape[0]):
                 q = merged_files['q'][ii, :]
                 I = merged_files[keys][ii,:]
-                plt.loglog(q, I, lw = 0.3, marker = 'o',  ms = 2)
+                sigma = merged_files['sigma'][ii,:]
+                plt.errorbar(q, I, sigma, lw = 0.3, marker = 'o',  ms = 2)
             if keys != 'q':
                 plt.xlabel(r'Scattering vector q [$\AA^{-1}$]')
                 plt.xscale('log')
@@ -109,6 +122,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type):
     for keys in merged_files:
         I_all = []
         q_all = []
+        sigma_all = []
         plt.close('all')
         plt.ioff()
         range_det = (range(merged_files['q'].shape[0]-1, -1, -1))
@@ -119,27 +133,37 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type):
                 q = q[skip_start[count]:len(q)-skip_end[count]]
                 I = merged_files[keys][ii,:]
                 I = I[skip_start[count]:len(I)-skip_end[count]]
+                sigma = merged_files['sigma'][ii,:]
+                sigma = sigma[skip_start[count]:len(sigma)-skip_end[count]]
                 if ii == range_det[0]:
                     q_all = np.concatenate((q_all, q), axis = None)
                     I_all = np.concatenate((I_all, I), axis = None)
+                    sigma_all = np.concatenate((sigma_all, sigma), axis = None)
                 else:
                     start_pt = np.where(np.round(q_all, 2) == np.round(q[0], 2))
                     start_pt = start_pt[0][-1]
                     end_pt = np.where(np.round(q, 2) == np.round(q_all[-1], 2))
                     end_pt = end_pt[0][0]
-                    scaling = np.median(I_all[start_pt:])/np.median(I[:end_pt])
-                    if np.isnan(scaling):
-                        scaling = 1
-                    I = np.multiply(I, scaling)
+                    
+                    ##### Ash: I'm not sure what the scaling below is for, but this was offsetting my 
+                    ##### detector patterns so they wouldn't align if I trimmed points.
+                    
+                    #scaling = np.median(I_all[start_pt:])/np.median(I[:end_pt])
+                    #if np.isnan(scaling):
+                        #scaling = 1
+                    #I = np.multiply(I, scaling)
+                    
                     q_all = np.concatenate((q_all, q), axis = None)
                     I_all = np.concatenate((I_all, I), axis = None)
+                    sigma_all = np.concatenate((sigma_all, sigma), axis = None)
                 count = count + 1
             if keys != 'q':
                 if merged_files[keys].ndim > 1:
                     idx = np.argsort(q_all)
                     q_all = q_all[idx]
                     I_all = I_all[idx]
-                    plt.loglog(q_all, I_all, lw = 0, marker = 'o',  ms = 10, color = 'black', alpha = 0.2, label = 'merged')
+                    sigma_all = sigma_all[idx]
+                    plt.errorbar(q_all, I_all, sigma_all ,lw = 0, marker = 'o',  ms = 10, color = 'black', alpha = 0.2, label = 'merged')
                     if interp_type == 'log':
                         # Interpolate it to new time points
                         min_pt = np.round(np.log10(np.min(q_all))/1.01, 3)
