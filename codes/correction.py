@@ -13,7 +13,7 @@ from utils import save_results
 from utils import load_hdf
 import normalization as norm
 import pyFAI
-import cv2
+
 
 
 def prepare_corrections(config, result, det):
@@ -42,6 +42,7 @@ def prepare_ai(config, beam_center, name_hdf, result):
     pixel2 = pixel1
     path_hdf_raw = config['analysis']['path_hdf_raw']
     wl_input = config['experiment']['wl_input']
+    beamstopper_coordinates = config['analysis']['beamstopper_coordinates']
     path_dir_an = create_analysis_folder(config)
     dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
     # calculate the beam center
@@ -54,25 +55,14 @@ def prepare_ai(config, beam_center, name_hdf, result):
     # create a mask
     detector_size = config['instrument']['detector_size']
     mask = np.zeros([detector_size, detector_size])
-    # find the size of the beam stopper, based on the list
-    beam_stop = load_hdf(path_hdf_raw, name_hdf, 'beam_stop')
-    list_bs = config['instrument']['list_bs']
-    beam_stopper = list_bs[str(int(beam_stop))]
-    beam_stopper = (beam_stopper/(pixel1*1000)/2)
-
-    # remove those pixels around the beam stopper
-    y_p = int(bc_y + beam_stopper)
-    y_n = int(bc_y - beam_stopper)
-    x_p = int(bc_x + beam_stopper)
-    x_n = int(bc_x - beam_stopper)
-
-    # the bemstopper must be larger at lower detector distances
-    if dist < 4:
-        mask[y_n-4:y_p+4, x_n-4:x_p+4] = 1
-    elif dist < 10 and dist > 4:
-        mask[y_n-1:y_p+1, x_n-1:x_p+1] = 1
-    else:
+    if len(beamstopper_coordinates[str(dist)]) == 4:
+        y_n = beamstopper_coordinates[str(dist)][0]
+        y_p = beamstopper_coordinates[str(dist)][1]
+        x_n = beamstopper_coordinates[str(dist)][2]
+        x_p = beamstopper_coordinates[str(dist)][3]
         mask[y_n:y_p, x_n:x_p] = 1
+    else:
+        print('provide the coordinates for the beamstopper')
 
     # remove the edge lines around the detector
     lines = 2
