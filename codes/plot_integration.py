@@ -116,11 +116,11 @@ def plot_integ_radial(config, result, ScanNr, Frame):
 
     axs0.grid(color = 'white', linestyle = '--', linewidth = 0.25)
     axs0.set(ylabel = r'q$_{y}$ [$\AA$$^{-1}$]', xlabel = r'q$_{x}$ [$\AA$$^{-1}$]')
-    axs1.plot(q, I, 'ok', label = 'total', markersize=2)
+    axs1.plot(q, I, 'ok', label = 'total', markersize=6, alpha = 0.8)
     axs1.set(xlabel = r'Scattering vector q [$\AA^{-1}$]', ylabel = r'Intensity I [cm$^{-1}$]', xscale = 'log',
                 yscale = 'log', title = 'Sample: '+ sample_name)
     axs1.grid(color = 'gray', linestyle = '--', linewidth = 0.5)
-    axs1.errorbar(q, I, yerr = sigma, color = 'black', lw = 1)
+    axs1.errorbar(q, I, yerr = sigma, color = 'black', lw = 1, markersize=2)
 
     # add caked imges to the files
     fig1.colorbar(im2, ax = axs2, orientation = 'horizontal', shrink = 0.75).set_label(r'Intensity I [cm$^{-1}$]')
@@ -145,7 +145,6 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     axs3.set_title('Anisotropy I_v/I_h = ' + str(np.round((np.sum(I_v)/np.sum(I_h)), 2)))
     axs3.legend()
 
-    #sigma = data[:,int((data.shape[1]-1)/2):]
     I_select = I_a[q_range, :]
     colors = plt.cm.plasma(np.linspace(0, 1 , I_select.shape[1]))
     for ii in range(I_select.shape[1]):

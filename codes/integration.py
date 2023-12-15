@@ -136,7 +136,7 @@ def radial_integ(config, result, img1, file_name):
                                  method = 'nosplit_csr',
                                  unit = 'q_A^-1',
                                  safe = True,
-                                 error_model="azimuthal",
+                                 error_model="azimuthal", # "poisson" or "azimuthal",
                                  flat = None,
                                  dark = None)
     if perform_abs_calib == 1:
@@ -148,10 +148,10 @@ def radial_integ(config, result, img1, file_name):
                                                  method = 'nosplit_csr',
                                                  unit = 'q_A^-1',
                                                  safe = True,
-                                                 error_model="azimuthal",
+                                                 error_model="azimuthal", # "poisson" or "azimuthal",
                                                  flat = None,
                                                  dark = None)
-        I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat)
+        I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat)
     # save the integrated files
     data_save = np.column_stack((q, I, sigma))
     header_text = 'q (A-1), absolute intensity  I (1/cm), standard deviation'
@@ -181,7 +181,7 @@ def azimuthal_integ(config, result, img1, file_name):
                                      method = 'nosplit_csr',
                                      unit = 'q_A^-1',
                                      safe = True,
-                                     error_model = "azimuthal",
+                                     error_model = "azimuthal", # "poisson" or "azimuthal",
                                      azimuth_range = [azim_start, azim_end],
                                      flat = None,
                                      dark = None)
@@ -194,11 +194,11 @@ def azimuthal_integ(config, result, img1, file_name):
                                                      method = 'nosplit_csr',
                                                      unit = 'q_A^-1',
                                                      safe = True,
-                                                     error_model = "azimuthal",
+                                                     error_model = "azimuthal", # "poisson" or "azimuthal",
                                                      azimuth_range = [azim_start, azim_end],
                                                      flat = None,
                                                      dark = None)
-            I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat)
+            I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat)
         if rr == 0:
             I_all = I
             sigma_all = sigma
