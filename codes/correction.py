@@ -13,7 +13,7 @@ from utils import save_results
 from utils import load_hdf
 import normalization as norm
 import pyFAI
-import cv2
+
 
 
 def prepare_corrections(config, result, det):
@@ -41,6 +41,8 @@ def prepare_ai(config, beam_center, name_hdf, result):
     pixel1 = config['instrument']['pixel_size']
     pixel2 = pixel1
     path_hdf_raw = config['analysis']['path_hdf_raw']
+    wl_input = config['experiment']['wl_input']
+    beamstopper_coordinates = config['analysis']['beamstopper_coordinates']
     path_dir_an = create_analysis_folder(config)
     dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
     # calculate the beam center
@@ -53,25 +55,16 @@ def prepare_ai(config, beam_center, name_hdf, result):
     # create a mask
     detector_size = config['instrument']['detector_size']
     mask = np.zeros([detector_size, detector_size])
-    # find the size of the beam stopper, based on the list
-    beam_stop = load_hdf(path_hdf_raw, name_hdf, 'beam_stop')
-    list_bs = config['instrument']['list_bs']
-    beam_stopper = list_bs[str(int(beam_stop))]
-    beam_stopper = (beam_stopper/(pixel1*1000)/2)
-    # load manual offsets for the mask
-    [d_x_p,d_x_n,d_y_p,d_y_n] = config['analysis']['mask_offsets']
-
-    # remove those pixels around the beam stopper
-    y_p = int(bc_y + beam_stopper) + d_y_p
-    y_n = int(bc_y - beam_stopper) - d_y_n
-    x_p = int(bc_x + beam_stopper) + d_x_p
-    x_n = int(bc_x - beam_stopper) - d_x_n
-
-    if dist < 4:
-        mask[y_n-1:y_p+1, x_n-1:x_p+1] = 1
-    else:
+    if len(beamstopper_coordinates[str(dist)]) == 4:
+        y_n = beamstopper_coordinates[str(dist)][0]
+        y_p = beamstopper_coordinates[str(dist)][1]
+        x_n = beamstopper_coordinates[str(dist)][2]
+        x_p = beamstopper_coordinates[str(dist)][3]
         mask[y_n:y_p, x_n:x_p] = 1
-    # remove the lines around the detector
+    else:
+        print('provide the coordinates for the beamstopper')
+
+    # remove the edge lines around the detector
     lines = 2
     mask[:, 0:lines] = 1
     mask[:, detector_size - lines : detector_size + 1] = 1
@@ -88,7 +81,10 @@ def prepare_ai(config, beam_center, name_hdf, result):
     mask[-corner:-1, -corner:-1] = 1
     mask[0:corner, -corner:-1] = 1
     result['integration']['int_mask'] = mask
-    wl = load_hdf(path_hdf_raw, name_hdf, 'wl')*1e-10  # from A to m
+    if wl_input == 'auto':
+        wl = load_hdf(path_hdf_raw, name_hdf, 'wl')*1e-10  # from A to m
+    else:
+        wl = wl_input*1e-10  # from A to m
     # create the radial integrator
     ai = pyFAI.AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,rot1=0,
                                    rot2=0, rot3=0, pixel1=pixel1, pixel2=pixel2,

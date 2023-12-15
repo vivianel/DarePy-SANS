@@ -4,7 +4,6 @@ Created on Wed Jul 26 13:31:39 2023
 
 @author: lutzbueno_v
 """
-#HEllo
 # %% EXPERIMENTAL PARAMETERS
 # select the instrument
 instrument = 'SANS-I'
@@ -28,17 +27,25 @@ empty_cell = 'EC'
 sample_thickness = {'all':0.1}
 # indicate the distance in meters where the transmission has been measured.
 # if transmission correction is not needed, provide a negative value, such as -1
-trans_dist = 18
+trans_dist = 6
 # for the case of flat field correction at large detector distances, indicate which
 # detctor distance to use instead in m
-replace_18m = 4.5
+replace_18m = 6.0
+# used wavelength
+wl = 'auto' # in Angstrons or 'auto'
+# add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
+#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
+beam_center_guess = {'1.6':[59.89, 64.03], '6.0':[59.48, 62.96], '18.0':[59.17, 62.01]}
+# add the size of the beamstopper as a dictionary: {'detector_distance':[size_x, size_y]} in pixels
+#beamstopper_size = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
+beamstopper_coordinates = {'1.6':[56, 72, 51, 68], '6.0':[57, 72, 53, 66], '18.0':[56, 69, 54, 66]}
 
 
-#  ANALYSIS PARAMETERS
+# ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_0915_Combet/DarePy-SANS/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_0915_Combet/DarePy-SANS/'
 # id to the analysis folder. Use '' to aboid it
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
@@ -57,18 +64,11 @@ perform_abs_calib = 1
 # if force_reintegrate = 0, only the new files will be integrated
 force_reintegrate = 1
 
-#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beam_center_guess = {'1.6':[62.37, 66.09], '4.5':[62.37, 66.09], '18.0':[62.37, 66.09]}
 
-# Add offsets to the mask
-x_pos_edge_offset = 0 # RIGHT edge
-x_neg_edge_offset = 0 # LEFT
-y_pos_edge_offset = 0 # BOTTOM
-y_neg_edge_offset = 0 # TOP
+
 
 
 # run for starting the data analysis pipeline
-
 import prepare_input as org
 from transmission import trans_calc
 import integration as ri
@@ -90,7 +90,8 @@ configuration = {'SANS-I':{
                    'list_abs_calib': {'5':0.909, '6':0.989, '8':1.090, '10':1.241, '12':1.452}},
     'experiment': {'trans_dist': trans_dist,
                    'calibration':calibration,
-                   'sample_thickness':sample_thickness},
+                   'sample_thickness':sample_thickness,
+                   'wl_input': wl},
     'analysis': {'path_dir': path_dir,
                  'path_hdf_raw':path_hdf_raw,
                  'exclude_files':exclude_files,
@@ -103,17 +104,18 @@ configuration = {'SANS-I':{
                  "plot_radial":plot_radial,
                  'add_id':add_id,
                  'beam_center_guess': beam_center_guess,
-                 'mask_offsets':[x_pos_edge_offset,x_neg_edge_offset,y_pos_edge_offset,y_neg_edge_offset]}},
+                 'beamstopper_coordinates': beamstopper_coordinates,
+                 }},
                   'SANS-LLB':{
     'instrument': {'deadtime':1e5},
                     'experiment': {},
                     'analysis': {}}}
 
-# %%
+# %% STEP 1: load all files
 config = configuration[instrument]
 class_files = org.list_files(config, result)
 
-# %%
+# %% STEP 2: calculate transmission
 
 #select the transmission measurements if they are present. Otherwise, keep it with -1
 if trans_dist > 0:
@@ -121,6 +123,9 @@ if trans_dist > 0:
 else:
     print('No transmission has been measured.')
 
+# %% STEP 3: divide into different detector distances
 result = org.select_detector_distances(config, class_files, result)
 
+
+# %% STEP 4: radial integration
 result = ri.set_integration(config, result)
