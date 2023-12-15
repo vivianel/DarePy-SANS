@@ -56,8 +56,8 @@ def plot_all_data(path_dir_an):
                     det = list_class_files[keys]['detx_m'][ii]
                     Frame = 0
                     path_integ = path_dir_an + '/det_' + str(det).replace('.','p') + '/integration/'
-                    file_name = integ.make_file_name(path_integ, prefix, sufix, sample_name, str(det).replace('.','p'), ScanNr, Frame)
-                    I = np.genfromtxt(file_name,
+                    file_name1 = integ.make_file_name(path_integ, prefix, sufix, sample_name, str(det).replace('.','p'), ScanNr, Frame)
+                    I = np.genfromtxt(file_name1,
                                          dtype = None,
                                          delimiter = ',',
                                          usecols = 1)
@@ -66,10 +66,10 @@ def plot_all_data(path_dir_an):
                         merged_files[sample_name] =  np.vstack((temp, I))
                     else:
                         merged_files[sample_name] = I
-                q = np.genfromtxt(file_name,
-                                     dtype = None,
-                                     delimiter = ',',
-                                     usecols = 0)
+                    q = np.genfromtxt(file_name1,
+                                         dtype = None,
+                                         delimiter = ',',
+                                         usecols = 0)
             if 'q' in merged_files:
                 temp = merged_files['q']
                 merged_files['q'] = np.vstack((temp, q))

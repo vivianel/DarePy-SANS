@@ -43,7 +43,7 @@ path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = [65303, 65304]
+exclude_files = [65303, 65304, 22097]
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1
@@ -58,7 +58,7 @@ perform_abs_calib = 1
 force_reintegrate = 1
 
 #beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beam_center_guess = {'1.6':[62.2, 66.3], '4.5':[62.5, 66], '18.0':[62, 66.2]}
+beam_center_guess = {'1.6':[62.37, 66.09], '4.5':[62.37, 66.09], '18.0':[62.37, 66.09]}
 
 # Add offsets to the mask
 x_pos_edge_offset = 0 # RIGHT edge
