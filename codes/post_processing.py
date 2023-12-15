@@ -117,7 +117,6 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, i
     if not os.path.exists(path_merged_fig):
         os.mkdir(path_merged_fig)
     path_merged_txt = os.path.join(path_merged, 'data_txt/')
-    interp_points = 100
 
     for keys in merged_files:
         # initiate variables to join the values
