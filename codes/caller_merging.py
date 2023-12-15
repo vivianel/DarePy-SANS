@@ -27,14 +27,7 @@ skip_start = {'2':1,'1':5 ,'0':5}
 skip_end = {'2':40,'1':5 ,'0':2}
 
 # For the interpolation and in which scale
-interp_type = 'log' # 'log' or 'linear'
-
-pp.merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type)
-
-# %% Fitting the Porod scale and the incoherent background
-
-
-interp_type = 'none' # 'log' or 'linear' or 'none' for no interpolation
+interp_type = 'log' # 'log' or 'linear' or 'none' for avoiding the interpolation
 interp_points = 100
 
 pp.merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, interp_points)
@@ -44,6 +37,6 @@ pp.merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, in
 # %% FIT THE POROD LINE AND REMOVE INCOHERENT
 
 # define the range of the inoherent part to fit
-Last_points_fit = 30
+Last_points_fit = 15
 
 pp.subtract_incoherent(path_dir_an, Last_points_fit)
