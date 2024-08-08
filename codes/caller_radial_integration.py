@@ -27,30 +27,30 @@ empty_cell = 'EC'
 sample_thickness = {'all':0.1}
 # indicate the distance in meters where the transmission has been measured.
 # if transmission correction is not needed, provide a negative value, such as -1
-trans_dist = 6
+trans_dist = 18
 # for the case of flat field correction at large detector distances, indicate which
 # detctor distance to use instead in m
-replace_18m = 6.0
+replace_18m = 4.5
 # used wavelength
 wl = 'auto' # in Angstrons or 'auto'
-# add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
-#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beam_center_guess = {'1.6':[59.89, 64.03], '6.0':[59.48, 62.96], '18.0':[59.17, 62.01]}
 # add the size of the beamstopper as a dictionary: {'detector_distance':[size_x, size_y]} in pixels
 #beamstopper_size = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beamstopper_coordinates = {'1.6':[56, 72, 51, 68], '6.0':[57, 72, 53, 66], '18.0':[56, 69, 54, 66]}
+beamstopper_coordinates = {'1.6':[57, 74, 52, 69], '4.5':[58, 72, 54, 68], '18.0':[58, 71, 54, 67]}
+# add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
+#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
+beam_center_guess = {'1.6':[60.44, 64.87], '4.5':[60.56, 65.53], '18.0':[60.62, 65.0]}
 
 
 # ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_0915_Combet/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_0915_Combet/DarePy-SANS/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/'
 # id to the analysis folder. Use '' to aboid it
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = [65303, 65304, 22097]
+exclude_files = list(range(21742,21750)) + list(range(20000, 21730)) + [21730, 21731, 21732, 21734, 21736, 21737 ] + list(range(21781,21788)) + list(range(21836, 25000))
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1

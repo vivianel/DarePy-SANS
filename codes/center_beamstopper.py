@@ -7,9 +7,9 @@ Created on Wed Dec  6 10:52:03 2023
 
 # %% STEP 1: load the AgBE file
 # where are the hdf files saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/raw_data_Hellma/'
 # number of the AgBE scan
-scanNr = 65365
+scanNr = 21751
 
 # load hdf
 import numpy as np
@@ -18,7 +18,7 @@ from utils import load_hdf
 plt.ion()
 
 # NOTE: this name has to be updated every year
-name_hdf = 'sans2023n0' + str(scanNr) +'.hdf'
+name_hdf = 'sans2024n0' + str(scanNr) +'.hdf'
 img = load_hdf(path_hdf_raw, name_hdf, 'counts')
 Detector_distance = load_hdf(path_hdf_raw, name_hdf, 'detx')
 img1 = np.where(img==0, 1e-4, img)

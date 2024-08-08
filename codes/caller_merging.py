@@ -8,7 +8,7 @@ Created on Thu Aug 17 16:33:06 2023
 import post_processing as pp
 
 # %% Plot the detector distances in the same graphic
-path_dir_an = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/analysis/'
+path_dir_an = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/analysis/'
 
 
 
@@ -37,6 +37,6 @@ pp.merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, in
 # %% FIT THE POROD LINE AND REMOVE INCOHERENT
 
 # define the range of the inoherent part to fit
-Last_points_fit = 15
+Last_points_fit = 12
 
 pp.subtract_incoherent(path_dir_an, Last_points_fit)

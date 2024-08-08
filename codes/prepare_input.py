@@ -94,6 +94,7 @@ def  select_detector_distances(config, class_files, result):
     empty_beam = config['experiment']['calibration']['empty_beam']
     calibration = config['experiment']['calibration']
     path_hdf_raw = config['analysis']['path_hdf_raw']
+    trans_dist = config['experiment']['trans_dist']
     # select the unique detector distance values
     unique_det = np.unique(class_files['detx_m'])
     #generate the analysis folder
@@ -105,16 +106,23 @@ def  select_detector_distances(config, class_files, result):
         list_det = list(class_files.keys())
         class_det = {key: [] for key in list_det}
         for ii in range(0, len(class_files['detx_m'])):
-            if ((class_files['detx_m'][ii] == jj) and (class_files['att'][ii] == 0 or class_files['att'][ii] == 3) and class_files['time_s'][ii] > 0) or ((class_files['detx_m'][ii] == jj) and class_files['sample_name'][ii] == empty_beam and class_files['time_s'][ii] > 0) :
-                if not os.path.exists(path_det):
-                    os.mkdir(path_det)
-                source = os.path.join(path_hdf_raw, class_files['name_hdf'][ii])
-                destination = os.path.join(path_det, 'hdf_raw/')
-                if not os.path.exists(destination):
-                    os.mkdir(destination)
-                shutil.copyfile(source, destination+class_files['name_hdf'][ii])
+            if not os.path.exists(path_det):
+                os.mkdir(path_det)
+            source = os.path.join(path_hdf_raw, class_files['name_hdf'][ii])
+            destination = os.path.join(path_det, 'hdf_raw/')
+            if not os.path.exists(destination):
+                os.mkdir(destination)
+            shutil.copyfile(source, destination+class_files['name_hdf'][ii])
+            # it should only select the non attenuated files for the transmission measurement
+            if (class_files['detx_m'][ii] == jj and class_files['detx_m'][ii] == trans_dist and class_files['att'][ii] != 1 and class_files['time_s'][ii] > 0):
                 for iii in list_det:
                     class_det[iii].append(class_files[iii][ii])
+            elif (class_files['detx_m'][ii] == jj and class_files['sample_name'][ii] == empty_beam and class_files['time_s'][ii] > 0 and class_files['att'][ii] == 1):
+                for iii in list_det:
+                    class_det[iii].append(class_files[iii][ii])
+            elif (class_files['detx_m'][ii] != trans_dist and class_files['detx_m'][ii] == jj and class_files['time_s'][ii] > 0):
+                  for iii in list_det:
+                      class_det[iii].append(class_files[iii][ii])
         print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
         print('For sample-detector distance: ' + string + 'm')
         # print the calibration files
