@@ -7,14 +7,15 @@ Created on Wed Dec  6 10:52:03 2023
 
 # %% STEP 1: load the AgBE file
 # where are the hdf files saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/Connor/SANS_2022_2581/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2023_SANS_Ashley/DarePy-SANS/raw_data/'
 # number of the AgBE scan
-scanNr = 22028
+scanNr = 65365
 
 # load hdf
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import load_hdf
+plt.ion()
 
 # NOTE: this name has to be updated every year
 name_hdf = 'sans2023n0' + str(scanNr) +'.hdf'

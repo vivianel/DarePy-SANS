@@ -50,7 +50,7 @@ path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2022_0915_Combet/DarePy
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = list(range(80400, 80416)) + list(range(80458, 80459)) + list(range(80482, 80487)) +  list(range(80417, 80420)) + list(range(80441, 80447)) + list(range(80482, 80487))
+exclude_files = [65303, 65304, 22097]
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1
@@ -63,6 +63,7 @@ perform_abs_calib = 1
 # force_reintegrate = 1 the radial integration will run again for all files
 # if force_reintegrate = 0, only the new files will be integrated
 force_reintegrate = 1
+
 
 
 

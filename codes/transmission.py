@@ -53,6 +53,8 @@ def trans_calc_reference(config, result):
             plt.title(im_title +  ', Total counts = ' + str(EB_ref))
             im_title = str(path_transmission + 'mask.jpg')
             plt.savefig(im_title)
+        else:
+            print('NO TRANSMISSION DATASET FOUND.')
     plt.close('all')
     result['transmission']['mask'] = mask
     result['transmission']['mean_EB'] = EB_ref

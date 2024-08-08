@@ -178,7 +178,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, i
             I_all = I_all[idx]
             e_all = e_all[idx]
             # plot original data
-            plt.errorbar(q_all, I_all, e_all, lw = 0, marker = 'o',  ms = 7, color = 'blue', alpha = 0.1, label = 'merged, scale = ' + str(np.round(scaling, 4)))
+            plt.errorbar(q_all, I_all, e_all, lw = 0, marker = 'o',  ms = 10, color = 'black', alpha = 0.05, label = 'merged, scale = ' + str(np.round(scaling, 4)))
             if interp_type == 'log':
                 # Interpolate it to new time points
                 min_pt = np.round(np.log10(np.min(q_all))/1.01, 3)
@@ -234,7 +234,7 @@ def subtract_incoherent(path_dir_an, fitting_range):
     files = []
     # r=root, d=directories, f = files
     for r, d, f in os.walk(path_merged_txt):
-        if 'interpolated' in f:
+        if any("interpolated" in s for s in f):
             for file in f:
                 if 'interpolated' in file:
                     files.append(os.path.join(file))
@@ -290,7 +290,7 @@ def subtract_incoherent(path_dir_an, fitting_range):
 
             # plot the results
             plt.loglog(q, I, '.', label="original data", color = 'blue', alpha = 0.2)
-            plt.loglog(fitting_q, porod(fitting_q, m, t, b), '--', color = 'blue', label= f"fit - R² = {rSquared}")
+            plt.loglog(fitting_q, porod(fitting_q, m, t, b), '--', color = 'blue', linewidth=3, label= f"fit - R² = {rSquared}")
             plt.title("Fitted Porod Approximation")
             plt.loglog(q, np.ones(len(I))*incoherent, '--', color = 'red', label = 'incoherent = ' + str(round(incoherent, 4)))
             plt.loglog(q, coeff * q**(slope-4), '--', color = 'black', label = 'slope = ' + str(round(slope-4, 2)))
