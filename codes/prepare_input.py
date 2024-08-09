@@ -28,6 +28,7 @@ def list_files(config, result):
     files = []
     # r=root, d=directories, f = files
     for r, d, f in os.walk(path_hdf_raw):
+        f.sort()
         for file in f:
             if '.hdf' in file:
                 files.append(os.path.join(file))
