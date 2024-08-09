@@ -6,7 +6,7 @@ save_figures = 1 # if you don't want to save then change to 0
 path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_SANS-LLB/DarePy-SANS/raw_data/'
 
 # path to save th eimages
-save_figures = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_SANS-LLB/DarePy-SANS/analysis/'
+path_save_figures = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_SANS-LLB/DarePy-SANS/analysis/'
 
 # minimum value for the colorbar in log scale
 vmin = 0
@@ -83,5 +83,5 @@ for jj in range(0, len(list_scan)):
 
     if save_figures == 1:
         # save the graphics
-        plt.savefig(save_figures + str(list_scan[jj]) + '_' + sample_name + '.png')
+        plt.savefig(path_save_figures + str(list_scan[jj]) + '_' + sample_name + '.png')
         plt.close('all')
