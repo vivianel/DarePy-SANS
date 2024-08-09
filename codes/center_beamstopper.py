@@ -7,9 +7,10 @@ Created on Wed Dec  6 10:52:03 2023
 
 # %% STEP 1: load the AgBE file
 # where are the hdf files saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/raw_data_Hellma/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_SANS-LLB/DarePy-SANS/raw_data/'
+instrument = 'sans-llb'
 # number of the AgBE scan
-scanNr = 21751
+scanNr = 24
 
 # load hdf
 import numpy as np
@@ -18,9 +19,9 @@ from utils import load_hdf
 plt.ion()
 
 # NOTE: this name has to be updated every year
-name_hdf = 'sans2024n0' + str(scanNr) +'.hdf'
-img = load_hdf(path_hdf_raw, name_hdf, 'counts')
-Detector_distance = load_hdf(path_hdf_raw, name_hdf, 'detx')
+name_hdf = instrument + '2024n' +f"{scanNr:06}" +'.hdf'
+img = load_hdf(path_hdf_raw, name_hdf, 'counts_main', instrument)
+Detector_distance = 4#load_hdf(path_hdf_raw, name_hdf, 'detx')
 img1 = np.where(img==0, 1e-4, img)
 
 # %% STEP 2: define the mask coordinates by clicking on the 4 edges, and then close the figure
@@ -83,7 +84,7 @@ plt.close('all')
 coord0 = []
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.imshow(img1, origin='lower', cmap='jet')
+ax.imshow(np.log(img1), origin='lower', cmap='jet')
 plt.title('press on the ring: left, right, bottom and top')
 ax.grid(which='major', color='w', linestyle='--', linewidth=1)
 cid0 = fig.canvas.mpl_connect('button_press_event', set_Clicks)
@@ -114,7 +115,7 @@ print('the beamcenter along y is:', center_y)
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.imshow(img1, origin='lower', cmap='jet')
+ax.imshow(np.log(img1), origin='lower', cmap='jet')
 radius = (diameter_x/2 + diameter_y/2)/2
 circ = plt.Circle((center_x,center_y), radius = radius, facecolor = 'None', edgecolor = 'white', linestyle = '--')
 ax.add_patch(circ)
