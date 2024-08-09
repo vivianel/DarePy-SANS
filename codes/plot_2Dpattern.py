@@ -84,4 +84,5 @@ for jj in range(0, len(list_scan)):
     if save_figures == 1:
         # save the graphics
         plt.savefig(path_save_figures + str(list_scan[jj]) + '_' + sample_name + '.png')
-        plt.close('all')
+
+    plt.close('all')
