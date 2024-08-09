@@ -11,18 +11,31 @@ path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_SANS-LLB/DareP
 instrument = 'sans-llb'
 # number of the AgBE scan
 scanNr = 24
+# limits of  the colorbar in log(i)
+clim = [0, 7]
 
+#################################################
 # load hdf
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import load_hdf
+import cv2
 plt.ion()
 
 # NOTE: this name has to be updated every year
 name_hdf = instrument + '2024n' +f"{scanNr:06}" +'.hdf'
-img = load_hdf(path_hdf_raw, name_hdf, 'counts_main', instrument)
-Detector_distance = 4#load_hdf(path_hdf_raw, name_hdf, 'detx')
-img1 = np.where(img==0, 1e-4, img)
+if instrument == 'sans-llb':
+    img = load_hdf(path_hdf_raw, name_hdf, 'counts_main', instrument)
+    img_main = load_hdf(path_hdf_raw, name_hdf, 'counts_main', instrument)
+    h, w = img_main.shape
+    img_main = img_main[:, int(h/2):int(w-(h/2))]
+    h, w = img_main.shape
+    data = cv2.resize(img_main, (h, w//3), interpolation = cv2.INTER_NEAREST);
+    img1 = np.where(data <= 0, 1e-4, data)
+if instrument == 'sans':
+    img = load_hdf(path_hdf_raw, name_hdf, 'counts', instrument)
+    Detector_distance = load_hdf(path_hdf_raw, name_hdf, 'detx', instrument)
+    img1 = np.where(img==0, 1e-4, img)
 
 # %% STEP 2: define the mask coordinates by clicking on the 4 edges, and then close the figure
 
@@ -37,7 +50,7 @@ def set_Clicks(event):
 
 coord0 = []
 fig, ax = plt.subplots()
-ax.imshow(np.log(img1), origin='lower', cmap='jet', clim=[0, 7])
+ax.imshow(np.log(img1), origin='lower', cmap='jet', clim=clim)
 plt.title('press on the beamstopper edges: left, right, bottom and top')
 ax.grid(which='major', color='w', linestyle='--', linewidth=1)
 cid0 = fig.canvas.mpl_connect('button_press_event', set_Clicks)
@@ -60,7 +73,7 @@ y3 = coord0[3][1]
 size_y = np.sqrt(((x2 - x3)**2)+((y2 - y3)**2))
 print('the vertical beamstopper size is: y = ', np.round(size_y,2), 'pixels' )
 
-img2 = img
+img2 = img1
 mask_beamstopper = [int(np.floor(y2)), int(np.ceil(y3)), int(np.floor(x0)), int(np.ceil(x1))]
 bs = mask_beamstopper
 img2[bs[0]:bs[1], bs[2]:bs[3]] = 0
@@ -69,7 +82,7 @@ img2[bs[0]:bs[1], bs[2]:bs[3]] = 0
 # plot the mask
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.imshow(np.log(img2), origin='lower')
+ax.imshow(np.log(img2), origin='lower', cmap='jet', clim=clim)
 
 print('_______________COPY________________')
 print('___________________________________')
@@ -84,7 +97,7 @@ plt.close('all')
 coord0 = []
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.imshow(np.log(img1), origin='lower', cmap='jet')
+ax.imshow(np.log(img1), origin='lower', cmap='jet', clim=clim)
 plt.title('press on the ring: left, right, bottom and top')
 ax.grid(which='major', color='w', linestyle='--', linewidth=1)
 cid0 = fig.canvas.mpl_connect('button_press_event', set_Clicks)
@@ -115,7 +128,7 @@ print('the beamcenter along y is:', center_y)
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.imshow(np.log(img1), origin='lower', cmap='jet')
+ax.imshow(np.log(img1), origin='lower', cmap='jet', clim=clim)
 radius = (diameter_x/2 + diameter_y/2)/2
 circ = plt.Circle((center_x,center_y), radius = radius, facecolor = 'None', edgecolor = 'white', linestyle = '--')
 ax.add_patch(circ)
