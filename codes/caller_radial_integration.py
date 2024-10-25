@@ -43,14 +43,14 @@ beam_center_guess = {'1.6':[60.44, 64.87], '4.5':[60.56, 65.53], '18.0':[60.62, 
 
 # ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/GA_data/2022_2581_GA_dilution/DarePy-SANS/raw_data_GA/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/GA_data/2022_2581_GA_dilution/DarePy-SANS/'
 # id to the analysis folder. Use '' to aboid it
 add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
-exclude_files = list(range(21742,21750)) + list(range(20000, 21730)) + [21730, 21731, 21732, 21734, 21736, 21737 ] + list(range(21781,21788)) + list(range(21836, 25000))
+exclude_files = []
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
 perform_radial = 1
 plot_radial = 1
@@ -69,9 +69,13 @@ force_reintegrate = 1
 
 
 # run for starting the data analysis pipeline
+import os
+os.chdir(path_dir + '/codes/')
+
 import prepare_input as org
 from transmission import trans_calc
 import integration as ri
+
 
 # prepare a dictionary with the names of the samples for calibration
 calibration = {'cadmium':cadmium, 'water':water, 'water_cell': water_cell, 'empty_cell':empty_cell, 'empty_beam':empty_beam, 'beam_center':beam_center}
