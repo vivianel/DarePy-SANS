@@ -8,9 +8,6 @@ Created on Wed Jul 26 13:31:39 2023
 # select the instrument
 instrument = 'SANS-I'
 #these calibrants are neeeded to run the data reduction
-# mandatory measurement of the empty beam.
-# without an empty beam measurement the script cannot determine beam center
-beam_center = 'EB'
 # optional measurement of empty beam for transmission
 empty_beam = 'EB'
 # the following standards are required for data reduction
@@ -34,11 +31,9 @@ replace_18m = 4.5
 # used wavelength
 wl = 'auto' # in Angstrons or 'auto'
 # add the size of the beamstopper as a dictionary: {'detector_distance':[size_x, size_y]} in pixels
-#beamstopper_size = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beamstopper_coordinates = {'1.6':[57, 74, 52, 69], '4.5':[58, 72, 54, 68], '18.0':[58, 71, 54, 67]}
+beamstopper_coordinates = {'1.6':[56, 73, 53, 69], '4.5':[58, 71, 55, 68], '18.0':[57, 69, 55, 67]}
 # add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
-#beam_center_guess = {'1.6':'auto', '4.5':'auto', '18.0':'auto'}
-beam_center_guess = {'1.6':[60.44, 64.87], '4.5':[60.56, 65.53], '18.0':[60.62, 65.0]}
+beam_center_guess = {'1.6':[61.33, 64.28], '4.5':[60.26, 63.69], '18.0':[61.16, 63.33]}
 
 
 # ANALYSIS PARAMETERS
@@ -78,7 +73,7 @@ import integration as ri
 
 
 # prepare a dictionary with the names of the samples for calibration
-calibration = {'cadmium':cadmium, 'water':water, 'water_cell': water_cell, 'empty_cell':empty_cell, 'empty_beam':empty_beam, 'beam_center':beam_center}
+calibration = {'cadmium':cadmium, 'water':water, 'water_cell': water_cell, 'empty_cell':empty_cell}
 
 result = {'transmission':{},
        'overview':{},
@@ -107,6 +102,7 @@ configuration = {'SANS-I':{
                  "plot_azimuthal":plot_azimuthal,
                  "plot_radial":plot_radial,
                  'add_id':add_id,
+                 'empty_beam':empty_beam,
                  'beam_center_guess': beam_center_guess,
                  'beamstopper_coordinates': beamstopper_coordinates,
                  }},

@@ -20,7 +20,7 @@ from utils import save_results
 def list_files(config, result):
     # create a list for containing all the measurements
     # classify measurements with the following info
-    class_files = {'name_hdf':[ ], 'scan':[], 'sample_name':[],'att':[], 'coll_m':[], 'wl_A':[],
+    class_files = {'name_hdf':[ ], 'scan':[], 'sample_name':[],'att':[], 'beamstop_y':[], 'coll_m':[], 'wl_A':[],
                     'detx_m':[], 'dety_m':[],  'moni_e4':[], 'time_s':[], 'thickness_cm':[], 'frame_nr':[], 'temp_C':[]}
     path_hdf_raw = config['analysis']['path_hdf_raw']
     exclude_files = config['analysis']['exclude_files']
@@ -42,6 +42,7 @@ def list_files(config, result):
             class_files['name_hdf'].append(files[ii])
             class_files['scan'].append(scan_nr)
             class_files['att'].append(load_hdf(path_hdf_raw, files[ii], 'att'))
+            class_files['beamstop_y'].append(load_hdf(path_hdf_raw, files[ii], 'beamstop_y'))
             class_files['coll_m'].append(load_hdf(path_hdf_raw, files[ii], 'coll'))
             class_files['time_s'].append(load_hdf(path_hdf_raw, files[ii], 'time'))
             class_files['moni_e4'].append(load_hdf(path_hdf_raw, files[ii], 'moni'))
@@ -92,14 +93,14 @@ def save_list_files(path_save, path_dir_an, class_files, name, result):
 
 def  select_detector_distances(config, class_files, result):
     #select the different detector distances measurements
-    empty_beam = config['experiment']['calibration']['empty_beam']
     calibration = config['experiment']['calibration']
     path_hdf_raw = config['analysis']['path_hdf_raw']
-    trans_dist = config['experiment']['trans_dist']
     # select the unique detector distance values
     unique_det = np.unique(class_files['detx_m'])
     #generate the analysis folder
     path_dir_an = create_analysis_folder(config)
+
+    # select for the detector distances
     for jj in unique_det:
         string = str(jj)
         string = string.replace('.', 'p')
@@ -113,17 +114,11 @@ def  select_detector_distances(config, class_files, result):
             destination = os.path.join(path_det, 'hdf_raw/')
             if not os.path.exists(destination):
                 os.mkdir(destination)
-            shutil.copyfile(source, destination+class_files['name_hdf'][ii])
-            # it should only select the non attenuated files for the transmission measurement
-            if (class_files['detx_m'][ii] == jj and class_files['detx_m'][ii] == trans_dist and class_files['att'][ii] != 1 and class_files['time_s'][ii] > 0):
+            # I change to select the files based on the position of the BS
+            if (class_files['detx_m'][ii] == jj and class_files['beamstop_y'][ii] > -30 and class_files['time_s'][ii] > 0):
+                shutil.copyfile(source, destination+class_files['name_hdf'][ii])
                 for iii in list_det:
                     class_det[iii].append(class_files[iii][ii])
-            elif (class_files['detx_m'][ii] == jj and class_files['sample_name'][ii] == empty_beam and class_files['time_s'][ii] > 0 and class_files['att'][ii] == 1):
-                for iii in list_det:
-                    class_det[iii].append(class_files[iii][ii])
-            elif (class_files['detx_m'][ii] != trans_dist and class_files['detx_m'][ii] == jj and class_files['time_s'][ii] > 0):
-                  for iii in list_det:
-                      class_det[iii].append(class_files[iii][ii])
         print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
         print('For sample-detector distance: ' + string + 'm')
         # print the calibration files

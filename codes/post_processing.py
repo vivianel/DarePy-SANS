@@ -220,7 +220,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, i
                 data_save = np.column_stack((interpolation_pts, linear_results))
                 np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
-# %%
+# %% subtract incoherent
 def subtract_incoherent(path_dir_an, fitting_range):
     path_merged = path_dir_an + '/merged'
     path_merged_txt = path_merged +  '/data_txt/'

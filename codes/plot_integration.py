@@ -7,6 +7,7 @@ import integration as integ
 
 
 def plot_integ_radial(config, result, ScanNr, Frame):
+    # open the files
     path_analysis = create_analysis_folder(config)
     class_all = result['overview']['all_files']
     if ScanNr in class_all['scan']:
@@ -15,17 +16,24 @@ def plot_integ_radial(config, result, ScanNr, Frame):
         det = str(det).replace('.', 'p')
         sample_name = class_all['sample_name'][idx]
         attenuator = class_all['att'][idx]
+    # create folder to save the figures
     path_rad_int_fig = path_analysis + 'det_' + det + '/figures/'
     if not os.path.exists(path_rad_int_fig):
         os.mkdir(path_rad_int_fig)
+    # create folder to save the radial integration
     path_integ = path_analysis + 'det_' + det + '/integration/'
+
     # load the 2D pattern
     prefix = 'pattern2D'
     sufix = 'dat'
+    # create a file name
     file_name = integ.make_file_name(path_integ, prefix, sufix, sample_name, det, ScanNr, Frame)
     img1 = np.genfromtxt(file_name,
                          dtype = None,
                          delimiter=',')
+    # to avoid zeros in the log representation
+    img1[img1 <= 0] = 1e-10
+
     # load the radial integration
     prefix = 'radial_integ'
     sufix = 'dat'
@@ -70,8 +78,6 @@ def plot_integ_radial(config, result, ScanNr, Frame):
         detector_size = config['instrument']['detector_size']
         mask_inv = np.ones([detector_size, detector_size])
 
-    img1[img1<=0] = np.mean(img1[1:20, :])
-
     # define the extent of the image in q
     def x2q(x, wl, dist, pixelsize):
        return 4*np.pi/wl*np.sin(np.arctan(pixelsize*x/dist)/2)
@@ -79,9 +85,6 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     # caked images
     res2d = ai.integrate2d(img1*mask_inv, pixel_range, 360,   method = 'BBox', unit = 'q_A^-1')
     I_c, tth, chi = res2d
-
-    I_c[I_c<=0] = np.nan
-
 
     # reduce the size of the image for plotting
     #img1 = img1[35:-40, 35:-40]
@@ -91,6 +94,8 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     qx = x2q(np.arange(img1.shape[1])-bc_x, ai.wavelength, ai.dist, ai.pixel1)
     qy = x2q(np.arange(img1.shape[0])-bc_y, ai.wavelength, ai.dist, ai.pixel2)
     extent = [qx.min(), qx.max(), qy.min(), qy.max()]
+
+    # for the plotting not to pop
     plt.ioff()
 
     # define the figure axis
@@ -99,20 +104,20 @@ def plot_integ_radial(config, result, ScanNr, Frame):
 
     scale = 'log'
     if scale == 'log':
+        # set color for "bad values"
         bool_mask = mask.astype('bool')
         img1[bool_mask] = np.nan
-        clim = (np.min(np.log(img1[~bool_mask])),np.max(np.log(img1[~bool_mask])))
+        clim = (np.min(np.log(img1[~bool_mask]))/2, np.max(np.log(img1[~bool_mask])))
         cmap_mask = mpl.colormaps.get_cmap('jet')
         cmap_mask.set_bad(color='black')
-
-        im1 = axs0.imshow(np.log(img1), origin='lower', aspect = 'equal', clim = clim, cmap = cmap_mask, extent = np.divide(extent,1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
+        im1 = axs0.imshow(np.log(img1), origin='lower', clim = clim, aspect = 'equal', cmap = cmap_mask, extent = np.divide(extent,1e9)) # to have in A
         fig1.colorbar(im1, ax = axs0, orientation = 'horizontal', shrink = 0.75).set_label(r'log(I) [cm$^{-1}$]')
-        im2=axs2.imshow(np.log(I_c), origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  clim = clim, cmap = cmap_mask)
+        im2 = axs2.imshow(np.log(I_c), origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto", cmap = cmap_mask, clim = clim,)
     else:
         clim = (0, np.max(img1)/2)
-        im1 = axs0.imshow(img1*mask_inv, origin='lower', aspect = 'equal', clim = clim, cmap = 'jet', extent = np.divide(extent, 1e9)) # to have in A, clim = clim1, clim = (0, np.max(np.log(img1)))
+        im1 = axs0.imshow(img1*mask_inv, origin='lower', aspect = 'equal', clim = clim, cmap = 'jet', extent = np.divide(extent, 1e9)) # to have in A
         fig1.colorbar(im1, ax = axs0, orientation = 'horizontal', shrink = 0.75).set_label(r'intensity (I) [cm$^{-1}$]')
-        im2=axs2.imshow(I_c, origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  cmap='jet', clim = clim)
+        im2 = axs2.imshow(I_c, origin="lower", extent=[tth.min(), tth.max(), chi.min(), chi.max()], aspect="auto",  cmap='jet', clim = clim)
 
     axs0.grid(color = 'white', linestyle = '--', linewidth = 0.25)
     axs0.set(ylabel = r'q$_{y}$ [$\AA$$^{-1}$]', xlabel = r'q$_{x}$ [$\AA$$^{-1}$]')
@@ -168,6 +173,8 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     file_name = integ.make_file_name(path_rad_int_fig, prefix, sufix, sample_name, det, ScanNr, Frame)
     plt.savefig(file_name)
     plt.close(fig1)
+    # to return into plotting
+    plt.ion()
 
 
 def plot_integ_azimuthal(config, result, ScanNr, Frame):
@@ -195,6 +202,8 @@ def plot_integ_azimuthal(config, result, ScanNr, Frame):
     I = data[:, 1:len(npt_azim)]
     #sigma = data[:,int((data.shape[1]-1)/2):]
     I_select = I[q_range, :]
+
+    # to avoid plots poping up
     plt.ioff()
     colors = plt.cm.viridis(np.linspace(0, 1 , I_select.shape[1]))
     fig2, ((axs0, axs1))  = plt.subplots(1, 2,  figsize=(15, 5))
@@ -217,3 +226,5 @@ def plot_integ_azimuthal(config, result, ScanNr, Frame):
     file_name = integ.make_file_name(path_rad_int_fig, prefix, sufix, sample_name, det, ScanNr, Frame)
     fig2.savefig(file_name)
     plt.close(fig2)
+    # to return into plotting
+    plt.ion()

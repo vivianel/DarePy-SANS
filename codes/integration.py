@@ -113,12 +113,14 @@ def integrate(config, result, det, path_rad_int):
                 prefix = 'radial_integ'
                 sufix = 'dat'
                 file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
+                # run the radial integration
                 radial_integ(config, result, img1, file_name)
             if perform_azimuthal == 1:
                 # name the sample
                 prefix = 'azim_integ'
                 sufix = 'dat'
                 file_name = make_file_name(path_rad_int, prefix, sufix,  sample_name, det, scanNr, frame)
+                # run the azimuthal integration
                 azimuthal_integ(config, result, img1, file_name)
             plot_radial_integ(config, result, file_name)
     return result

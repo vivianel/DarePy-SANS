@@ -22,7 +22,7 @@ def trans_calc_reference(config, result):
     path_transmission = os.path.join(path_dir_an, 'transmission/')
     # open the list for all
     class_trans  = result['overview']['trans_files']
-    empty_beam = config['experiment']['calibration']['empty_beam']
+    empty_beam = config['analysis']['empty_beam']
     trans_dist = config['experiment']['trans_dist']
     # calculate the number of counts of the EB measurement
     array = np.array(class_trans['sample_name'])
@@ -83,7 +83,7 @@ def trans_calc_sample(config, result):
     list_counts = []
     mask =  result['transmission']['mask']
     EB_ref = result['transmission']['mean_EB']
-    empty_beam = config['experiment']['calibration']['empty_beam']
+    empty_beam = config['analysis']['empty_beam']
     class_trans = result['overview']['trans_files']
     trans_dist = config['experiment']['trans_dist']
     path_hdf_raw = os.path.join(path_transmission, 'hdf_raw/')
@@ -134,7 +134,6 @@ def select_transmission(config, class_files, result):
     #generate the analysis folder
     path_hdf_raw = config['analysis']['path_hdf_raw']
     trans_dist = config['experiment']['trans_dist']
-    empty_beam = config['experiment']['calibration']['empty_beam']
     path_dir_an = create_analysis_folder(config)
     #create a folder
     path_transmission = os.path.join(path_dir_an, 'transmission/')
@@ -143,7 +142,7 @@ def select_transmission(config, class_files, result):
     list_trans = list(class_files.keys())
     class_trans = {key: [] for key in list_trans}
     for ii in range(0, len(class_files['att'])):
-         if (class_files['att'][ii] > 0 and class_files['detx_m'][ii] == trans_dist and class_files['time_s'][ii] > 0) or (class_files['att'][ii] > 0 and class_files['sample_name'][ii] == empty_beam and class_files['time_s'][ii] > 0):
+         if (class_files['att'][ii] > 0 and class_files['detx_m'][ii] == trans_dist and class_files['time_s'][ii] > 0) and class_files['beamstop_y'][ii] < -30:
              for iii in list_trans:
                  class_trans[iii].append(class_files[iii][ii])
              #save a copy of the transmission files

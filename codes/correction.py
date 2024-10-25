@@ -18,40 +18,34 @@ import pyFAI
 
 def prepare_corrections(config, result, det):
     path_dir_an = create_analysis_folder(config)
-    path_det = os.path.join(path_dir_an, 'det' + det)
+    path_det = path_dir_an + 'det_' + det + '/hdf_raw/'
     # prepare radial integration files
-    path_hdf_raw = os.path.join(path_det, 'hdf_raw/')
-    beam_center = config['experiment']['calibration']['beam_center']
-    class_trans = result['overview']['all_files']
-    array = np.array(class_trans['sample_name'])
-    indices = np.where(array == beam_center)[0]
-    # prepare ai
-    for ll in indices:
-        if class_trans['detx_m'][ll] == float(det.replace('p', '.')) and class_trans['att'][ll] > 0:
-            name_hdf = class_trans['name_hdf'][ll]
-            ai = prepare_ai(config, beam_center, name_hdf, result)
-    if 'ai' not in locals():
-        print('###########################################################')
-        print('An Empty beam is needed for this configuration: ' + det + ' m')
-        print('###########################################################')
-        sys.exit('Please measure an empty beam (EB).')
+    name_hdf = os.listdir(path_det)[0]
+    # load detector distance
+    dist = load_hdf(path_det, name_hdf, 'detx')
 
-
-def prepare_ai(config, beam_center, name_hdf, result):
+    # define pixel size
     pixel1 = config['instrument']['pixel_size']
     pixel2 = pixel1
-    path_hdf_raw = config['analysis']['path_hdf_raw']
+
+    # define the wavelength
     wl_input = config['experiment']['wl_input']
-    beamstopper_coordinates = config['analysis']['beamstopper_coordinates']
-    path_dir_an = create_analysis_folder(config)
-    dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
-    # calculate the beam center
-    counts = load_hdf(path_hdf_raw, name_hdf, 'counts')
-    bc_x, bc_y = calculate_beam_center(config, counts, name_hdf)
+    if wl_input == 'auto':
+        wl = load_hdf(path_det, name_hdf, 'wl')*1e-10  # from A to m
+    else:
+        wl = wl_input*1e-10  # from A to m
+
+    #define the beam center
+    beam_center_guess = config['analysis']['beam_center_guess']
+    bc_x = beam_center_guess[str(dist)][0]
+    bc_y = beam_center_guess[str(dist)][1]
     poni2 = bc_x*pixel1
     poni1 = bc_y*pixel2
     result['integration']['beam_center_x'] = bc_x
     result['integration']['beam_center_y'] = bc_y
+
+    # define the beam stop coordinates
+    beamstopper_coordinates = config['analysis']['beamstopper_coordinates']
     # create a mask
     detector_size = config['instrument']['detector_size']
     mask = np.zeros([detector_size, detector_size])
@@ -81,10 +75,7 @@ def prepare_ai(config, beam_center, name_hdf, result):
     mask[-corner:-1, -corner:-1] = 1
     mask[0:corner, -corner:-1] = 1
     result['integration']['int_mask'] = mask
-    if wl_input == 'auto':
-        wl = load_hdf(path_hdf_raw, name_hdf, 'wl')*1e-10  # from A to m
-    else:
-        wl = wl_input*1e-10  # from A to m
+
     # create the radial integrator
     ai = pyFAI.AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,rot1=0,
                                    rot2=0, rot3=0, pixel1=pixel1, pixel2=pixel2,
@@ -92,48 +83,25 @@ def prepare_ai(config, beam_center, name_hdf, result):
     ai.setChiDiscAtZero()
     result['integration']['ai'] = ai
     save_results(path_dir_an, result)
-    return (ai, mask, result)
 
-
-def calculate_beam_center(config, counts0, name_hdf):
-    path_hdf_raw = config['analysis']['path_hdf_raw']
-    dist = load_hdf(path_hdf_raw, name_hdf, 'detx')
-    #interpolation_factor = 1
-    # reshape the image
-    #sizeX = counts0.shape[0]*interpolation_factor
-    #sizeY = counts0.shape[1]*interpolation_factor
-    #counts = cv2.resize(counts0, dsize=(sizeX, sizeY), interpolation=cv2.INTER_NEAREST)
-    counts = counts0
-    counts = np.where(counts <= 0, 1e-8, counts)
-    cutoff = counts[counts > 0].max()/1.3
-    counts = np.where(counts < cutoff, 0, counts)
-    im = np.where(counts >= cutoff, 1, counts)
-    beam_center_guess = config['analysis']['beam_center_guess']
-    if beam_center_guess[str(dist)] == 'auto':
-        # Find coordinates of thresholded image
-        y, x = np.nonzero(im)
-        # Find average
-        xmean = x.mean()
-        ymean = y.mean()
-        bc_x = xmean#/interpolation_factor
-        bc_y = ymean#/interpolation_factor
-        # this seems to be needed for smaller detector distances
-    elif np.size(beam_center_guess[str(dist)]) == 2:
-        bc_x = beam_center_guess[str(dist)][0]
-        bc_y = beam_center_guess[str(dist)][1]
-    # turn off the interactivity
     plt.ioff()
     # Plot on figure
     plt.figure()
-    #plt.imshow(np.dstack([im, im, im]))
-    plt.imshow(counts0, origin='lower', aspect = 'equal', clim=[0, 10])
+    plt.imshow(mask, origin='lower', aspect = 'equal', clim=[0, 1])
     plt.plot(bc_x, bc_y, 'r+', markersize=10)
     plt.title('x_center = ' + str(round(bc_x, 2)) + ', y_center =' + str(round(bc_y, 2)) + ' pixels')
     path_dir_an = create_analysis_folder(config)
     file_name = path_dir_an + 'beamcenter_' + str(dist).replace('.', 'p') + 'm.jpg'
     plt.savefig(file_name)
     plt.close('all')
-    return bc_x, bc_y
+    plt.ion()
+
+
+    return (ai, mask, result)
+
+
+
+
 
 
 def load_standards(config, result, det):

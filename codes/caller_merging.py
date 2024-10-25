@@ -5,11 +5,15 @@ Created on Thu Aug 17 16:33:06 2023
 @author: lutzbueno_v
 """
 
-import post_processing as pp
 
 # %% Plot the detector distances in the same graphic
-path_dir_an = 'C:/Users/lutzbueno_v/Documents/Analysis/data/2024_0101_Flow/DarePy-SANS/analysis/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/GA_data/2022_2581_GA_dilution/DarePy-SANS/'
 
+
+import os
+os.chdir(path_dir + '/codes/')
+path_dir_an = path_dir + '/analysis/'
+import post_processing as pp
 
 
 
@@ -37,6 +41,6 @@ pp.merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, in
 # %% FIT THE POROD LINE AND REMOVE INCOHERENT
 
 # define the range of the inoherent part to fit
-Last_points_fit = 12
+Last_points_fit = 10
 
 pp.subtract_incoherent(path_dir_an, Last_points_fit)

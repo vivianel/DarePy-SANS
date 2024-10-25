@@ -21,6 +21,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
     # open the hdf files
     file_hdf = h5py.File(name_hdf, 'r')
     # those are only scalars
+    if which_property == 'beamstop_y':
+        prop = file_hdf['entry1/SANS/beam_stop/y_position'][0]
+        res = check_dimension(prop)
     if which_property == 'att':
         prop = file_hdf['entry1/SANS/attenuator/selection'][0]
         res = check_dimension(prop)
@@ -78,7 +81,8 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
     if  which_property == 'counts':
         prop = np.array(file_hdf['entry1/SANS/detector/counts'])
         res = check_dimension(prop)
-        res[res < 0] = 1e-20
+        # correction to avoid zeros and negative values
+        np.zeros_like(res[res <= 0])
     file_hdf.close()
     return res
 
