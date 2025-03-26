@@ -31,9 +31,9 @@ replace_18m = 4.5
 # used wavelength
 wl = 'auto' # in Angstrons or 'auto'
 # add the size of the beamstopper as a dictionary: {'detector_distance':[size_x, size_y]} in pixels
-beamstopper_coordinates = {'1.6':[56, 73, 53, 69], '4.5':[58, 71, 55, 68], '18.0':[57, 69, 55, 67]}
+beamstopper_coordinates = {'1.6':[56, 74, 52, 69], '4.5':[58, 72, 54, 68], '18.0':[57, 70, 50, 67]}
 # add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
-beam_center_guess = {'1.6':[61.33, 64.28], '4.5':[60.26, 63.69], '18.0':[61.16, 63.33]}
+beam_center_guess = {'1.6':[62, 64.5], '4.5':[62, 64.2], '18.0':[62, 63.6]}
 
 
 # ANALYSIS PARAMETERS
@@ -41,16 +41,15 @@ beam_center_guess = {'1.6':[61.33, 64.28], '4.5':[60.26, 63.69], '18.0':[61.16, 
 path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/GA_data/2022_2581_GA_dilution/DarePy-SANS/raw_data_GA/'
 # path to the working directory (where the analysis will be saved)
 path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/GA_data/2022_2581_GA_dilution/DarePy-SANS/'
+show_plots = 0
 # id to the analysis folder. Use '' to aboid it
-add_id = ''
+add_id = 'sector'
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
 exclude_files = []
 # perform_radial and plot_radial = 1 to integrate, plot, and save the results.
-perform_radial = 1
 plot_radial = 1
 # perform_azimuthal and plot_azimuthal = 1 to integrate, plot, and save the results.
-perform_azimuthal = 1
 plot_azimuthal = 0
 # perform_abs_calib = 1 to perform the absolute calibration of the data
 # perform_abs_calib = 0 to deactivate
@@ -58,8 +57,11 @@ perform_abs_calib = 1
 # force_reintegrate = 1 the radial integration will run again for all files
 # if force_reintegrate = 0, only the new files will be integrated
 force_reintegrate = 1
-
-
+# integration_points defines how many q values the final curve will contain
+integration_points = 100
+# number of sectors for azimuthal integration
+sectors_nr = 16
+pixel_range_azim = range(5,40)
 
 
 
@@ -77,8 +79,12 @@ calibration = {'cadmium':cadmium, 'water':water, 'water_cell': water_cell, 'empt
 
 result = {'transmission':{},
        'overview':{},
-       'integration':{}
-       }
+       'integration':{
+           'pixel_range_azim':pixel_range_azim,
+           'integration_points':integration_points,
+           'sectors_nr': sectors_nr}}
+           #'npt_azim':npt_azim}
+
 
 configuration = {'SANS-I':{
     'instrument': {'deadtime': 6.6e-7,
@@ -93,10 +99,9 @@ configuration = {'SANS-I':{
                    'wl_input': wl},
     'analysis': {'path_dir': path_dir,
                  'path_hdf_raw':path_hdf_raw,
+                 'show_plots':show_plots,
                  'exclude_files':exclude_files,
                  'perform_abs_calib':perform_abs_calib,
-                 'perform_azimuthal':perform_azimuthal,
-                 'perform_radial':perform_radial,
                  'force_reintegrate': force_reintegrate,
                  'replace_18m':replace_18m,
                  "plot_azimuthal":plot_azimuthal,

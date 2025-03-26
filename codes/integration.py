@@ -64,14 +64,9 @@ def integrate(config, result, det, path_rad_int):
     class_file = result['overview']['det_files_'+ det]
     # correct to absolute scale
     perform_abs_calib = config['analysis']['perform_abs_calib']
-    perform_azimuthal = config['analysis']['perform_azimuthal']
-    perform_radial = config['analysis']['perform_radial']
     class_file = result['overview']['det_files_'+ det]
 
-    # pixel range defines how many q the final curve will contain
-    pixel_range = range(0, 100)
-    result['integration']['pixel_range'] = pixel_range
-    # execute the corrections for all
+    # execute the corrections for all the images in 2D
     print('DOING ' + str(det) + 'm')
     for ii in range(0, len(class_file['sample_name'])):
         name_hdf = class_file['name_hdf'][ii]
@@ -81,6 +76,7 @@ def integrate(config, result, det, path_rad_int):
         for ff in range(0, class_file['frame_nr'][ii]):
             if perform_abs_calib == 1:
                 dark =  result['integration']['cadmium']
+                # load the hdf file
                 img = load_and_normalize(config, result, name_hdf)
                 # Subtract empty cell and Cadmium
                 img_cell = result['integration']['empty_cell']
@@ -103,25 +99,26 @@ def integrate(config, result, det, path_rad_int):
             # get the frame number
             frame = ff
             # azimuthal integration
-            if perform_radial == 1:
-                # name the sample
-                prefix = 'pattern2D'
-                sufix = 'dat'
-                file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
-                np.savetxt(file_name, img1, delimiter=',')
-                # name the sample
-                prefix = 'radial_integ'
-                sufix = 'dat'
-                file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
-                # run the radial integration
-                radial_integ(config, result, img1, file_name)
-            if perform_azimuthal == 1:
-                # name the sample
-                prefix = 'azim_integ'
-                sufix = 'dat'
-                file_name = make_file_name(path_rad_int, prefix, sufix,  sample_name, det, scanNr, frame)
-                # run the azimuthal integration
-                azimuthal_integ(config, result, img1, file_name)
+            # perform_radial integration
+            # name the sample
+            prefix = 'pattern2D'
+            sufix = 'dat'
+            file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
+            np.savetxt(file_name, img1, delimiter=',')
+            # name the sample
+            prefix = 'radial_integ'
+            sufix = 'dat'
+            file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
+            # run the radial integration
+            radial_integ(config, result, img1, file_name)
+
+            # perform_azimuthal integration
+            # name the sample
+            prefix = 'azim_integ'
+            sufix = 'dat'
+            file_name = make_file_name(path_rad_int, prefix, sufix,  sample_name, det, scanNr, frame)
+            # run the azimuthal integration
+            azimuthal_integ(config, result, img1, file_name)
             plot_radial_integ(config, result, file_name)
     return result
 
@@ -129,10 +126,10 @@ def integrate(config, result, det, path_rad_int):
 def radial_integ(config, result, img1, file_name):
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
-    pixel_range = result['integration']['pixel_range']
+    integration_points = result['integration']['integration_points']
     perform_abs_calib = config['analysis']['perform_abs_calib']
     # integrate for radial plots
-    q, I, sigma = ai.integrate1d(img1, len(pixel_range),
+    q, I, sigma = ai.integrate1d(img1, integration_points,
                                  correctSolidAngle = True,
                                  mask = mask,
                                  method = 'nosplit_csr',
@@ -143,8 +140,8 @@ def radial_integ(config, result, img1, file_name):
                                  dark = None)
     if perform_abs_calib == 1:
         # correct for the number of pixels
-        flat =     flat = result['integration']['water']
-        q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  len(pixel_range),
+        flat = result['integration']['water']
+        q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  integration_points,
                                                  correctSolidAngle = True,
                                                  mask = mask,
                                                  method = 'nosplit_csr',
@@ -166,18 +163,17 @@ def radial_integ(config, result, img1, file_name):
 def azimuthal_integ(config, result, img1, file_name):
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
-    pixel_range = result['integration']['pixel_range']
+    integration_points = result['integration']['integration_points']
     perform_abs_calib = config['analysis']['perform_abs_calib']
     # define the number of sectors
-    sectors_nr = 16
+    sectors_nr = result['integration']['sectors_nr']
     # integrate for azimuthal plots
-    npt_azim = range(0, 370, int(360/sectors_nr))
-    result['integration']['sectors_nr'] = sectors_nr
-    result['integration']['npt_azim'] = npt_azim
+    npt_azim = range(0, 360, int(360/sectors_nr))
+
     for rr in range(0, len(npt_azim)-1):
         azim_start = npt_azim[rr]
         azim_end = npt_azim[rr+1]
-        q, I, sigma = ai.integrate1d(img1, len(pixel_range),
+        q, I, sigma = ai.integrate1d(img1, integration_points,
                                      correctSolidAngle = True,
                                      mask = mask,
                                      method = 'nosplit_csr',
@@ -190,7 +186,7 @@ def azimuthal_integ(config, result, img1, file_name):
         if perform_abs_calib == 1:
             # correct for the number of pixels
             flat = result['integration']['water']
-            q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  len(pixel_range),
+            q_flat, I_flat, sigma_flat = ai.integrate1d(flat,  integration_points,
                                                      correctSolidAngle = True,
                                                      mask = mask,
                                                      method = 'nosplit_csr',

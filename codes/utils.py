@@ -47,11 +47,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
     elif which_property == 'spos':
         prop = file_hdf['/entry1/sample/position'][0]
         res = check_dimension(prop)
-    elif which_property == 'monitor2':
-        prop = file_hdf['entry1/SANS/monitor2/counts'][0]
-        res = check_dimension(prop)
     elif which_property == 'flux_monit':
-        res = file_hdf['/entry1/SANS/monitor2/counts'][0]
+        prop = file_hdf['/entry1/SANS/monitor2/counts'][0]
+        res = check_dimension(prop)
     elif which_property == 'beam_stop':
         res = file_hdf['/entry1/SANS/beam_stop/out_flag'][0]
     elif which_property == 'sample_name':
@@ -82,7 +80,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
         prop = np.array(file_hdf['entry1/SANS/detector/counts'])
         res = check_dimension(prop)
         # correction to avoid zeros and negative values
-        np.zeros_like(res[res <= 0])
+        #res[res <= 0] = np.median(res)
     file_hdf.close()
     return res
 
@@ -127,3 +125,8 @@ def save_results(path_save, result):
     with open(save_file, 'wb') as handle:
         pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return result
+
+def smooth(y, box_pts):
+    box = np.ones(box_pts)/box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    return y_smooth

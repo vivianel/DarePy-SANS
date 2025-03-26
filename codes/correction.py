@@ -95,8 +95,6 @@ def prepare_corrections(config, result, det):
     plt.savefig(file_name)
     plt.close('all')
     plt.ion()
-
-
     return (ai, mask, result)
 
 
@@ -123,12 +121,10 @@ def load_standards(config, result, det):
     for key, value in calibration.items():
         if key != 'cadmium':
             result['integration'][key] = correct_dark(result['integration'][key], result['integration']['cadmium'])
-
     # subtract empty cell
     img_h2o = result['integration']['water']
     img_cell = result['integration']['water_cell']
     img_h2o = correct_EC(img_h2o, img_cell)
-
     # determine the scaling factor to replace water at 18 m
     ai = result['integration']['ai']
     mask = result['integration']['int_mask']
