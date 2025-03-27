@@ -12,9 +12,10 @@ def absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat
     scaling_factor = result['integration']['scaling_factor']
     if '18p0' in file_name:
         I = I/scaling_factor
+    # avoid getting errors from the division by zero: here we have the 1D scattering pattern
+    I_flat[I_flat <= 0] = np.median(np.abs(I_flat))
+    I[I <= 0] = np.median(np.abs(I[I>0]))
     # divide by flat sample - water
-    I_flat[I_flat < 0] = np.mean(np.abs(I_flat))
-    I[I < 0] = np.mean(np.abs(I))
     I_corr = np.divide(I, I_flat)
     # scale to absolute units (cm -1)
     list_cs = config['instrument']['list_abs_calib']

@@ -36,8 +36,7 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     file_name = integ.make_file_name(path_integ, prefix, sufix, sample_name, det, ScanNr, Frame)
     # load the 2D
     img1 = np.genfromtxt(file_name, dtype = None, delimiter=',')
-    # smoothen the data for display
-    img1[img1 <= 0] = np.median(img1)
+
 
     # load the radial integration from the integrated files
     prefix = 'radial_integ'
@@ -117,6 +116,8 @@ def plot_integ_radial(config, result, ScanNr, Frame):
     axs1.errorbar(q, I, yerr = sigma, color = 'black', lw = 1, markersize=2)
 
     # AXS2: plot the scattering pattern in 2D in axs2 (log scale)
+    img1[img1 <= 1e-5] = 1e-5
+    # Remove negative and zeros
     img2 = np.log(img1)
     #clim = [np.mean(img2), np.mean(img2)+3]
     im1 = axs2.imshow(img2*mask_inv, origin='lower', aspect = 'equal', cmap = cmap_mask, extent = np.divide(extent,1e9)) # to have in A

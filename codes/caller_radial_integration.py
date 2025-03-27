@@ -26,24 +26,24 @@ sample_thickness = {'all':0.1}
 # if transmission correction is not needed, provide a negative value, such as -1
 trans_dist = 18
 # for the case of flat field correction at large detector distances, indicate which
-# detctor distance to use instead in m
-replace_18m = 4.5
+# detctor distance to use instead in m, it should be "6.0" one
+replace_18m = 6.0
 # used wavelength
 wl = 'auto' # in Angstrons or 'auto'
 # add the size of the beamstopper as a dictionary: {'detector_distance':[size_x, size_y]} in pixels
-beamstopper_coordinates = {'1.6':[56, 74, 52, 69], '4.5':[58, 72, 54, 68], '18.0':[57, 70, 50, 67]}
+beamstopper_coordinates = {'1.6':[56, 77, 50, 69], '6.0':[57, 72, 53, 66], '18.0':[57, 70, 53, 65]}
 # add the guess for beamcenter as a dictionary: {'detector_distance':[center_x, center_y]}
-beam_center_guess = {'1.6':[62, 64.5], '4.5':[62, 64.2], '18.0':[62, 63.6]}
+beam_center_guess = {'1.6':[60.58, 67.63], '6.0':[56.41, 75.62], '18.0':[59.69, 62.8]}
 
 
 # ANALYSIS PARAMETERS
 # path where the raw hdf files are saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/GA_data/2022_2581_GA_dilution/DarePy-SANS/raw_data_GA/'
+path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_1mm_rest/raw_data/'
 # path to the working directory (where the analysis will be saved)
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/GA_data/2022_2581_GA_dilution/DarePy-SANS/'
+path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_1mm_rest/DarePy-SANS/'
 show_plots = 0
-# id to the analysis folder. Use '' to aboid it
-add_id = 'sector'
+# id to the analysis folder. Use '' to avoid it
+add_id = ''
 # Scan numbers to be excluded from the analysis pipeline. They should be lists,
 # such as: list(range(23177, 28000). If not needed keep it to empty [].
 exclude_files = []

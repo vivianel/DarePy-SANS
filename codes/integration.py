@@ -65,61 +65,65 @@ def integrate(config, result, det, path_rad_int):
     # correct to absolute scale
     perform_abs_calib = config['analysis']['perform_abs_calib']
     class_file = result['overview']['det_files_'+ det]
+    calibration = config['experiment']['calibration']
 
     # execute the corrections for all the images in 2D
     print('DOING ' + str(det) + 'm')
     for ii in range(0, len(class_file['sample_name'])):
-        name_hdf = class_file['name_hdf'][ii]
         sample_name = class_file['sample_name'][ii]
-        scanNr = class_file['scan'][ii]
-        # do radial integration for each frame
-        for ff in range(0, class_file['frame_nr'][ii]):
-            if perform_abs_calib == 1:
-                dark =  result['integration']['cadmium']
-                # load the hdf file
-                img = load_and_normalize(config, result, name_hdf)
-                # Subtract empty cell and Cadmium
-                img_cell = result['integration']['empty_cell']
-                # subraction of empty cell
-                if class_file['frame_nr'][ii] > 1:
-                    img1 =  correct_dark(img[ff,:,:], dark)
-                    img1 =  correct_EC(img1, img_cell)
+        if sample_name not in calibration.values():
+            name_hdf = class_file['name_hdf'][ii]
+            scanNr = class_file['scan'][ii]
+            # do radial integration for each frame
+            for ff in range(0, class_file['frame_nr'][ii]):
+                if perform_abs_calib == 1:
+                    dark =  result['integration']['cadmium']
+                    # load the hdf file
+                    img = load_and_normalize(config, result, name_hdf)
+                    # Subtract empty cell and Cadmium
+                    img_cell = result['integration']['empty_cell']
+                    # subraction of empty cell
+                    if class_file['frame_nr'][ii] > 1:
+                        img1 =  correct_dark(img[ff,:,:], dark)
+                        img1 =  correct_EC(img1, img_cell)
+                    else:
+                        img1 =  correct_dark(img, dark)
+                        img1 =  correct_EC(img1, img_cell)
+                    print('Corrected scan ' + class_file['name_hdf'][ii] + ', Frame: ' + str(ff) )
                 else:
-                    img1 =  correct_dark(img, dark)
-                    img1 =  correct_EC(img1, img_cell)
-                print('Corrected scan ' + class_file['name_hdf'][ii] + ', Frame: ' + str(ff) )
-            else:
-                img = load_hdf(path_hdf_raw, name_hdf, 'counts')
-                if class_file['frame_nr'][ii] > 1:
-                    img1 = img[ff,:,:]
-                else:
-                    img1=img
-                print('NOT corrected scan ' + class_file['name_hdf'][ii] + ', Frame: ' + str(ff) )
-            img1= np.squeeze(img1)
-            # get the frame number
-            frame = ff
-            # azimuthal integration
-            # perform_radial integration
-            # name the sample
-            prefix = 'pattern2D'
-            sufix = 'dat'
-            file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
-            np.savetxt(file_name, img1, delimiter=',')
-            # name the sample
-            prefix = 'radial_integ'
-            sufix = 'dat'
-            file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
-            # run the radial integration
-            radial_integ(config, result, img1, file_name)
+                    img = load_hdf(path_hdf_raw, name_hdf, 'counts')
+                    if class_file['frame_nr'][ii] > 1:
+                        img1 = img[ff,:,:]
+                    else:
+                        img1=img
+                    print('NOT corrected scan ' + class_file['name_hdf'][ii] + ', Frame: ' + str(ff) )
+                img1= np.squeeze(img1)
+                # get the frame number
+                frame = ff
+                # azimuthal integration
+                # perform_radial integration
+                # name the sample
+                prefix = 'pattern2D'
+                sufix = 'dat'
+                file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
+                np.savetxt(file_name, img1, delimiter=',')
+                # name the sample
+                prefix = 'radial_integ'
+                sufix = 'dat'
+                file_name = make_file_name(path_rad_int, prefix, sufix, sample_name, det, scanNr, frame)
+                # run the radial integration
+                radial_integ(config, result, img1, file_name)
 
-            # perform_azimuthal integration
-            # name the sample
-            prefix = 'azim_integ'
-            sufix = 'dat'
-            file_name = make_file_name(path_rad_int, prefix, sufix,  sample_name, det, scanNr, frame)
-            # run the azimuthal integration
-            azimuthal_integ(config, result, img1, file_name)
-            plot_radial_integ(config, result, file_name)
+                # perform_azimuthal integration
+                # name the sample
+                prefix = 'azim_integ'
+                sufix = 'dat'
+                file_name = make_file_name(path_rad_int, prefix, sufix,  sample_name, det, scanNr, frame)
+                # run the azimuthal integration
+                azimuthal_integ(config, result, img1, file_name)
+                plot_radial_integ(config, result, file_name)
+        else:
+            print(sample_name + ' is not being integrated')
     return result
 
 

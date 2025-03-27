@@ -188,8 +188,12 @@ def load_and_normalize(config, result, name_hdf):
 
 def correct_dark(img, dark):
     img = np.subtract(img, dark)
+    # avoid creating negative values
+    img[img < 0] = 0
     return img
 
 def correct_EC(img, EC):
     img = np.subtract(img, EC)
+    # avoid creating negative values
+    img[img < 0] = 0
     return img
