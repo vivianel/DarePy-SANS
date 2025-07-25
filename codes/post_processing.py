@@ -365,12 +365,12 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end, interp_type, i
             plt.savefig(file_name)
 
             header_text = 'q (A-1), I (1/cm), error'
-            file_name = path_merged_txt + 'merged_'+  keys  + '.dat'
+            file_name = path_merged_txt +  keys +'_merged' + '.dat'
             data_save = np.column_stack((q_all, I_all, e_all))
             np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
             if interp_type == 'linear' or interp_type == 'log':
-                file_name = path_merged_txt +'interp_' + keys +   '.dat'
+                file_name = path_merged_txt + keys + '_interp'  '.dat'
                 data_save = np.column_stack((interpolation_pts, linear_results))
                 np.savetxt(file_name, data_save, delimiter=',', header=header_text)
 
