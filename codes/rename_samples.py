@@ -14,8 +14,8 @@ correcting metadata directly in the HDF5 files.
 import h5py
 import numpy as np
 import os
-import sys
-import math
+import sys # Added for controlled exit in case of critical errors
+import math # Added for math.isnan
 
 # %% USER INPUT PARAMETERS
 
@@ -32,7 +32,7 @@ path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/raw_data/'
 #    - To change a range of files: list(range(23100, 23150))
 #    - Leave as an empty list [] if you do NOT want to apply changes based on specific scan numbers
 #      (but you would then need to ensure 'replace_with' is set if you want to apply a blanket change)
-files_change = [23328, 23343, 23358, 23373]
+files_change = [23328, 23343, 23358,23373]
 
 # 3. Subscript to Append to Sample Name (Optional)
 #    This allows appending additional information to the *existing* sample name.
@@ -151,27 +151,19 @@ for ii in range(0, len(files)):
 
             # Replace with a new name if 'replace_with' is specified and not 0
             if isinstance(replace_with, str) and replace_with != '': # Ensure replace_with is a meaningful string
-                new_sample_name = replace_with
+                new_sample_name = replace_with # Use directly, no need to cast from 0
             elif isinstance(replace_with, int) and replace_with != 0: # Handle case where replace_with might be a non-zero int
                 new_sample_name = str(replace_with)
 
-            # --- START OF MODIFICATION ---
-            # Define the path to the *original* sample name field
-            original_sample_name_path = '/entry1/sample/name'
 
-            # Delete the existing dataset before recreating it with the new value
-            # This is important because you can't directly "overwrite" an HDF5 dataset
-            # with data of a different type or size using simple assignment.
-            # Deleting and recreating ensures the new string is properly stored.
-            if original_sample_name_path in file_hdf:
-                del file_hdf[original_sample_name_path]
+            # Write the new sample name to '/entry1/sample/name_new'
+            dataset_path = '/entry1/sample/name_new'
+            if dataset_path in file_hdf:
+                del file_hdf[dataset_path] # Delete existing dataset to ensure clean overwrite
 
-            # Create the dataset at the original path with the new sample name
-            # Make sure to encode the string to bytes
-            file_hdf.create_dataset(original_sample_name_path, data=np.bytes_(new_sample_name))
-
-            print(f"Scan {current_scan_nr}: Sample name successfully updated from '{current_sample_name}' to '{new_sample_name}' in '{original_sample_name_path}'")
-            # --- END OF MODIFICATION ---
+            # Create the new dataset. Store as numpy bytes string.
+            file_hdf.create_dataset(dataset_path, data=np.bytes_(new_sample_name))
+            print(f"Scan {current_scan_nr}: Sample name changed from '{current_sample_name}' to '{new_sample_name}'")
 
         except FileNotFoundError: # Catches if file_hdf could not be opened
             print(f"Error: HDF5 file '{full_hdf_path}' not found or accessible. Skipping.")
@@ -183,3 +175,5 @@ for ii in range(0, len(files)):
             # Ensure the HDF5 file is closed even if errors occur
             if file_hdf:
                 file_hdf.close()
+
+# The redundant file_hdf.close() at the very end of the script has been removed.
