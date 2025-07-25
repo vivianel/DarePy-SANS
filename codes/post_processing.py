@@ -484,10 +484,11 @@ def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_thres
 
         if len(I_tail_analysis) < 5: # Need at least a few points to assess constancy reliably
             print(f"Warning: Tail analysis range too small for {file_short_name}. Cannot assess constancy. Skipping.")
-            continue
+            # MODIFIED: Removed 'continue' here. The fit will now always be attempted.
+            # This allows the user to decide if the fit is acceptable even if the automated check warns.
 
         # Check standard deviation relative to mean for intensity constancy
-        # A smaller value for `std_threshold` (part of constancy_threshold) means stricter constancy.
+        # A smaller value for `constancy_threshold` means stricter constancy.
         if np.mean(I_tail_analysis) > 0:
             relative_std = np.std(I_tail_analysis) / np.mean(I_tail_analysis)
         else:
@@ -502,8 +503,11 @@ def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_thres
                            (abs(slope_lin) < (constancy_threshold * np.mean(I_tail_analysis) / (q_tail_analysis[-1] - q_tail_analysis[0] + 1e-9)))
 
         if not is_constant_tail:
-            print(f"Warning: Tail of data for {file_short_name} is not sufficiently constant (relative std: {relative_std:.3f}, slope: {slope_lin:.3e}). Skipping flat background fit.")
-            continue
+            # MODIFIED: Changed this from skipping the file to just printing a warning.
+            print(f"Warning: Tail of data for {file_short_name} is not sufficiently constant (relative std: {relative_std:.3f}, slope: {slope_lin:.3e}). Proceeding with fit, but manual review recommended.")
+        else:
+            print(f"Tail of data for {file_short_name} appears constant (relative std: {relative_std:.3f}). Proceeding with fit.")
+
 
         # If the tail is considered constant, define the fitting range for the model.
         # We use `initial_last_points_fit` points for the fitting.
@@ -512,8 +516,8 @@ def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_thres
         # Ensure we have a minimum number of points for a robust fit (only 1 parameter to fit: incoherent_val)
         min_points_for_fit = 1 # Need at least 1 point to fit a constant, but more for robust average
         if determined_fitting_range < min_points_for_fit:
-            print(f"Warning: Determined fitting range ({determined_fitting_range} points) is too small for a robust fit for {file_short_name}. Skipping.")
-            continue
+            print(f"Error: Determined fitting range ({determined_fitting_range} points) is too small for a robust fit for {file_short_name}. Skipping.")
+            continue # This is a critical error, so we skip the file.
 
         # Select the data points for fitting the model
         off_set = len(I_pos) - determined_fitting_range
