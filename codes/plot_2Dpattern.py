@@ -8,6 +8,16 @@ This script processes SANS HDF5 data to create a GIF animation or save individua
 It automatically detects the year in filenames and supports background subtraction.
 """
 
+import numpy as np
+import matplotlib.pyplot as plt # Matplotlib imported for interactive use
+import os
+import re
+from matplotlib.animation import FuncAnimation
+from PIL import Image # For saving GIFs from individual frames (fallback method)
+
+# Assuming utils.py is in the same directory or accessible in your Python path
+from utils import load_hdf
+
 # --- User Options ---
 # Main base path for SANS analysis data.
 # Raw data will be looked for in 'MAIN_BASE_PATH/raw_data'
@@ -15,7 +25,7 @@ It automatically detects the year in filenames and supports background subtracti
 MAIN_BASE_PATH = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/'
 
 # List of scan numbers to process
-LIST_SCAN = list(range(23079, 23083))
+LIST_SCAN = list(range(23079,23085))
 
 # Background scan number (if background subtraction is enabled)
 BACKGROUND_SCAN_NR = 23088
@@ -25,26 +35,8 @@ ENABLE_BACKGROUND_SUBTRACTION = False
 
 # --- Output Mode Selection ---
 # Choose 'gif' to save a single GIF animation.
-# Choose 'frames' to save each processed image as a separate PNG/JPEG file.
+# Choose 'frames' to save each processed image as a separate PNG/JPEG file AND keep them open.
 OUTPUT_MODE = 'frames' # Options: 'gif', 'frames'
-
-# --- IMPORTANT: Set a non-interactive backend for animation saving ---
-# This MUST be done BEFORE any other matplotlib imports or usage (e.g., plt.figure(), plt.imshow())
-import matplotlib
-matplotlib.use('Agg') # 'Agg' is a non-interactive backend suitable for generating images/animations.
-                      # This ensures no interactive GUI elements try to interfere.
-
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-import re
-from matplotlib.animation import FuncAnimation
-from PIL import Image # For saving GIFs from individual frames (fallback method)
-
-# Assuming utils.py is in the same directory or accessible in your Python path
-from utils import load_hdf
-
-
 
 # --- Animation Specific Options (if OUTPUT_MODE is 'gif') ---
 ANIMATION_FPS = 5 # Frames per second for the GIF animation
@@ -171,6 +163,7 @@ def get_plot_clim(image_data_list):
 def save_individual_frames(processed_data, output_folder, global_clim, output_format, dpi):
     """
     Saves each processed image as a separate file directly into the specified output_folder.
+    Figures are kept open after saving.
     """
     print(f"Saving individual frames to: {output_folder}")
 
@@ -181,26 +174,35 @@ def save_individual_frames(processed_data, output_folder, global_clim, output_fo
         ax_frame.set_title(plot_title)
 
         # Use a consistent filename pattern for individual frames
-        # Replace problematic characters for filenames
         clean_plot_title = plot_title.replace(', ', '_').replace('#', '').replace(' ', '_').replace('/', '_')
         frame_file_name = f"{clean_plot_title}_frame_{idx:03d}.{output_format}"
-        frame_path = os.path.join(output_folder, frame_file_name) # Save directly to output_folder
+        frame_path = os.path.join(output_folder, frame_file_name)
 
         plt.savefig(frame_path, dpi=dpi, bbox_inches='tight')
-        plt.close(fig_frame)
+        # DO NOT close fig_frame here. It will remain open for interaction.
         print(f"Saved frame: {frame_file_name}")
+
     print("Individual frames saved successfully.")
+    # plt.show() will be called once at the end of the main block to display all figures.
 
 
 def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, output_folder,
                                   list_scan_info, fps, loop, dpi):
     """
     Handles the creation and saving of the GIF animation.
+    This function will still close its internal figure after saving,
+    as it's designed for headless rendering for reliable animation saving.
     """
     if not processed_data:
         print("No valid scan data processed to create an animation. Skipping GIF creation.")
         return
 
+    # When creating GIF, we still want to use a non-interactive approach for stability.
+    # This means the figure created here will be for rendering to GIF, not for display.
+    # If the user has an interactive backend active, this might still interact with it.
+
+    # We explicitly create a figure for the animation, which FuncAnimation manages.
+    # This figure is intended for rendering to file, not for interactive display.
     fig, ax = plt.subplots(figsize=(8, 6))
 
     global_clim = get_plot_clim(raw_image_data_for_clim)
@@ -225,7 +227,7 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
         print(f"Attempting to save GIF animation to {animation_file_name} using Matplotlib's Pillow writer...")
 
         ani = FuncAnimation(fig, update_frame, frames=len(processed_data),
-                            interval=1000/fps, blit=False,
+                            interval=1000/fps, blit=False, # blit=False is safer for saving
                             repeat=True if loop == 0 else False, repeat_delay=1000)
 
         ani.save(animation_file_name, writer=writer, dpi=dpi)
@@ -234,12 +236,11 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
     except Exception as e:
         print(f"\n--- ERROR DURING MATPLOTLIB ANIMATION SAVE ---")
         print(f"Error: {e}")
-        print(f"This indicates an issue with Matplotlib's animation backend or configuration.")
+        print(f"This often indicates an issue with Matplotlib's animation backend or configuration in an interactive environment.")
         print("Falling back to manual GIF creation via Pillow (more robust for troubleshooting).")
         print(f"--- END ERROR ---\n")
 
         # Fallback: Manual GIF creation with PIL (Pillow) by saving frames
-        # Temp frames for GIF still need a temp subfolder to avoid cluttering main output
         temp_frames_dir = os.path.join(output_folder, 'temp_animation_frames_for_gif')
         os.makedirs(temp_frames_dir, exist_ok=True)
 
@@ -253,7 +254,7 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
 
             frame_path = os.path.join(temp_frames_dir, f'frame_{idx:03d}.png')
             plt.savefig(frame_path, dpi=dpi, bbox_inches='tight')
-            plt.close(fig_frame)
+            plt.close(fig_frame) # Close these temp figures
             frames_for_pil.append(Image.open(frame_path))
 
         if frames_for_pil:
@@ -277,13 +278,16 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
             os.rmdir(temp_frames_dir)
             print("Temporary frames cleaned up.")
 
-    plt.close(fig)
+    plt.close(fig) # Always close the animation figure to avoid memory leaks.
 
 
 # --- Main Script Execution ---
 if __name__ == '__main__':
-    plt.close('all')
-    plt.ioff()
+    # Initial setup for interactive plotting
+    plt.close('all') # Close any existing plots from previous runs
+
+    # Enable interactive mode so figures created with plt.subplots() stay open.
+    plt.ion()
 
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
@@ -325,14 +329,27 @@ if __name__ == '__main__':
     if not processed_scan_data:
         print("No valid scan data processed. Nothing to save/animate. Exiting.")
     elif OUTPUT_MODE == 'gif':
+        # For 'gif' output, we create a figure for the animation, which is then saved.
+        # This figure will likely not be interactively displayed if the 'Agg' backend
+        # is chosen internally by FuncAnimation for saving.
+        # The crucial point is that we allow Matplotlib to operate in interactive mode (plt.ion())
+        # for overall control, and rely on the robust saving logic in the function.
         create_and_save_gif_animation(processed_scan_data, raw_image_data_for_clim, OUTPUT_FOLDER,
                                       LIST_SCAN, ANIMATION_FPS, ANIMATION_LOOP, ANIMATION_QUALITY_DPI)
+        # Even after saving, if other interactive figures were opened, plt.show()
+        # at the end ensures they remain responsive (though for GIF, usually none are left).
+
     elif OUTPUT_MODE == 'frames':
         # Calculate global clim once for consistency across individual frames
         global_clim_for_frames = get_plot_clim(raw_image_data_for_clim)
 
         save_individual_frames(processed_scan_data, OUTPUT_FOLDER, global_clim_for_frames,
                                FRAME_OUTPUT_FORMAT, FRAME_QUALITY_DPI)
+
+        # After saving all frames and leaving their figures open, call plt.show()
+        # to ensure they are actually displayed and interactive in your environment.
+        plt.show()
+
     else:
         print(f"Error: Invalid OUTPUT_MODE '{OUTPUT_MODE}'. Please choose 'gif' or 'frames'.")
 
