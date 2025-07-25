@@ -86,14 +86,8 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             elif which_property == 'beam_stop': # This specific property returns a boolean/flag
                 res = file_hdf['/entry1/SANS/beam_stop/out_flag'][0]
             elif which_property == 'sample_name':
-                try:
-                    # Attempt to get name from 'name_new' first (newer HDF5 structure)
-                    prop = file_hdf['/entry1/sample/name_new']
-                    res = prop.asstr()[()] # Convert numpy bytes to string
-                except KeyError:
-                    # Fallback to 'name' (older HDF5 structure)
-                    prop = file_hdf['/entry1/sample/name'][0]
-                    res = check_dimension(prop) # Will handle decoding bytes if necessary
+                prop = file_hdf['/entry1/sample/name'][0]
+                res = check_dimension(prop) # Will handle decoding bytes if necessary
             # Handle array properties
             elif which_property == 'time':
                 prop = np.asarray(file_hdf['/entry1/SANS/detector/counting_time'])
