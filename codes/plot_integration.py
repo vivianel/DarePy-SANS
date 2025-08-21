@@ -213,7 +213,7 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
     # AXS1: Plot the integrated radial integration (I vs q)
     axs1.plot(q, I, 'ok', label = 'total', markersize=6, alpha = 0.8)
     axs1.set(xlabel = r'Scattering vector q [$\AA^{-1}$]', ylabel = r'Intensity I [cm$^{-1}$]', xscale = 'log',
-                yscale = 'log', title = 'Sample: '+ sample_name)
+                yscale = 'log', title = 'Sample: '+ str(sample_name))
     axs1.grid(color = 'gray', linestyle = '--', linewidth = 0.5)
     axs1.errorbar(q, I, yerr = sigma, color = 'black', lw = 1, markersize=2, capsize=3)
 

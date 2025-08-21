@@ -87,9 +87,9 @@ def plot_all_data(path_dir_an):
                         continue # Skip to the next file if loading fails
 
                     # Specific correction for a particular beamtime/detector
-                    if det == 1.6:
-                        I = np.divide(I,2) # Example: Divide intensity by 2 for det 1.6m
-                        e = np.divide(e,2) # Propagate error for the intensity division
+                    #if det == 1.6:
+                    #    I = np.divide(I,2) # Example: Divide intensity by 2 for det 1.6m
+                    #    e = np.divide(e,2) # Propagate error for the intensity division
 
                     # Ensure errors are non-negative before storing
                     e = np.abs(e)
@@ -553,6 +553,8 @@ def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_thres
 
             # Calculate R-squared to assess the goodness of the fit
             residuals = fitting_I - flat_background_model(fitting_q, incoherent_fit)
+            # to decrease a bit the level of the incohenet background
+            incoherent_fit = incoherent_fit*0.99
             ss_res = np.sum(residuals**2)
             ss_tot = np.sum((fitting_I - np.mean(fitting_I))**2)
             rSquared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 1.0
