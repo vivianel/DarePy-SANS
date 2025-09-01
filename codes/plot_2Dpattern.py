@@ -25,7 +25,7 @@ from utils import load_hdf
 MAIN_BASE_PATH = 'C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2024_0212_Wade/DarePy-SANS/'
 
 # List of scan numbers to process
-LIST_SCAN = list(range(37107,37109))
+LIST_SCAN = list(range(37109,37110))
 
 # file year saved
 file_year = '2024'
@@ -62,7 +62,8 @@ OUTPUT_FOLDER = os.path.join(MAIN_BASE_PATH, 'extra_results')
 def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable_bg_sub=False, file_year=None):
     """
     Loads an HDF scan, performs background subtraction if enabled, and prepares
-    the image data.
+    the image data. This function is updated to handle files with multiple
+    2D scattering patterns.
 
     Args:
         scan_number (int): The scan number to load.
@@ -74,7 +75,7 @@ def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable
 
     Returns:
         tuple: A tuple containing:
-            - numpy.ndarray: The processed image data.
+            - list: A list of processed image data (numpy.ndarray).
             - str: The sample name.
             - str: The full name of the HDF file.
             Returns (None, None, None) if the file cannot be loaded.
@@ -94,14 +95,30 @@ def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable
         print(f"An error occurred loading {name_hdf} from {path_raw_dir}: {e}. Skipping scan {scan_number}.")
         return None, None, None
 
-    img_processed = np.where(img == 0, 1e-4, img)
+    # Convert the img data into a list of 2D images
+    if img.ndim == 3:
+        # Assuming the first dimension is the number of images
+        images = [img[i, :, :] for i in range(img.shape[0])]
+    else:
+        # It's a single 2D image
+        images = [img]
 
-    if enable_bg_sub and background_img is not None:
-        img_processed = img_processed - background_img
-        img_processed[img_processed < 0] = 0.0001 # Set negative to a small positive value
+    processed_images = []
+    for current_img in images:
+        img_processed = np.where(current_img == 0, 1e-4, current_img)
+
+        if enable_bg_sub and background_img is not None:
+            # Check if background image has the same shape as the current image
+            if background_img.shape == img_processed.shape:
+                img_processed = img_processed - background_img
+                img_processed[img_processed < 0] = 0.0001
+            else:
+                print("Warning: Background image shape does not match current image. Skipping subtraction.")
+
+        processed_images.append(img_processed)
 
     sample_name = load_hdf(path_raw_dir, name_hdf, 'sample_name')
-    return img_processed, sample_name, name_hdf
+    return processed_images, sample_name, name_hdf
 
 def get_plot_clim(image_data_list):
     """
@@ -274,9 +291,10 @@ if __name__ == '__main__':
         background_file_year = file_year
         if background_file_year:
             print(f"Loading background scan: sans{background_file_year}n0{BACKGROUND_SCAN_NR}.hdf from {PATH_HDF_RAW}")
-            bg_img_raw, _, _ = load_and_process_scan(BACKGROUND_SCAN_NR, PATH_HDF_RAW, file_year=background_file_year)
-            if bg_img_raw is not None:
-                background_image = np.where(bg_img_raw == 0, 1e-4, bg_img_raw)
+            # Load background, which may also be a list of images. We'll use the first one.
+            bg_imgs, _, _ = load_and_process_scan(BACKGROUND_SCAN_NR, PATH_HDF_RAW, file_year=background_file_year)
+            if bg_imgs is not None and len(bg_imgs) > 0:
+                background_image = np.where(bg_imgs[0] == 0, 1e-4, bg_imgs[0])
                 print("Background loaded successfully.")
             else:
                 print("Could not load background image. Background subtraction will be skipped for all scans.")
@@ -290,25 +308,27 @@ if __name__ == '__main__':
 
     for i, scan_nr in enumerate(LIST_SCAN):
         print(f"Processing scan: {scan_nr}")
-        img_data, sample_name, hdf_name = load_and_process_scan(
+        images_data, sample_name, hdf_name = load_and_process_scan(
             scan_nr, PATH_HDF_RAW, background_image, ENABLE_BACKGROUND_SUBTRACTION, file_year=file_year
         )
 
-        if img_data is None:
+        if images_data is None:
             continue
 
-        plot_title = f"{sample_name}, #{scan_nr}"
-        processed_scan_data.append((img_data, plot_title))
-        raw_image_data_for_clim.append(img_data)
+        # Iterate through all images returned for the current scan
+        for sub_index, img_data in enumerate(images_data):
+            # Create a more specific plot title for each image
+            plot_title = f"{sample_name}, #{scan_nr}"
+            if len(images_data) > 1:
+                 plot_title += f" (Frame {sub_index+1}/{len(images_data)})"
+
+            processed_scan_data.append((img_data, plot_title))
+            raw_image_data_for_clim.append(img_data)
 
     if not processed_scan_data:
         print("No valid scan data processed. Nothing to save/animate. Exiting.")
     elif OUTPUT_MODE == 'gif':
         # For 'gif' output, we create a figure for the animation, which is then saved.
-        # This figure will likely not be interactively displayed if the 'Agg' backend
-        # is chosen internally by FuncAnimation for saving.
-        # The crucial point is that we allow Matplotlib to operate in interactive mode (plt.ion())
-        # for overall control, and rely on the robust saving logic in the function.
         create_and_save_gif_animation(processed_scan_data, raw_image_data_for_clim, OUTPUT_FOLDER,
                                       LIST_SCAN, ANIMATION_FPS, ANIMATION_LOOP, ANIMATION_QUALITY_DPI)
         # Even after saving, if other interactive figures were opened, plt.show()
