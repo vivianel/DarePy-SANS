@@ -22,10 +22,13 @@ from utils import load_hdf
 # Main base path for SANS analysis data.
 # Raw data will be looked for in 'MAIN_BASE_PATH/raw_data'
 # Results will be saved in 'MAIN_BASE_PATH/extra_results'
-MAIN_BASE_PATH = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/'
+MAIN_BASE_PATH = 'C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2024_0212_Wade/DarePy-SANS/'
 
 # List of scan numbers to process
-LIST_SCAN = list(range(23079,23085))
+LIST_SCAN = list(range(37107,37109))
+
+# file year saved
+file_year = '2024'
 
 # Background scan number (if background subtraction is enabled)
 BACKGROUND_SCAN_NR = 23088
@@ -55,31 +58,6 @@ OUTPUT_FOLDER = os.path.join(MAIN_BASE_PATH, 'extra_results')
 
 # --- Functions and Definitions ---
 
-def get_file_year(path_raw_dir, scan_number):
-    """
-    Checks the files in the specified raw data directory to find the correct year
-    for the given scan number. Assumes filename format is 'sansYYYYn0[scan_number].hdf'.
-
-    Args:
-        path_raw_dir (str): The specific raw data directory to search for files.
-        scan_number (int): The scan number to look for.
-
-    Returns:
-        str: The four-digit year (e.g., '2023', '2025'), or a default '2023' if not found.
-    """
-    pattern = re.compile(r'sans(\d{4})n0' + str(scan_number) + r'\.hdf')
-
-    if not os.path.exists(path_raw_dir):
-        print(f"Error: Raw data directory '{path_raw_dir}' does not exist.")
-        return '2023'
-
-    for filename in os.listdir(path_raw_dir):
-        match = pattern.match(filename)
-        if match:
-            return match.group(1)
-
-    print(f"Warning: Year not found for scan {scan_number} in {path_raw_dir}. Defaulting to '2023'.")
-    return '2023'
 
 def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable_bg_sub=False, file_year=None):
     """
@@ -101,10 +79,7 @@ def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable
             - str: The full name of the HDF file.
             Returns (None, None, None) if the file cannot be loaded.
     """
-    if file_year is None:
-        current_year = get_file_year(path_raw_dir, scan_number)
-    else:
-        current_year = file_year
+    current_year = file_year
 
     name_hdf = f'sans{current_year}n0{scan_number}.hdf'
     full_hdf_path = os.path.join(path_raw_dir, name_hdf)
@@ -296,7 +271,7 @@ if __name__ == '__main__':
 
     if ENABLE_BACKGROUND_SUBTRACTION:
         print(f"Determining year for background scan: {BACKGROUND_SCAN_NR}")
-        background_file_year = get_file_year(PATH_HDF_RAW, BACKGROUND_SCAN_NR)
+        background_file_year = file_year
         if background_file_year:
             print(f"Loading background scan: sans{background_file_year}n0{BACKGROUND_SCAN_NR}.hdf from {PATH_HDF_RAW}")
             bg_img_raw, _, _ = load_and_process_scan(BACKGROUND_SCAN_NR, PATH_HDF_RAW, file_year=background_file_year)
@@ -316,7 +291,7 @@ if __name__ == '__main__':
     for i, scan_nr in enumerate(LIST_SCAN):
         print(f"Processing scan: {scan_nr}")
         img_data, sample_name, hdf_name = load_and_process_scan(
-            scan_nr, PATH_HDF_RAW, background_image, ENABLE_BACKGROUND_SUBTRACTION, file_year=None
+            scan_nr, PATH_HDF_RAW, background_image, ENABLE_BACKGROUND_SUBTRACTION, file_year=file_year
         )
 
         if img_data is None:
