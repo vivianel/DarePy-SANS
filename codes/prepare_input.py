@@ -57,13 +57,10 @@ def list_files(config, result):
             else:
                 class_files['frame_nr'].append(1)
             # save sample thickness
-            sample_name = class_files['sample_name'][-1]
             list_thickness = config['experiment']['sample_thickness']
-            if sample_name in list_thickness:
-                thickness = list_thickness[sample_name]
-                class_files['thickness_cm'].append(thickness)
-            elif 'all' in list_thickness:
-                thickness = list_thickness['all']
+            if scan_nr in list_thickness['scanno']:
+                th_idx = list_thickness['scanno'].index(scan_nr)
+                thickness = list_thickness['thickness_cm'][th_idx]
                 class_files['thickness_cm'].append(thickness)
             else:
                 thickness = 0.1

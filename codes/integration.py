@@ -387,77 +387,96 @@ def azimuthal_integ(config, result, img1, file_name): # MODIFIED: removed hdf_na
     I_all = None
     sigma_all = None
     q_all_sectors = None # To store q for the sectors, should be consistent
+    
+    if perform_abs_calib == 1:
+        I_all, q_all_sectors, angles_all, sigma_all = ai.integrate2d_ng(img1, 
+                                     integration_points, npt_azim=sectors_nr,
+                                     correctSolidAngle = True, mask = mask,
+                                     method = ('full', 'csr', 'cython'), unit = 'q_A^-1',
+                                     safe = True, error_model = "azimuthal",
+                                     flat = result['integration'].get('water'), 
+                                     dark = None)
+    else:
+        I_all, q_all_sectors, angles_all, sigma_all = ai.integrate2d_ng(img1, 
+                                     integration_points, npt_azim=sectors_nr,
+                                     correctSolidAngle = True, mask = mask,
+                                     method = ('full', 'csr', 'cython'), unit = 'q_A^-1',
+                                     safe = True, error_model = "azimuthal",
+                                     flat = None, dark = None)
 
     # Loop through each azimuthal sector
-    for rr in range(0, sectors_nr): # Loop `sectors_nr` times
-        azim_start = npt_azim[rr]
-        azim_end = npt_azim[rr+1]
+    # for rr in range(0, sectors_nr): # Loop `sectors_nr` times
+    #     azim_start = npt_azim[rr]
+    #     azim_end = npt_azim[rr+1]
 
-        try:
-            # Perform 1D integration within the current azimuthal range
-            q_sector, I_sector, sigma_sector = ai.integrate1d(img1, integration_points,
-                                         correctSolidAngle = True, mask = mask,
-                                         method = 'nosplit_csr', unit = 'q_A^-1',
-                                         safe = True, error_model = "azimuthal",
-                                         azimuth_range = [azim_start, azim_end],
-                                         flat = None, dark = None)
-        except Exception as e:
-            print(f"Error during azimuthal integration for sector {rr} ({azim_start:.1f}-{azim_end:.1f} deg) of {file_name}: {e}. Skipping this sector.")
-            # Fill with NaNs or zeros for this sector to maintain array shape
-            I_sector = np.full(integration_points, np.nan)
-            sigma_sector = np.full(integration_points, np.nan)
-            if rr == 0: # If the first sector fails, q might not be defined, so fill it too
-                q_sector = np.full(integration_points, np.nan)
-            else: # Otherwise, use q from previous successful sector if available
-                q_sector = q_all_sectors # Assuming q is consistent across sectors
-            # Do not continue loop iteration. The nan values will be appended.
+    #     try:
+    #         # Perform 1D integration within the current azimuthal range
+    #         q_sector, I_sector, sigma_sector = ai.integrate1d(img1, integration_points,
+    #                                      correctSolidAngle = True, mask = mask,
+    #                                      method = 'nosplit_csr', unit = 'q_A^-1',
+    #                                      safe = True, error_model = "azimuthal",
+    #                                      azimuth_range = [azim_start, azim_end],
+    #                                      flat = None, dark = None)
+    #     except Exception as e:
+    #         print(f"Error during azimuthal integration for sector {rr} ({azim_start:.1f}-{azim_end:.1f} deg) of {file_name}: {e}. Skipping this sector.")
+    #         # Fill with NaNs or zeros for this sector to maintain array shape
+    #         I_sector = np.full(integration_points, np.nan)
+    #         sigma_sector = np.full(integration_points, np.nan)
+    #         if rr == 0: # If the first sector fails, q might not be defined, so fill it too
+    #             q_sector = np.full(integration_points, np.nan)
+    #         else: # Otherwise, use q from previous successful sector if available
+    #             q_sector = q_all_sectors # Assuming q is consistent across sectors
+    #         # Do not continue loop iteration. The nan values will be appended.
 
 
-        if perform_abs_calib == 1:
-            # Apply absolute calibration for each sector
-            water_flat_field_img = result['integration'].get('water') # Corrected water image
+    #     if perform_abs_calib == 1:
+    #         # Apply absolute calibration for each sector
+    #         water_flat_field_img = result['integration'].get('water') # Corrected water image
 
-            if water_flat_field_img is None:
-                print(f"Warning: Water flat field image not found in 'result' for {file_name} (azimuthal). Absolute calibration skipped for this sector.")
-            else:
-                # Integrate water for this specific azimuthal sector
-                try:
-                    # Use the same integration points and mask as for the sample
-                    q_flat_sector, I_flat_sector, sigma_flat_sector = ai.integrate1d(water_flat_field_img, integration_points,
-                                                                 correctSolidAngle = True, mask = mask,
-                                                                 method = 'nosplit_csr', unit = 'q_A^-1',
-                                                                 safe = True, error_model = "azimuthal",
-                                                                 azimuth_range = [azim_start, azim_end],
-                                                                 flat = None, dark = None)
-                    # Apply absolute calibration to the sector's data
-                    I_sector, sigma_sector = absolute_calibration(config, result, file_name, I_sector, sigma_sector, I_flat_sector, sigma_flat_sector) # MODIFIED: removed hdf_name_raw
-                except Exception as e:
-                    print(f"Error during absolute calibration for azimuthal sector {rr} of {file_name}: {e}. Absolute calibration skipped for this sector.")
+    #         if water_flat_field_img is None:
+    #             print(f"Warning: Water flat field image not found in 'result' for {file_name} (azimuthal). Absolute calibration skipped for this sector.")
+    #         else:
+    #             # Integrate water for this specific azimuthal sector
+    #             try:
+    #                 # Use the same integration points and mask as for the sample
+    #                 q_flat_sector, I_flat_sector, sigma_flat_sector = ai.integrate1d(water_flat_field_img, integration_points,
+    #                                                              correctSolidAngle = True, mask = mask,
+    #                                                              method = 'nosplit_csr', unit = 'q_A^-1',
+    #                                                              safe = True, error_model = "azimuthal",
+    #                                                              azimuth_range = [azim_start, azim_end],
+    #                                                              flat = None, dark = None)
+    #                 # Apply absolute calibration to the sector's data
+    #                 I_sector, sigma_sector = absolute_calibration(config, result, file_name, I_sector, sigma_sector, I_flat_sector, sigma_flat_sector) # MODIFIED: removed hdf_name_raw
+    #             except Exception as e:
+    #                 print(f"Error during absolute calibration for azimuthal sector {rr} of {file_name}: {e}. Absolute calibration skipped for this sector.")
 
 
         # Collect integrated data for all sectors
-        if rr == 0:
-            q_all_sectors = q_sector # Store q from the first sector
-            I_all = I_sector
-            sigma_all = sigma_sector
-        else:
-           # Ensure arrays are 1D before stacking
-           I_all = np.column_stack((I_all, I_sector.flatten()))
-           sigma_all = np.column_stack((sigma_all, sigma_sector.flatten()))
+        # if rr == 0:
+        #     q_all_sectors = q_sector # Store q from the first sector
+        #     I_all = I_sector
+        #     sigma_all = sigma_sector
+        # else:
+        #    # Ensure arrays are 1D before stacking
+        #    I_all = np.column_stack((I_all, I_sector.flatten()))
+        #    sigma_all = np.column_stack((sigma_all, sigma_sector.flatten()))
 
     # Check if any integration was successful (e.g., first sector produced valid q)
     if q_all_sectors is None or I_all is None or sigma_all is None or q_all_sectors.size == 0:
         print(f"Warning: No valid azimuthal integration data generated for {file_name}. Skipping file save.")
         return
+    
+    
 
     # The control to save is handled by 'plot_azimuthal' flag that triggers the call to this function.
     # If plot_azimuthal is 0, this function isn't called, so data isn't saved.
     # If plot_azimuthal is 1, this function IS called, and data IS saved.
-    data_save = np.column_stack((q_all_sectors, I_all, sigma_all))
+    data_save = np.column_stack((q_all_sectors, I_all.transpose(), sigma_all.transpose()))
     if config['analysis'].get('save_azimuthal', 0) == 1:
         header_text = (f'q (A-1), {sectors_nr} columns for absolute intensity I (1/cm) '
                        f'(sectors from {npt_azim[0]:.1f} to {npt_azim[-1]:.1f} deg), '
-                       f'{sectors_nr} columns for standard deviation')
+                       f'{sectors_nr} columns for standard deviation\n'
+                       f'Angles {angles_all}')
         try:
             np.savetxt(file_name, data_save, delimiter=',', header=header_text, comments='# ') # Add comments char
         except Exception as e:

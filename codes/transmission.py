@@ -8,6 +8,7 @@ from utils import save_results
 from prepare_input import save_list_files
 import normalization as norm
 import sys
+import rotation_utils as ru
 
 def trans_calc(config, class_files, result):
    result = select_transmission(config, class_files, result)
@@ -110,10 +111,28 @@ def trans_calc_sample(config, result):
     # save the transmission of the samples in the all_file
     list_trans = []
     class_all = result['overview']['all_files']
-    for ii in range(0, len(class_all['sample_name'])):
-        if class_all['sample_name'][ii] in class_trans['sample_name']:
-            idx_trans = list(class_trans['sample_name']).index(str(class_all['sample_name'][ii]))
-            list_trans.append(class_trans['transmission'][idx_trans])
+    trans_table = ru.make_trans_dict(config['analysis']['trans_table'])
+    for ii, scat_scan in enumerate(class_all['scan']):
+        if scat_scan in trans_table['scat_scan']:
+            table_idx = trans_table['scat_scan'].index(scat_scan)
+            trans_scan = trans_table['trans_scan'][table_idx]
+            
+            if trans_scan == -1:
+                thickness = trans_table['thickness_cm'][table_idx]
+                ref_thickness = trans_table['thickness_cm'][table_idx-1]
+                
+                ref_trans_scan = trans_table['trans_scan'][table_idx-1]
+                idx_ref_trans = list(class_trans['scan']).index(ref_trans_scan)
+                ref_trans = class_trans['transmission'][idx_ref_trans]
+                
+                est_mu = -np.log(ref_trans)/ref_thickness
+                est_trans = round(np.exp(-est_mu*thickness),3)
+                
+                list_trans.append(est_trans)
+                
+            else:
+                idx_trans = list(class_trans['scan']).index(trans_scan)
+                list_trans.append(class_trans['transmission'][idx_trans])
         else:
             list_trans.append('--')
     class_all['transmission'] = list_trans
