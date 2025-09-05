@@ -20,8 +20,6 @@ analysis directory.
 # %% EXPERIMENTAL PARAMETERS
 # This section defines parameters related to the SANS experiment and instrument setup.
 
-import rotation_utils as ru
-
 # Select the SANS instrument used for data collection.
 # This choice determines which instrument-specific configurations (e.g., deadtime,
 # attenuator values, absolute calibration constants) are applied.
@@ -68,7 +66,8 @@ empty_cell = 'EC_yrot_0'
 # special key 'all'. This value will be used for any sample not explicitly listed.
 # Example for universal thickness: {'all': 0.1} (assumes all samples are 0.1 cm thick)
 # If a sample name is not found here and 'all' is not specified, a default of 0.1 cm will be used.
-sample_thickness = ru.make_thickness_dict('C:/Users/gruene_e/Documents/SANS_reduction/DarePy-SANS/raw_data/sample_table.csv')# {'all':0.1}
+sample_thickness = {'all': 0.1}
+sample_thickness_table = 'C:/Users/gruene_e/Documents/SANS_reduction/DarePy-SANS/raw_data/sample_table.csv'# {'all':0.1}
 
 # Transmission measurement distance.
 # This specifies the detector distance (in meters) at which transmission measurements
@@ -310,6 +309,7 @@ configuration = {'SANS-I':{
                  'beamstopper_coordinates': beamstopper_coordinates, # Beam stopper coords (from above).
                  'target_detector_distances': target_detector_distances, # Target detector distances (from above).
                  'trans_table': trans_table,
+                 'thickness_table': sample_thickness_table,
                  }},
                   'SANS-LLB':{ # Placeholder for another instrument configuration (SANS-LLB).
     'instrument': {'deadtime':1e5}, # Example instrument-specific parameter for LLB.

@@ -15,6 +15,7 @@ import pickle
 from utils import load_hdf
 from utils import create_analysis_folder
 from utils import save_results
+import rotation_utils as ru
 
 
 def list_files(config, result):
@@ -57,7 +58,7 @@ def list_files(config, result):
             else:
                 class_files['frame_nr'].append(1)
             # save sample thickness
-            list_thickness = config['experiment']['sample_thickness']
+            list_thickness = ru.make_thickness_dict(config['analysis']['thickness_table'])
             if scan_nr in list_thickness['scanno']:
                 th_idx = list_thickness['scanno'].index(scan_nr)
                 thickness = list_thickness['thickness_cm'][th_idx]

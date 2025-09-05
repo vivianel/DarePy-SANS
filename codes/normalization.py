@@ -218,19 +218,13 @@ def normalize_thickness(config, hdf_name, result, counts):
     if hdf_name in class_all_files['name_hdf']:
         try:
             idx_file = list(class_all_files['name_hdf']).index(str(hdf_name))
-            sample_name = class_all_files['sample_name'][idx_file]
-
-            list_thickness = config['experiment']['sample_thickness']
-
-            if sample_name in list_thickness:
-                thickness = list_thickness[sample_name]
-            elif 'all' in list_thickness:
-                thickness = list_thickness['all']
-            # else: thickness remains 0.1 (default set above)
         except ValueError:
             print(f"Warning: HDF file '{hdf_name}' not found in 'all_files' overview during thickness lookup. Using default thickness.")
-        except Exception as e:
-            print(f"Warning: Error accessing sample thickness for '{hdf_name}': {e}. Using default thickness.")
+        
+        thickness = class_all_files['thickness_cm'][idx_file]
+        sample_name = class_all_files['sample_name'][idx_file]
+            
+            # else: thickness remains 0.1 (default set above)
     else:
         print(f"Warning: HDF file '{hdf_name}' not found in main overview for thickness normalization. Using default thickness.")
 
