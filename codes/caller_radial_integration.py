@@ -158,7 +158,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = list(range(0,21024)) + list(range(21113,21120)) + list(range(21225, 99999))
+exclude_files = list(range(0,21024)) + list(range(21113,21120)) + list(range(21225, 99999)) + list(range(21121, 21225))
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
@@ -284,6 +284,7 @@ configuration = {'SANS-I':{
                    'detector_size': 128, # Number of pixels along one side of the (assumed square) detector.
                    # List of beam stopper sizes (if applicable, often not used directly in this pipeline).
                    'list_bs': {'1':40, '2':70,'3':85,'4':100},
+                   'efficiency_map': "detector_efficiency_extrapolate_SINQ_SANS_I_HDF.mat",
                    # Absolute calibration cross-sections for different wavelengths.
                    # A dictionary where keys are rounded wavelengths in Angstroms (as strings)
                    # and values are calibration factors (e.g., from water calibration)

@@ -301,7 +301,7 @@ def load_standards(config, result, det):
 
     # Avoid negative numbers and zeros in the final water image, set to small positive for log scale etc.
     # This is critical for subsequent flat-fielding or log plots.
-    result['integration']['water'][result['integration']['water'] <= 0] = 1e-8
+    result['integration']['water'][result['integration']['water'] <= 0] = result['integration']['water'].mean()
 
     save_results(path_dir_an, result) # Save updated results including standards
     return result

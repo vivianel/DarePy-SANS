@@ -24,7 +24,7 @@ from correction import load_standards # Used for loading and correcting standard
 from correction import load_and_normalize # Used for loading and applying full normalizations
 from correction import correct_dark # Used for dark field subtraction
 from correction import correct_EC # Used for empty cell subtraction
-from calibration import absolute_calibration # Used for absolute intensity calibration
+from calibration import absolute_calibration, absolute_calibration_2D # Used for absolute intensity calibration
 import plot_integration as plot_integ # Used for plotting integrated data
 
 
@@ -228,17 +228,33 @@ def integrate(config, result, det_str, path_rad_int):
 
             # Ensure img1 is 2D (remove singleton dimensions)
             img1 = np.squeeze(img1)
-
-            # --- Save the 2D pattern (Conditional) ---
-            if config['analysis'].get('save_2d_patterns', 0) == 1: # Default to 0 if not defined
-                prefix_pattern2D = 'pattern2D'
-                file_name_pattern2D = make_file_name(path_rad_int, prefix_pattern2D, sufix_dat,
-                                                      sample_name, det_str, scanNr, ff)
-                try:
-                    np.savetxt(file_name_pattern2D, img1, delimiter=',')
-                except Exception as e:
-                    print(f"Error saving 2D pattern to {file_name_pattern2D}: {e}. Skipping further processing for this frame.")
-                    continue # Skip to next frame if saving fails
+            
+            if perform_abs_calib == 1:
+                img1_new = img1.copy()
+                
+                img1_corr = absolute_calibration_2D(config, result, scanNr, img1_new, result['integration'].get('water'))
+                
+                if config['analysis'].get('save_2d_patterns', 0) == 1: # Default to 0 if not defined
+                    prefix_pattern2D = 'pattern2D'
+                    file_name_pattern2D = make_file_name(path_rad_int, prefix_pattern2D, sufix_dat,
+                                                          sample_name, det_str, scanNr, ff)
+                    try:
+                        np.savetxt(file_name_pattern2D, img1_corr, delimiter=',')
+                    except Exception as e:
+                        print(f"Error saving 2D pattern to {file_name_pattern2D}: {e}. Skipping further processing for this frame.")
+                        continue # Skip to next frame if saving fails
+                
+            else:
+                # --- Save the 2D pattern (Conditional) ---
+                if config['analysis'].get('save_2d_patterns', 0) == 1: # Default to 0 if not defined
+                    prefix_pattern2D = 'pattern2D'
+                    file_name_pattern2D = make_file_name(path_rad_int, prefix_pattern2D, sufix_dat,
+                                                          sample_name, det_str, scanNr, ff)
+                    try:
+                        np.savetxt(file_name_pattern2D, img1, delimiter=',')
+                    except Exception as e:
+                        print(f"Error saving 2D pattern to {file_name_pattern2D}: {e}. Skipping further processing for this frame.")
+                        continue # Skip to next frame if saving fails
 
             # --- Perform Radial Integration ---
             prefix_radial = 'radial_integ'
