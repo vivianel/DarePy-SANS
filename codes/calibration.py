@@ -182,6 +182,9 @@ def absolute_calibration_2D(config, result, file_name, I, I_flat, sigma=None, si
     # correct for detector efficiency
     I_corr = np.ma.divide(masked_I, detector_eff) 
     
+    if file_name == '21120':
+        pass
+    
     # calculate correction coefficient for absolute scaling and apply
     list_cs = config['instrument']['list_abs_calib']
     wl = str(int(result['overview']['all_files']['wl_A'][1]))

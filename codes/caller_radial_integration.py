@@ -158,7 +158,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = list(range(0,21024)) + list(range(21113,21120)) + list(range(21225, 99999)) + list(range(21121, 21225))
+exclude_files = list(range(0,21024)) + list(range(21113,21120)) + list(range(21225, 99999))
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
