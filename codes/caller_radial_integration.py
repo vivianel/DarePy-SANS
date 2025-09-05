@@ -57,6 +57,8 @@ water_cell = 'EC_yrot_0'
 # This is crucial for subtracting contributions from sample holders.
 # Set to the sample name used for your empty sample cell (e.g., 'EC', 'SAMPLE_EC').
 empty_cell = 'EC_yrot_0'
+empty_cell_transmissions = list(range(21038,21052))
+empty_cell_table = 'C:/Users/gruene_e/Documents/SANS_reduction/DarePy-SANS/raw_data/empty_cell_table.csv'
 
 # Sample thickness information.
 # Provide a dictionary where keys are sample names (matching HDF5 metadata) and
@@ -310,6 +312,8 @@ configuration = {'SANS-I':{
                  'target_detector_distances': target_detector_distances, # Target detector distances (from above).
                  'trans_table': trans_table,
                  'thickness_table': sample_thickness_table,
+                 'empty_cell_trans': empty_cell_transmissions,
+                 'empty_cell_table': empty_cell_table,
                  }},
                   'SANS-LLB':{ # Placeholder for another instrument configuration (SANS-LLB).
     'instrument': {'deadtime':1e5}, # Example instrument-specific parameter for LLB.
