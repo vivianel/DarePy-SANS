@@ -26,6 +26,8 @@ from correction import correct_dark # Used for dark field subtraction
 from correction import correct_EC # Used for empty cell subtraction
 from calibration import absolute_calibration, absolute_calibration_2D # Used for absolute intensity calibration
 import plot_integration as plot_integ # Used for plotting integrated data
+import rotation_utils as ru
+import normalization as norm
 
 
 def set_integration(config, result, det_str):
@@ -172,6 +174,10 @@ def integrate(config, result, det_str, path_rad_int):
         if sample_name in calibration_names.values():
             print(f"Skipping '{sample_name}' (Scan: {scanNr}) as it is a calibration standard.")
             continue # Move to the next file (scan)
+            
+        if scanNr in config['analysis']['empty_cell_scat_files'] :
+            print(f"Skipping '{sample_name}' (Scan: {scanNr}) as it is an empty cell.")
+            continue
 
         # NEW LOGIC: Check for existing integrated file for *this specific scan*
         # We'll check for the radial_integ file for the first frame (frame 0) as an indicator
@@ -194,7 +200,7 @@ def integrate(config, result, det_str, path_rad_int):
 
                 # Get correction images from 'result' (loaded by load_standards)
                 dark_img = result['integration'].get('cadmium')
-                empty_cell_img = result['integration'].get('empty_cell')
+                empty_cell_img = ru.find_empty_cell(scanNr, config, result)
 
                 if dark_img is None or empty_cell_img is None:
                     print(f"Error: Dark or empty cell images not found in 'result' for {hdf_name}, Frame {ff}. Skipping corrections.")
@@ -202,18 +208,20 @@ def integrate(config, result, det_str, path_rad_int):
                     # We continue with raw normalized image for this frame.
                     img1 = img_raw_normalized[ff, :, :] if frame_nr_total > 1 else img_raw_normalized
                 else:
-                    # Apply dark field, empty cell, flat field corrections
-                    # and absolute scatling
+                    # Apply empty cell, thickness, flat field corrections
+                    # and absolute scaling
                     if frame_nr_total > 1:
                         # If multi-frame, select the specific frame for correction
-                        img_corrected_dark = correct_dark(img_raw_normalized[ff,:,:], dark_img) #
-                        img1 = correct_EC(img_corrected_dark, empty_cell_img) #
-                        img_corr = absolute_calibration_2D(config, result, scanNr, img1, result['integration'].get('water'))
+                        # img_corrected_dark = correct_dark(img_raw_normalized[ff,:,:], dark_img) #
+                        img1 = correct_EC(img_raw_normalized[ff,:,:], empty_cell_img)
+                        img2 = norm.normalize_thickness(config, hdf_name, result, img1)
+                        img_corr = absolute_calibration_2D(config, result, scanNr, img2, result['integration'].get('water'))
                     else:
                         # Single-frame image
-                        img_corrected_dark = correct_dark(img_raw_normalized, dark_img) #
-                        img1 = correct_EC(img_corrected_dark, empty_cell_img) #
-                        img_corr = absolute_calibration_2D(config, result, scanNr, img1, result['integration'].get('water'))
+                        # img_corrected_dark = correct_dark(img_raw_normalized, dark_img) #
+                        img1 = correct_EC(img_raw_normalized, empty_cell_img)
+                        img2 = norm.normalize_thickness(config, hdf_name, result, img1)#
+                        img_corr = absolute_calibration_2D(config, result, scanNr, img2, result['integration'].get('water'))
 
                 print(f'Corrected scan {scanNr}, Frame: {ff}')
             else:

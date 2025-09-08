@@ -216,20 +216,53 @@ def load_standards(config, result, det):
         # Transmission is NOT applied here, as standards often have 100% transmission or are not measured with it.
         # This function implicitly skips transmission for standards based on 'trans_dist' in caller_radial_integration.py
         # and its logic in normalization.py.
-        img = load_and_normalize(config, result, hdf_name)
+        if standard_key == 'cadmium':
+            path_hdf_raw = config['analysis']['path_hdf_raw']
+            counts = load_hdf(path_hdf_raw, hdf_name, 'counts') # Load raw counts
+
+            if counts is None:
+                print(f"Error: Could not load counts data for {hdf_name}. Skipping normalizations.")
+                img = np.array([[]]) # Return an empty/invalid array if counts cannot be loaded
+                
+            else:
+                counts = norm.normalize_deadtime(config, hdf_name, counts)
+                counts = norm.normalize_flux(config, hdf_name, counts)
+                img = counts.copy()
+        else:
+            img = load_and_normalize(config, result, hdf_name)
+        if standard_key == 'water':
+            water_hdf_name = hdf_name
         result['integration'][standard_key] = img
 
     # After loading all standards, perform initial subtractions
     # Subtract cadmium (dark field) from water, water_cell, and empty_cell
-    result['integration']['water'] = correct_dark(result['integration']['water'], result['integration']['cadmium'])
-    result['integration']['water_cell'] = correct_dark(result['integration']['water_cell'], result['integration']['cadmium'])
-    result['integration']['empty_cell'] = correct_dark(result['integration']['empty_cell'], result['integration']['cadmium'])
+    # NOW DONE IN load_and_normalize
+    # result['integration']['water'] = correct_dark(result['integration']['water'], result['integration']['cadmium'])
+    # result['integration']['water_cell'] = correct_dark(result['integration']['water_cell'], result['integration']['cadmium'])
+    # result['integration']['empty_cell'] = correct_dark(result['integration']['empty_cell'], result['integration']['cadmium'])
 
     # Subtract empty cell from water to get pure water scattering for flat field
     img_h2o = result['integration']['water']
     img_cell = result['integration']['water_cell']
     img_h2o = correct_EC(img_h2o, img_cell)
+    img_h2o = norm.normalize_thickness(config, water_hdf_name, result, img_h2o)
     result['integration']['water'] = img_h2o # Store the corrected water
+    
+    # Get list of all other empty cells
+    empty_cell_list = config['analysis']['empty_cell_scat_files']
+    
+    result['integration']['other_empty_cells'] = {}
+    
+    for empty_cell_scan in empty_cell_list:
+        idx = class_det_files['scan'].index(empty_cell_scan)
+        hdf_name = class_det_files['name_hdf'][idx]
+        empty_cell_name = class_det_files['sample_name'][idx]
+    
+        print(f"Loading and normalizing empty cell: {empty_cell_name} for {det.replace('p', '.')}m")
+        
+        img = load_and_normalize(config, result, hdf_name)
+        
+        result['integration']['other_empty_cells'][empty_cell_scan] = img
 
     # Determine the scaling factor to replace water at 18 m, if configured
     replace_18m = config['analysis']['replace_18m']
@@ -329,11 +362,14 @@ def load_and_normalize(config, result, hdf_name):
     if counts is None:
         print(f"Error: Could not load counts data for {hdf_name}. Skipping normalizations.")
         return np.array([[]]) # Return an empty/invalid array if counts cannot be loaded
+    
+    dark_img = result['integration'].get('cadmium')
 
     # Apply normalizations in sequence
     # Note: `normalize_time` is commented out in original, consider if it should be active.
     # counts = norm.normalize_time(config, hdf_name, counts)
     counts = norm.normalize_deadtime(config, hdf_name, counts)
+    counts = correct_dark(counts, dark_img)
     counts = norm.normalize_flux(config, hdf_name, counts)
     counts = norm.normalize_attenuator(config, hdf_name, counts)
 
@@ -342,8 +378,8 @@ def load_and_normalize(config, result, hdf_name):
         counts = norm.normalize_transmission(config, hdf_name, result, counts)
     else:
         print(f"Error: trans_dist is < 0. Skipping transmission normalization for {hdf_name}.")
-
-    counts = norm.normalize_thickness(config, hdf_name, result, counts)
+    # Do not normalise by thickness here, do later (after empty cell subtraction)
+    # counts = norm.normalize_thickness(config, hdf_name, result, counts)
     return counts
 
 def correct_dark(img, dark):
