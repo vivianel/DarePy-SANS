@@ -31,4 +31,12 @@ def make_trans_dict(csv_file):
         trans_dict['thickness_cm'].append(thickness)
         
     return trans_dict
+
+def make_EC_dict(csv_file):
+    data_file = np.loadtxt(csv_file)
+    EC_dict = {}
+    for (scat_scan, EC_scat) in zip(data_file[:,0], data_file[:,2]):
+        EC_dict[int(scat_scan)] = int(EC_scat)
+        
+    return EC_dict
     

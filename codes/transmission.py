@@ -73,8 +73,6 @@ def trans_calc_reference(config, result):
     else:
         sys.exit('Please measure an empty beam (EB) for the same detector distance, for calculating the relative transmission.')
 
-
-
 def trans_calc_sample(config, result):
     path_dir_an = create_analysis_folder(config)
     #find transmission folder
@@ -88,26 +86,6 @@ def trans_calc_sample(config, result):
     class_trans = result['overview']['trans_files']
     trans_dist = config['experiment']['trans_dist']
     path_hdf_raw = os.path.join(path_transmission, 'hdf_raw/')
-    EC_trans_dict = {}
-    
-    # First calculate tranmission for all empty cells
-    for EC_trans_scan in config['analysis']['empty_cell_trans']:
-        class_trans_idx = list(class_trans['scan']).index(EC_trans_scan)
-        hdf_name = class_trans['name_hdf'][class_trans_idx]
-        counts = load_hdf(path_hdf_raw, hdf_name , 'counts')
-        img = normalize_trans(config, result, hdf_name, counts)
-        sum_counts = int(np.sum(np.multiply(img, mask)))
-        list_counts.append(sum_counts)
-        if class_trans['detx_m'][class_trans_idx] == trans_dist \
-            and class_trans['sample_name'][class_trans_idx] != empty_beam:
-            
-            trans = np.divide(sum_counts,EB_ref)
-            trans = round(trans, 3)
-            EC_trans_dict[EC_trans_scan] = trans
-            #print('This is sample '+ class_trans['name'][ii] + ' transmission:' + str(trans))
-        else:
-            trans = 1
-            EC_trans_dict[EC_trans_scan] = trans
     
     for ii in range(0, len(class_trans['sample_name'])):
         hdf_name = class_trans['name_hdf'][ii]
