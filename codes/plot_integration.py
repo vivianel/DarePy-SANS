@@ -176,6 +176,8 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
     # Set masked areas in img1 to NaN for consistent plotting with cmap.set_bad
     img1_plot = img1.copy()
     img1_plot[mask_bool] = np.nan # Set masked regions to NaN
+    
+    img1_plot[img1_plot == 0] = np.nan # Set zeros to nan to improve plots
 
     # Define the extent of the image in q-space (A^-1)
     # x2q function converts pixel coordinates (relative to beam center) to q-values
@@ -222,6 +224,7 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
     img1_log_plot = img1.copy()
     img1_log_plot[img1_log_plot <= 1e-5] = 1e-5 # Original threshold
     img1_log_plot[mask_bool] = np.nan # Apply mask to the log image as well
+    img1_log_plot[img1_log_plot == 0] = np.nan
     img2_log = np.log(img1_log_plot) # Take logarithm
 
     im2 = axs2.imshow(img2_log, origin='lower', aspect = 'equal', cmap = cmap_mask, extent = extent_q)
