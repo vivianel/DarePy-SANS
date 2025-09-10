@@ -225,8 +225,8 @@ def load_standards(config, result, det):
                 
             else:
                 counts = norm.normalize_deadtime(config, hdf_name, counts)
-                counts = norm.normalize_flux(config, hdf_name, counts)
-                img = counts.copy()
+                counts_per_sec = norm.normalize_time(config, hdf_name, counts)
+                img = counts_per_sec.copy()
         else:
             img = load_and_normalize(config, result, hdf_name)
         if standard_key == 'water':
@@ -339,7 +339,10 @@ def load_and_normalize(config, result, hdf_name):
         print(f"Error: Could not load counts data for {hdf_name}. Skipping normalizations.")
         return np.array([[]]) # Return an empty/invalid array if counts cannot be loaded
 
-    dark_img = result['integration'].get('cadmium')
+    dark_per_sec_img = (result['integration'].get('cadmium')).copy()
+    meas_time = load_hdf(path_hdf_raw, hdf_name, 'time')
+    
+    dark_img = dark_per_sec_img * meas_time
 
     # Apply normalizations in sequence
     # Note: `normalize_time` is commented out in original, consider if it should be active.
