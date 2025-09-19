@@ -70,7 +70,7 @@ def trans_calc_reference(config, result):
         plt.close('all')
         return result
     else:
-        sys.exit('Please measure an empty beam (EB) for the same detector distance, for calculating the relative transmission.')
+        sys.exit('Please measure an empty beam (EB) for the same detector distance, for calculating the relative transmission. \n Or change the trans_dist < 0 in "caller_radial_integration" for not correcting by transmission.')
 
 
 

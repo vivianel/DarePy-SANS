@@ -76,7 +76,7 @@ sample_thickness = {'all':0.1}
 #   were taken at this distance, and transmission correction will be applied.
 # - Set to a non-positive value (e.g., 0, -1) if transmission correction is
 #   not needed for your experiment or if transmission data is not available.
-trans_dist = 6.0
+trans_dist = -6.0
 
 # Detector distance to use for flat field correction at large distances.
 # For very large detector distances (e.g., 18.0m), water flat field measurements
@@ -104,9 +104,9 @@ wl = 'auto' # Options: 'auto' (read from HDF5) or a float value in Angstroms (e.
 # - (y_min_pixel, y_max_pixel): Vertical pixel range of the beam stopper.
 # - (x_min_pixel, x_max_pixel): Horizontal pixel range of the beam stopper.
 beamstopper_coordinates = {
-    1.6: [56, 77, 50, 69],
-    6.0: [60, 71, 54, 65],
-    18.0: [56, 71, 93, 106]
+    1.6:[58, 73, 53, 69],
+    6.0:[55, 76, 54, 68],
+    18.0:[49, 81, 54, 67]
 }
 
 # Beam center guess.
@@ -115,9 +115,9 @@ beamstopper_coordinates = {
 # and azimuthal integration as they define the origin for q-space conversion.
 # Format: {detector_distance_in_meters (float): [center_x_pixel, center_y_pixel]}
 beam_center_guess = {
-    1.6: [60.58, 67.63],
-    6.0: [62, 64.5],
-    18.0: [99.73, 64.24]
+    1.6:[61.03, 64.42],
+    6.0:[62.56, 63.73],
+    18.0:[60.05, 64.03]
 }
 
 # Target detector distances for processing.
@@ -135,12 +135,12 @@ target_detector_distances = 'all' # Options: 'all' or a list of floats (e.g., [6
 
 # Path where the raw HDF5 data files are located.
 # Ensure this path points directly to the directory containing your `.hdf` files.
-path_hdf_raw = "C:/Users/gruene_e/Documents/SANS_reduction/DarePy-SANS/raw_data"
+path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2282_MF_3mm_pump/DarePy-SANS/raw_data/"
 
 # Path to the working directory where all analysis results (integrated data, plots, logs) will be saved.
 # A main analysis folder (e.g., 'analysis/') or a uniquely identified subfolder
 # (e.g., 'analysis_batch1/') will be created within this directory.
-path_dir = "C:/Users/gruene_e/Documents/SANS_reduction/DarePy-SANS/"
+path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2282_MF_3mm_pump/DarePy-SANS/"
 
 # Identifier for the analysis output folder.
 # This string will be appended to the default 'analysis/' folder name.
@@ -155,7 +155,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = list(range(0,21024)) + list(range(21113,21120)) + list(range(21225, 99999)) + [21080]
+exclude_files = []
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
@@ -199,7 +199,7 @@ save_2d_patterns = 0
 #   'water' standard measurement and its associated configuration.
 # - Set to 0 to skip absolute calibration. Intensities will remain in
 #   arbitrary units, suitable for relative comparisons.
-perform_abs_calib = 1
+perform_abs_calib = 0
 
 # Force re-integration of data.
 # This flag controls whether previously integrated files are re-processed.
@@ -219,7 +219,7 @@ integration_points = 120
 # Number of angular sectors for azimuthal integration.
 # This divides the 2D detector image into this many angular slices (bins) for
 # azimuthal anisotropy analysis.
-sectors_nr = 16
+sectors_nr = 32
 
 # Pixel range for azimuthal integration.
 # Defines the radial pixel range (distance from the beam center) over which
