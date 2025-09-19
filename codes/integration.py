@@ -24,7 +24,8 @@ from correction import load_standards # Used for loading and correcting standard
 from correction import load_and_normalize # Used for loading and applying full normalizations
 from correction import correct_dark # Used for dark field subtraction
 from correction import correct_EC # Used for empty cell subtraction
-from calibration import absolute_calibration # Used for absolute intensity calibration
+from calibration import absolute_calibration_2D # Used for absolute intensity calibration
+import normalization as norm
 import plot_integration as plot_integ # Used for plotting integrated data
 
 
@@ -202,15 +203,20 @@ def integrate(config, result, det_str, path_rad_int):
                     # We continue with raw normalized image for this frame.
                     img1 = img_raw_normalized[ff, :, :] if frame_nr_total > 1 else img_raw_normalized
                 else:
-                    # Apply dark field and empty cell corrections
+                    # Apply empty cell, thickness, flat field corrections
+                    # and absolute scaling
                     if frame_nr_total > 1:
                         # If multi-frame, select the specific frame for correction
-                        img_corrected_dark = correct_dark(img_raw_normalized[ff,:,:], dark_img) #
-                        img1 = correct_EC(img_corrected_dark, empty_cell_img) #
+                        # img_corrected_dark = correct_dark(img_raw_normalized[ff,:,:], dark_img) #
+                        img1 = correct_EC(img_raw_normalized[ff,:,:], empty_cell_img)
+                        img2 = norm.normalize_thickness(config, hdf_name, result, img1)
+                        img_corr = absolute_calibration_2D(config, result, scanNr, img2, result['integration'].get('water'))
                     else:
                         # Single-frame image
-                        img_corrected_dark = correct_dark(img_raw_normalized, dark_img) #
-                        img1 = correct_EC(img_corrected_dark, empty_cell_img) #
+                        # img_corrected_dark = correct_dark(img_raw_normalized, dark_img) #
+                        img1 = correct_EC(img_raw_normalized, empty_cell_img)
+                        img2 = norm.normalize_thickness(config, hdf_name, result, img1)#
+                        img_corr = absolute_calibration_2D(config, result, scanNr, img2, result['integration'].get('water'))
 
                 print(f'Corrected scan {scanNr}, Frame: {ff}')
             else:
@@ -221,21 +227,21 @@ def integrate(config, result, det_str, path_rad_int):
                     continue # Skip to next frame if counts cannot be loaded
 
                 if frame_nr_total > 1:
-                    img1 = img_raw[ff,:,:]
+                    img_corr = img_raw[ff,:,:]
                 else:
-                    img1 = img_raw
+                    img_corr = img_raw
                 print(f'NOT corrected scan {scanNr}, Frame: {ff}')
 
-            # Ensure img1 is 2D (remove singleton dimensions)
-            img1 = np.squeeze(img1)
-
+           # Ensure corrected img is 2D (remove singleton dimensions)
+            img_corr = np.squeeze(img_corr)
+                
             # --- Save the 2D pattern (Conditional) ---
             if config['analysis'].get('save_2d_patterns', 0) == 1: # Default to 0 if not defined
                 prefix_pattern2D = 'pattern2D'
                 file_name_pattern2D = make_file_name(path_rad_int, prefix_pattern2D, sufix_dat,
                                                       sample_name, det_str, scanNr, ff)
                 try:
-                    np.savetxt(file_name_pattern2D, img1, delimiter=',')
+                    np.savetxt(file_name_pattern2D, img_corr, delimiter=',')
                 except Exception as e:
                     print(f"Error saving 2D pattern to {file_name_pattern2D}: {e}. Skipping further processing for this frame.")
                     continue # Skip to next frame if saving fails
@@ -245,21 +251,20 @@ def integrate(config, result, det_str, path_rad_int):
             file_name_radial = make_file_name(path_rad_int, prefix_radial, sufix_dat,
                                                 sample_name, det_str, scanNr, ff)
             # Revert: Do NOT pass hdf_name_raw here.
-            radial_integ(config, result, img1, file_name_radial)
+            radial_integ(config, result, img_corr, file_name_radial)
 
             # --- Perform Azimuthal Integration (Conditional) ---
             prefix_azim = 'azim_integ'
             file_name_azim = make_file_name(path_rad_int, prefix_azim, sufix_dat,
                                                  sample_name, det_str, scanNr, ff)
-            data_azimuth = azimuthal_integ(config, result, img1, file_name_azim)
-
+            data_azimuth = azimuthal_integ(config, result, img_corr, file_name_azim)
 
 
             # --- Plot Radial and Azimuthal Integration Results (Conditional) ---
             # Plotting functions will manage their own specific plotting enablement
             if config['analysis']['plot_radial'] == 1:
                 #try:
-                plot_integ.plot_integ_radial(config, result, scanNr, ff, img1, data_azimuth) #
+                plot_integ.plot_integ_radial(config, result, scanNr, ff, img_corr, data_azimuth) #
                 #except Exception as e:
                 #    print(f"Error plotting radial integration for Scan {scanNr}, Frame {ff}: {e}.")
 
@@ -294,7 +299,6 @@ def radial_integ(config, result, img1, file_name): # MODIFIED: removed hdf_name_
     ai = result['integration'].get('ai')
     mask = result['integration'].get('int_mask')
     integration_points = result['integration'].get('integration_points') # Number of q-bins
-    perform_abs_calib = config['analysis']['perform_abs_calib'] # Flag for absolute calibration
 
     # Basic validation for essential integration components
     if ai is None or mask is None or integration_points is None:
@@ -319,25 +323,6 @@ def radial_integ(config, result, img1, file_name): # MODIFIED: removed hdf_name_
     except Exception as e:
         print(f"Error during radial integration for {file_name}: {e}. Skipping further radial processing for this file.")
         return
-
-    if perform_abs_calib == 1:
-        # Correct to absolute scale using the water flat field and calibration factors
-        water_flat_field_img = result['integration'].get('water') # Corrected water image
-
-        if water_flat_field_img is None:
-            print(f"Warning: Water flat field image not found in 'result' for {file_name}. Absolute calibration skipped for radial integration.")
-        else:
-            # Integrate the water flat field (needed for absolute calibration factor calculation)
-            try:
-                # Use the same integration points and mask as for the sample
-                q_flat, I_flat, sigma_flat = ai.integrate1d(water_flat_field_img, integration_points,
-                                                         correctSolidAngle = True, mask = mask,
-                                                         method = 'nosplit_csr', unit = 'q_A^-1',
-                                                         safe = True, error_model="azimuthal", flat = None, dark = None)
-                # Apply absolute calibration
-                I, sigma = absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat) # MODIFIED: removed hdf_name_raw
-            except Exception as e:
-                print(f"Error during absolute calibration for radial integration of {file_name}: {e}. Absolute calibration skipped.")
 
     # Save the integrated files to a CSV
     data_save = np.column_stack((q, I, sigma))
@@ -369,7 +354,6 @@ def azimuthal_integ(config, result, img1, file_name): # MODIFIED: removed hdf_na
     ai = result['integration'].get('ai')
     mask = result['integration'].get('int_mask')
     integration_points = result['integration'].get('integration_points') # Number of q-bins
-    perform_abs_calib = config['analysis']['perform_abs_calib'] # Flag for absolute calibration
     sectors_nr = result['integration'].get('sectors_nr') # Number of azimuthal sectors
 
     # Basic validation for essential integration components
@@ -387,77 +371,32 @@ def azimuthal_integ(config, result, img1, file_name): # MODIFIED: removed hdf_na
     I_all = None
     sigma_all = None
     q_all_sectors = None # To store q for the sectors, should be consistent
+    
+    
+    I_all, q_all_sectors, angles_all, sigma_all = ai.integrate2d_ng(img1, 
+                                 integration_points, npt_azim=sectors_nr,
+                                 correctSolidAngle = True, mask = mask,
+                                 method = ('full', 'csr', 'cython'), unit = 'q_A^-1',
+                                 safe = True, error_model = "azimuthal",
+                                 flat = None, dark = None)
 
-    # Loop through each azimuthal sector
-    for rr in range(0, sectors_nr): # Loop `sectors_nr` times
-        azim_start = npt_azim[rr]
-        azim_end = npt_azim[rr+1]
-
-        try:
-            # Perform 1D integration within the current azimuthal range
-            q_sector, I_sector, sigma_sector = ai.integrate1d(img1, integration_points,
-                                         correctSolidAngle = True, mask = mask,
-                                         method = 'nosplit_csr', unit = 'q_A^-1',
-                                         safe = True, error_model = "azimuthal",
-                                         azimuth_range = [azim_start, azim_end],
-                                         flat = None, dark = None)
-        except Exception as e:
-            print(f"Error during azimuthal integration for sector {rr} ({azim_start:.1f}-{azim_end:.1f} deg) of {file_name}: {e}. Skipping this sector.")
-            # Fill with NaNs or zeros for this sector to maintain array shape
-            I_sector = np.full(integration_points, np.nan)
-            sigma_sector = np.full(integration_points, np.nan)
-            if rr == 0: # If the first sector fails, q might not be defined, so fill it too
-                q_sector = np.full(integration_points, np.nan)
-            else: # Otherwise, use q from previous successful sector if available
-                q_sector = q_all_sectors # Assuming q is consistent across sectors
-            # Do not continue loop iteration. The nan values will be appended.
-
-
-        if perform_abs_calib == 1:
-            # Apply absolute calibration for each sector
-            water_flat_field_img = result['integration'].get('water') # Corrected water image
-
-            if water_flat_field_img is None:
-                print(f"Warning: Water flat field image not found in 'result' for {file_name} (azimuthal). Absolute calibration skipped for this sector.")
-            else:
-                # Integrate water for this specific azimuthal sector
-                try:
-                    # Use the same integration points and mask as for the sample
-                    q_flat_sector, I_flat_sector, sigma_flat_sector = ai.integrate1d(water_flat_field_img, integration_points,
-                                                                 correctSolidAngle = True, mask = mask,
-                                                                 method = 'nosplit_csr', unit = 'q_A^-1',
-                                                                 safe = True, error_model = "azimuthal",
-                                                                 azimuth_range = [azim_start, azim_end],
-                                                                 flat = None, dark = None)
-                    # Apply absolute calibration to the sector's data
-                    I_sector, sigma_sector = absolute_calibration(config, result, file_name, I_sector, sigma_sector, I_flat_sector, sigma_flat_sector) # MODIFIED: removed hdf_name_raw
-                except Exception as e:
-                    print(f"Error during absolute calibration for azimuthal sector {rr} of {file_name}: {e}. Absolute calibration skipped for this sector.")
-
-
-        # Collect integrated data for all sectors
-        if rr == 0:
-            q_all_sectors = q_sector # Store q from the first sector
-            I_all = I_sector
-            sigma_all = sigma_sector
-        else:
-           # Ensure arrays are 1D before stacking
-           I_all = np.column_stack((I_all, I_sector.flatten()))
-           sigma_all = np.column_stack((sigma_all, sigma_sector.flatten()))
 
     # Check if any integration was successful (e.g., first sector produced valid q)
     if q_all_sectors is None or I_all is None or sigma_all is None or q_all_sectors.size == 0:
         print(f"Warning: No valid azimuthal integration data generated for {file_name}. Skipping file save.")
         return
+    
+    
 
     # The control to save is handled by 'plot_azimuthal' flag that triggers the call to this function.
     # If plot_azimuthal is 0, this function isn't called, so data isn't saved.
     # If plot_azimuthal is 1, this function IS called, and data IS saved.
-    data_save = np.column_stack((q_all_sectors, I_all, sigma_all))
+    data_save = np.column_stack((q_all_sectors, I_all.transpose(), sigma_all.transpose()))
     if config['analysis'].get('save_azimuthal', 0) == 1:
         header_text = (f'q (A-1), {sectors_nr} columns for absolute intensity I (1/cm) '
                        f'(sectors from {npt_azim[0]:.1f} to {npt_azim[-1]:.1f} deg), '
-                       f'{sectors_nr} columns for standard deviation')
+                       f'{sectors_nr} columns for standard deviation\n'
+                       f'Angles {angles_all}')
         try:
             np.savetxt(file_name, data_save, delimiter=',', header=header_text, comments='# ') # Add comments char
         except Exception as e:

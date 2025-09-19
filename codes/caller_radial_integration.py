@@ -35,28 +35,28 @@ instrument = 'SANS-I'
 # Optional measurement of the empty beam for transmission calculation.
 # This sample represents the direct beam intensity without any sample in the beam path.
 # Set to the sample name used for your empty beam measurement (e.g., 'EB', 'EMPTY').
-empty_beam = 'EB'
+empty_beam = 'Empty Beam'
 
 # Cadmium measurement: Used for dark field (background) correction.
 # This measurement typically blocks all neutrons, providing a baseline of detector
 # noise and ambient background.
 # Set to the sample name used for your cadmium measurement (e.g., 'Cd', 'CADMIUM').
-cadmium = 'Cd'
+cadmium = 'Cadmium'
 
 # Water measurement: Used for flat field correction and absolute intensity calibration.
 # Water has a well-known incoherent scattering cross-section, serving as a standard reference.
 # Set to the sample name used for your water measurement (e.g., 'H2O', 'WATER').
-water = 'H2O'
+water = 'H2O_yrot_0'
 
 # Water cell measurement: Represents the scattering from the empty container used for the water sample.
 # This is subtracted from the 'water' measurement to isolate the scattering from water itself.
 # Set to the sample name used for your empty water cell (e.g., 'EC', 'WATER_EC').
-water_cell = 'EC'
+water_cell = 'EC_yrot_0'
 
 # Empty cell measurement: Represents the scattering from the empty container used for your samples.
 # This is crucial for subtracting contributions from sample holders.
 # Set to the sample name used for your empty sample cell (e.g., 'EC', 'SAMPLE_EC').
-empty_cell = 'EC'
+empty_cell = 'EC_yrot_0'
 
 # Sample thickness information.
 # Provide a dictionary where keys are sample names (matching HDF5 metadata) and
@@ -76,7 +76,7 @@ sample_thickness = {'all':0.1}
 #   were taken at this distance, and transmission correction will be applied.
 # - Set to a non-positive value (e.g., 0, -1) if transmission correction is
 #   not needed for your experiment or if transmission data is not available.
-trans_dist = 18.0
+trans_dist = 6.0
 
 # Detector distance to use for flat field correction at large distances.
 # For very large detector distances (e.g., 18.0m), water flat field measurements
@@ -86,7 +86,7 @@ trans_dist = 18.0
 # replacement water to match the 18m data.
 # - Provide a detector distance (e.g., 4.5, 6.0) if a replacement is desired.
 # - Set to 0 or a negative value if no replacement is desired.
-replace_18m = 4.5
+replace_18m = -1
 
 # Wavelength of the incident neutrons.
 # This value is crucial for converting scattering angles to the scattering vector 'q'.
@@ -105,7 +105,7 @@ wl = 'auto' # Options: 'auto' (read from HDF5) or a float value in Angstroms (e.
 # - (x_min_pixel, x_max_pixel): Horizontal pixel range of the beam stopper.
 beamstopper_coordinates = {
     1.6: [56, 77, 50, 69],
-    4.5: [58, 71, 93, 106],
+    6.0: [60, 71, 54, 65],
     18.0: [56, 71, 93, 106]
 }
 
@@ -116,7 +116,7 @@ beamstopper_coordinates = {
 # Format: {detector_distance_in_meters (float): [center_x_pixel, center_y_pixel]}
 beam_center_guess = {
     1.6: [60.58, 67.63],
-    4.5: [99.83, 64.57],
+    6.0: [62, 64.5],
     18.0: [99.73, 64.24]
 }
 
@@ -135,12 +135,12 @@ target_detector_distances = 'all' # Options: 'all' or a list of floats (e.g., [6
 
 # Path where the raw HDF5 data files are located.
 # Ensure this path points directly to the directory containing your `.hdf` files.
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/raw_data/'
+path_hdf_raw = "C:/Users/gruene_e/Documents/SANS_reduction/DarePy-SANS/raw_data"
 
 # Path to the working directory where all analysis results (integrated data, plots, logs) will be saved.
 # A main analysis folder (e.g., 'analysis/') or a uniquely identified subfolder
 # (e.g., 'analysis_batch1/') will be created within this directory.
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/'
+path_dir = "C:/Users/gruene_e/Documents/SANS_reduction/DarePy-SANS/"
 
 # Identifier for the analysis output folder.
 # This string will be appended to the default 'analysis/' folder name.
@@ -155,7 +155,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = []
+exclude_files = list(range(0,21024)) + list(range(21113,21120)) + list(range(21225, 99999)) + [21080]
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
@@ -281,6 +281,7 @@ configuration = {'SANS-I':{
                    'detector_size': 128, # Number of pixels along one side of the (assumed square) detector.
                    # List of beam stopper sizes (if applicable, often not used directly in this pipeline).
                    'list_bs': {'1':40, '2':70,'3':85,'4':100},
+                   'efficiency_map': "detector_efficiency_extrapolate_SINQ_SANS_I_HDF.mat",
                    # Absolute calibration cross-sections for different wavelengths.
                    # A dictionary where keys are rounded wavelengths in Angstroms (as strings)
                    # and values are calibration factors (e.g., from water calibration)

@@ -13,6 +13,7 @@ and propagates the associated errors.
 
 import numpy as np
 import sys # Import sys for potential exit on critical errors
+import scipy.io
 
 def absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat):
     """
@@ -144,3 +145,81 @@ def absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat
     sigma_corr = np.sqrt(total_relative_error_sq) * np.abs(I_corr)
 
     return (I_corr, sigma_corr)
+
+
+def absolute_calibration_2D(config, result, file_name, I, I_flat, sigma=None, sigma_flat=None):
+    I_safe = I.copy()
+    if np.all(I_safe <= 0):
+        print(f"Warning: Sample intensity (I) is all non-positive for '{file_name}'. Replacing with median of non-zero positive values or epsilon.")
+        # Fallback if no positive values: use epsilon, otherwise median of positive
+        if np.any(I[I > 0]):
+            I_safe[I_safe <= 0] = np.median(I[I > 0]) #
+        else:
+            I_safe[I_safe <= 0] = np.finfo(I_safe.dtype).eps
+    
+    
+    I_flat_safe = I_flat.copy() # Work on a copy to avoid modifying the original array in 'result'
+    if I_flat_safe.size == 0 or np.all(I_flat_safe <= 0):
+        print(f"Error: Flat field intensity (I_flat) is empty or all non-positive for '{file_name}'. Cannot perform absolute calibration.")
+        # Return original I and sigma, or raise an error, depending on desired robustness.
+        # For now, return original, indicating an issue without crashing the whole pipeline.
+        if sigma is not None:
+            return I, sigma
+        else:
+            return I
+        
+    # import and apply mask to avoid devision by 0
+    mask = result['integration'].get('int_mask')
+    I_flat_safe[I_flat_safe <= 0] = np.finfo(I_flat_safe.dtype).eps
+    masked_I_flat = np.ma.MaskedArray(data=I_flat_safe, mask=mask)
+    masked_I = np.ma.MaskedArray(data=I_safe, mask=mask)
+    
+    # import detector efficiency map and mask it
+    eff_file = config['instrument']['efficiency_map']
+    det_eff_dict = scipy.io.loadmat(eff_file)
+    detector_eff = np.ma.MaskedArray(data=det_eff_dict['eff_data'], mask=mask)
+    
+    # correct for detector efficiency
+    I_corr = np.ma.divide(masked_I, detector_eff) 
+    
+    # calculate correction coefficient for absolute scaling and apply
+    list_cs = config['instrument']['list_abs_calib']
+    wl = str(int(result['overview']['all_files']['wl_A'][1]))
+    if wl in list_cs.keys():
+        correction = float(list_cs[str(wl)]) / masked_I_flat.mean()
+    else:
+        correction = 1
+        print('Wavelength has not been calibrated.')
+    
+    I_corr = I_corr * correction
+    
+    # TODO: propagate errors properly
+    
+    if sigma is not None:
+        sigma_flat_safe = sigma_flat.copy()
+        sigma_safe = sigma.copy()
+        
+        I_flat_for_err = I_flat_safe # Already handled for zeros above
+        I_for_err = I_safe # Already handled for zeros above
+        
+        # Calculate relative errors squared safely
+        with np.errstate(divide='ignore', invalid='ignore'): # Suppress warnings for division by zero/invalid operations
+            relative_error_I_sq = np.square(sigma_safe / I_for_err)
+            relative_error_I_flat_sq = np.square(sigma_flat_safe / I_flat_for_err)
+    
+        # Replace NaNs or Infs that might arise from division by zero in relative_error_sq
+        # This might happen if sigma and I were both 0, leading to 0/0 (NaN).
+        relative_error_I_sq[np.isnan(relative_error_I_sq) | np.isinf(relative_error_I_sq)] = 0
+        relative_error_I_flat_sq[np.isnan(relative_error_I_flat_sq) | np.isinf(relative_error_I_flat_sq)] = 0
+    
+        # Total relative error squared
+        total_relative_error_sq = relative_error_I_sq + relative_error_I_flat_sq
+    
+        # Propagate the absolute calibration factor into the error
+        sigma_corr = np.sqrt(total_relative_error_sq) * np.abs(I_corr)
+    
+    
+        return (I_corr, sigma_corr)
+    
+    else:
+        return I_corr
