@@ -14,12 +14,12 @@ plt.ion() # Turn on interactive mode for immediate plot updates
 
 # %% Configuration
 # where are the hdf files saved
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/raw_data'
+path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2282_MF_3mm_pump/DarePy-SANS/raw_data/"
 # number of the AgBE scan
-scanNr = 23111
+scanNr = 23179
 
 # As requested, keep the name_hdf fixed with 'sans2025n0' + scanNr
-name_hdf = 'sans2025n0' + str(scanNr) + '.hdf'
+name_hdf = 'sans2023n0' + str(scanNr) + '.hdf'
 
 print(f"Attempting to load: {name_hdf}") # Added for debugging/clarity
 
@@ -32,10 +32,15 @@ pixel2 = 7.5e-3 # mm
 img = load_hdf(path_hdf_raw, name_hdf, 'counts')
 Detector_distance = load_hdf(path_hdf_raw, name_hdf, 'detx')
 wl = load_hdf(path_hdf_raw, name_hdf, 'wl')
-img_log = np.log(img) # In log scale
 
-# Get detector dimensions (still useful for general info)
-detector_rows, detector_cols = img.shape
+# Get detector dimensions
+try:
+    detector_rows, detector_cols = img.shape
+    img_log = np.log(img) # In log scale
+except:
+    frames, detector_rows, detector_cols = img.shape
+    img_mean = np.mean(img, axis=0)
+    img_log = np.log(img_mean) # In log scale
 
 # %% Automate Color bar limits for image display (clim)
 # Filter out non-finite values (NaN, inf, -inf) which can result from log(0) or other issues
