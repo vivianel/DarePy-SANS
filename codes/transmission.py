@@ -114,6 +114,18 @@ def trans_calc_sample(config, result):
         if class_all['sample_name'][ii] in class_trans['sample_name']:
             idx_trans = list(class_trans['sample_name']).index(str(class_all['sample_name'][ii]))
             list_trans.append(class_trans['transmission'][idx_trans])
+        elif len(class_all['sample_name'][ii])>=6 and class_all['sample_name'][ii][:7] == 'GA_23mM' and not class_all['sample_name'][ii][:13] == 'GA_23mM_CaCl2':
+            idx_trans = list(class_trans['sample_name']).index('GA_23mM_heat80C_100ps')
+            list_trans.append(class_trans['transmission'][idx_trans])
+        elif len(class_all['sample_name'][ii])>=6 and class_all['sample_name'][ii][:7] == 'GA_27mM':
+            idx_trans = list(class_trans['sample_name']).index('GA_27mM')
+            list_trans.append(class_trans['transmission'][idx_trans])
+        elif len(class_all['sample_name'][ii])>=6 and class_all['sample_name'][ii][:6] == 'GA_9mM':
+            idx_trans = list(class_trans['sample_name']).index('GA_9mM')
+            list_trans.append(class_trans['transmission'][idx_trans])
+        elif len(class_all['sample_name'][ii])>=12 and class_all['sample_name'][ii][:13] == 'GA_23mM_CaCl2':
+            idx_trans = list(class_trans['sample_name']).index('GA_23mM_CaCl2_5mM')
+            list_trans.append(class_trans['transmission'][idx_trans])
         else:
             list_trans.append('--')
     class_all['transmission'] = list_trans

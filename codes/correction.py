@@ -115,7 +115,7 @@ def prepare_corrections(config, result, det):
     # Remove the edge lines around the detector (common for most detectors)
     lines = 2 # Number of pixels to mask from the edges
     mask[:, 0:lines] = 1 # Left edge
-    mask[:, detector_size - lines : detector_size] = 1 # Right edge (corrected slice end)
+    mask[:, detector_size - (lines*3+1) : detector_size] = 1 # Right edge (corrected slice end)
     mask[0:lines, :] = 1 # Bottom edge
     mask[detector_size - lines : detector_size, :] = 1 # Top edge (corrected slice end)
 

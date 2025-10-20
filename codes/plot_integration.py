@@ -222,7 +222,7 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
     # AXS2: Plot the scattering pattern in 2D (logarithmic scale)
     # Replace non-positive values with a small number before taking log to avoid log(0) or log(negative)
     img1_log_plot = img1.copy()
-    img1_log_plot[img1_log_plot <= 1e-5] = 1e-5 # Original threshold
+    # img1_log_plot[img1_log_plot <= 1e-5] = 1e-5 # Original threshold
     img1_log_plot[mask_bool] = np.nan # Apply mask to the log image as well
     img1_log_plot[img1_log_plot == 0] = np.nan
     img2_log = np.log(img1_log_plot) # Take logarithm
