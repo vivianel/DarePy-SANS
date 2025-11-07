@@ -228,95 +228,34 @@ def load_standards(config, result, det):
                 counts_per_sec = norm.normalize_time(config, hdf_name, counts)
                 img = counts_per_sec.copy()
         else:
-            img = load_and_normalize(config, result, hdf_name)
+            img, img_variance = load_and_normalize(config, result, hdf_name, return_variance=True)
+            result['integration'][standard_key + '_variance'] = img_variance
         if standard_key == 'water':
             water_hdf_name = hdf_name
         result['integration'][standard_key] = img
+        
 
     # Subtract empty cell from water to get pure water scattering for flat field
     img_h2o = result['integration']['water']
+    img_h2o_variance = result['integration']['water_variance']
     img_cell = result['integration']['water_cell']
+    img_cell_variance = result['integration']['water_cell_variance']
     img_h2o = correct_EC(img_h2o, img_cell)
+    img_h2o_variance = img_h2o_variance + img_cell_variance
     img_h2o = norm.normalize_thickness(config, water_hdf_name, result, img_h2o)
+    img_h2o_variance = np.square(norm.normalize_thickness(config, water_hdf_name, result, np.sqrt(img_h2o_variance)))
     result['integration']['water'] = img_h2o # Store the corrected water
-
-    # Determine the scaling factor to replace water at 18 m, if configured
-    replace_18m = config['analysis']['replace_18m']
-    if det == '18p0' and replace_18m > 0:
-        print(f"Applying water replacement logic for 18m using {replace_18m}m data.")
-        det_m_str = str(float(replace_18m)).replace('.', 'p') # Convert float like 6.0 to '6p0'
-        class_corr_key = 'det_files_' + det_m_str
-
-        if class_corr_key not in result['overview']:
-            print(f"Error: Missing file overview for replacement detector {replace_18m}m. Skipping 18m water replacement.")
-            result['integration']['scaling_factor'] = 1 # Set to 1 if replacement cannot be done
-            return result
-
-        class_file_corr_det = result['overview'][class_corr_key]
-
-        # Load water and its cell from the replacement distance
-        if calibration_names.get('water') not in class_file_corr_det['sample_name'] or \
-           calibration_names.get('water_cell') not in class_file_corr_det['sample_name']:
-            print(f"Warning: Water or water cell missing for replacement distance {replace_18m}m. Skipping 18m water replacement.")
-            result['integration']['scaling_factor'] = 1
-            return result
-
-        idx_h2o_corr = class_file_corr_det['sample_name'].index(calibration_names.get('water'))
-        name_hdf_h2o_corr = class_file_corr_det['name_hdf'][idx_h2o_corr]
-        img_h2o_corr = load_and_normalize(config, result, name_hdf_h2o_corr)
-
-        idx_cell_corr = class_file_corr_det['sample_name'].index(calibration_names.get('water_cell'))
-        name_hdf_cell_corr = class_file_corr_det['name_hdf'][idx_cell_corr]
-        img_cell_corr = load_and_normalize(config, result, name_hdf_cell_corr)
-
-        # Apply dark and empty cell correction to the replacement water data
-        img_h2o_corr = correct_dark(img_h2o_corr, result['integration']['cadmium'])
-        img_h2o_corr = correct_EC(img_h2o_corr, img_cell_corr)
-
-        # Integrate the currently processed 18m water and the corrected replacement water
-        ai = result['integration']['ai'] # pyFAI integrator for the current 18m distance
-        mask = result['integration']['int_mask'] # Mask for the current 18m distance
-
-        # Integrate original 18m water (before replacement)
-        q_h2o_18m, I_h2o_18m, sigma_h2o_18m = ai.integrate1d(img_h2o,  200,
-                                                 correctSolidAngle=True, mask=mask,
-                                                 method = 'nosplit_csr', unit = 'q_A^-1',
-                                                 safe=True, error_model="azimuthal", flat = None, dark = None)
-        # Integrate replacement water data (from 6m or similar)
-        q_h2o_corr, I_h2o_corr, sigma_h2o_corr = ai.integrate1d(img_h2o_corr,  200,
-                                                                correctSolidAngle=True, mask=mask,
-                                                                method = 'nosplit_csr', unit = 'q_A^-1',
-                                                                safe=True, error_model="azimuthal", flat = None, dark = None)
-
-        # Calculate scaling factor from a reliable q-range
-        # Check if the integration arrays are empty or too short
-        if len(I_h2o_18m) < 60 or len(I_h2o_corr) < 60: # Arbitrary minimum length
-            print("Warning: Integrated water curves are too short for reliable scaling factor calculation. Skipping 18m water replacement.")
-            scaling_factor = 1
-        else:
-            # Using slice 50 to -10 as in original code, assuming it's a stable region
-            # Add small epsilon to avoid division by zero for I_h2o_corr
-            I_h2o_corr_safe = I_h2o_corr[50:-10]
-            I_h2o_corr_safe[I_h2o_corr_safe <= 0] = np.finfo(float).eps # Replace zero/negative with smallest float
-
-            scaling_factor = (I_h2o_18m[50:-10] / I_h2o_corr_safe).mean()
-            print(f"Calculated scaling factor for 18m water replacement: {scaling_factor:.4f}")
-
-        # Replace the 18m water image with the scaled replacement water image
-        result['integration']['water'] = img_h2o_corr # Store the corrected water
-        result['integration']['scaling_factor'] = scaling_factor # Store the scaling factor
-    else:
-        # If not 18m or replacement not configured, scaling factor is 1
-        result['integration']['scaling_factor'] = 1
+    result['integration']['water_variance'] = img_h2o_variance
 
     # Avoid negative numbers and zeros in the final water image, set to small positive for log scale etc.
     # This is critical for subsequent flat-fielding or log plots.
-    result['integration']['water'][result['integration']['water'] <= 0] = 1e-8
+    result['integration']['water'][result['integration']['water'] <= 0] = 0
+    result['integration']['water_variance'][result['integration']['water_variance'] <= 0] = 0
 
     save_results(path_dir_an, result) # Save updated results including standards
     return result
 
-def load_and_normalize(config, result, hdf_name):
+def load_and_normalize(config, result, hdf_name, return_variance=False):
     """
     Loads raw counts data from an HDF5 file and applies a sequence of essential
     normalizations: time, deadtime, flux, attenuator, transmission, and thickness.
@@ -334,6 +273,7 @@ def load_and_normalize(config, result, hdf_name):
     """
     path_hdf_raw = config['analysis']['path_hdf_raw']
     counts = load_hdf(path_hdf_raw, hdf_name, 'counts') # Load raw counts
+    counts_deviation = np.sqrt(counts.copy())
 
     if counts is None:
         print(f"Error: Could not load counts data for {hdf_name}. Skipping normalizations.")
@@ -351,15 +291,24 @@ def load_and_normalize(config, result, hdf_name):
     counts = correct_dark(counts, dark_img)
     counts = norm.normalize_flux(config, hdf_name, counts)
     counts = norm.normalize_attenuator(config, hdf_name, counts)
+    
+    counts_deviation = norm.normalize_deadtime(config, hdf_name, counts_deviation)
+    counts_deviation = np.sqrt(dark_img + counts_deviation**2)
+    counts_deviation = norm.normalize_flux(config, hdf_name, counts_deviation)
+    counts_deviation = norm.normalize_attenuator(config, hdf_name, counts_deviation)
 
     # Transmission normalization is conditional based on 'trans_dist' setting
     if config['experiment']['trans_dist'] > 0:
         counts = norm.normalize_transmission(config, hdf_name, result, counts)
+        counts_deviation = norm.normalize_transmission(config, hdf_name, result, counts_deviation)
     else:
         print(f"Error: trans_dist is < 0. Skipping transmission normalization for {hdf_name}.")
-
-    return counts
-
+    
+    if return_variance:
+        return counts, np.square(counts_deviation)
+    else:
+        return counts
+    
 def correct_dark(img, dark):
     """
     Performs dark field correction by subtracting a dark current image from the data.
