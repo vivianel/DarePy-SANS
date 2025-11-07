@@ -42,8 +42,8 @@ def trans_calc_reference(config, result):
         # when we get a reference for another beamtime, we might need to adjust the transmission
         # knowing that water with 1 mm should have a transmission of around 0.5
         # factor to correct the transmission (if needed)
-        Factor_correction = 1.14 # it should be mainly 1, if the calibration samples were measured properly
-        EB_ref = int(np.sum(np.multiply(img,mask)))*Factor_correction # needed only for this beamtime
+        Factor_correction = 1 # 1.14 # it should be mainly 1, if the calibration samples were measured properly
+        EB_ref = float(np.sum(np.multiply(img,mask)))*Factor_correction # needed only for this beamtime
         # save the reference value
         result['transmission']['mask'] = mask
         result['transmission']['mean_EB'] = EB_ref
@@ -91,7 +91,7 @@ def trans_calc_sample(config, result):
         hdf_name = class_trans['name_hdf'][ii]
         counts = load_hdf(path_hdf_raw, hdf_name , 'counts')
         img = normalize_trans(config, result, hdf_name, counts)
-        sum_counts = int(np.sum(np.multiply(img, mask)))
+        sum_counts = float(np.sum(np.multiply(img, mask)))
         list_counts.append(sum_counts)
         if class_trans['detx_m'][ii] == trans_dist and class_trans['sample_name'][ii] != empty_beam:
             trans = np.divide(sum_counts,EB_ref)
