@@ -35,28 +35,28 @@ instrument = 'SANS-I'
 # Optional measurement of the empty beam for transmission calculation.
 # This sample represents the direct beam intensity without any sample in the beam path.
 # Set to the sample name used for your empty beam measurement (e.g., 'EB', 'EMPTY').
-empty_beam = 'Empty Beam'
+empty_beam = 'EB'
 
 # Cadmium measurement: Used for dark field (background) correction.
 # This measurement typically blocks all neutrons, providing a baseline of detector
 # noise and ambient background.
 # Set to the sample name used for your cadmium measurement (e.g., 'Cd', 'CADMIUM').
-cadmium = 'Cadmium'
+cadmium = 'Cd'
 
 # Water measurement: Used for flat field correction and absolute intensity calibration.
 # Water has a well-known incoherent scattering cross-section, serving as a standard reference.
 # Set to the sample name used for your water measurement (e.g., 'H2O', 'WATER').
-water = 'H2O_yrot_0'
+water = 'H2O'
 
 # Water cell measurement: Represents the scattering from the empty container used for the water sample.
 # This is subtracted from the 'water' measurement to isolate the scattering from water itself.
 # Set to the sample name used for your empty water cell (e.g., 'EC', 'WATER_EC').
-water_cell = 'EC_yrot_0'
+water_cell = 'EC'
 
 # Empty cell measurement: Represents the scattering from the empty container used for your samples.
 # This is crucial for subtracting contributions from sample holders.
 # Set to the sample name used for your empty sample cell (e.g., 'EC', 'SAMPLE_EC').
-empty_cell = 'EC_yrot_0'
+empty_cell = 'EC'
 
 # Sample thickness information.
 # Provide a dictionary where keys are sample names (matching HDF5 metadata) and
@@ -76,17 +76,7 @@ sample_thickness = {'all':0.1}
 #   were taken at this distance, and transmission correction will be applied.
 # - Set to a non-positive value (e.g., 0, -1) if transmission correction is
 #   not needed for your experiment or if transmission data is not available.
-trans_dist = -6.0
-
-# Detector distance to use for flat field correction at large distances.
-# For very large detector distances (e.g., 18.0m), water flat field measurements
-# can be noisy due to low neutron counts. This parameter allows you to use
-# a water measurement from a shorter, typically less noisy, distance (e.g., 4.5m)
-# as a more reliable flat field. The script will automatically scale this
-# replacement water to match the 18m data.
-# - Provide a detector distance (e.g., 4.5, 6.0) if a replacement is desired.
-# - Set to 0 or a negative value if no replacement is desired.
-replace_18m = -1
+trans_dist = 18.
 
 # Wavelength of the incident neutrons.
 # This value is crucial for converting scattering angles to the scattering vector 'q'.
@@ -104,9 +94,9 @@ wl = 'auto' # Options: 'auto' (read from HDF5) or a float value in Angstroms (e.
 # - (y_min_pixel, y_max_pixel): Vertical pixel range of the beam stopper.
 # - (x_min_pixel, x_max_pixel): Horizontal pixel range of the beam stopper.
 beamstopper_coordinates = {
-    1.6:[58, 73, 53, 69],
-    6.0:[55, 76, 54, 68],
-    18.0:[49, 81, 54, 67]
+    1.6:[57, 70, 53, 66],
+    4.5:[57, 69, 53, 65],
+    18.0:[58, 68, 54, 64]
 }
 
 # Beam center guess.
@@ -115,9 +105,9 @@ beamstopper_coordinates = {
 # and azimuthal integration as they define the origin for q-space conversion.
 # Format: {detector_distance_in_meters (float): [center_x_pixel, center_y_pixel]}
 beam_center_guess = {
-    1.6:[61.03, 64.42],
-    6.0:[62.56, 63.73],
-    18.0:[60.05, 64.03]
+    1.6:[59.52, 63.92],
+    4.5:[59.89, 64.1],
+    18.0:[59.14, 63.04]
 }
 
 # Target detector distances for processing.
@@ -135,12 +125,12 @@ target_detector_distances = 'all' # Options: 'all' or a list of floats (e.g., [6
 
 # Path where the raw HDF5 data files are located.
 # Ensure this path points directly to the directory containing your `.hdf` files.
-path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2282_MF_3mm_pump/DarePy-SANS/raw_data/"
+path_hdf_raw = "C:/Users/gruene_e/Documents/SANS_reduction/Cuvettes_Oct25/DarePy-SANS/raw_data/"
 
 # Path to the working directory where all analysis results (integrated data, plots, logs) will be saved.
 # A main analysis folder (e.g., 'analysis/') or a uniquely identified subfolder
 # (e.g., 'analysis_batch1/') will be created within this directory.
-path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2282_MF_3mm_pump/DarePy-SANS/"
+path_dir = "C:/Users/gruene_e/Documents/SANS_reduction/error_propagation/DarePy-SANS/"
 
 # Identifier for the analysis output folder.
 # This string will be appended to the default 'analysis/' folder name.
@@ -155,7 +145,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = []
+exclude_files = list(range(74261)) + [74262, 74263] + list(range(74331, 99999))
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
@@ -181,7 +171,7 @@ plot_azimuthal = 0
 # - Set to 0 to skip saving these data files, even if 'plot_azimuthal' is 1
 #   (the plots will still be generated if plot_azimuthal is 1).
 #   Note: Setting 'plot_azimuthal' to 0 will implicitly skip saving data as well.
-save_azimuthal = 0
+save_azimuthal = 1
 
 # Control saving of raw 2D detector patterns (.dat).
 # These files are direct representations of the corrected 2D detector images.
@@ -189,7 +179,7 @@ save_azimuthal = 0
 # - Set to 1 if you need to save these raw 2D patterns for every frame.
 # - Set to 0 to skip saving these 2D pattern files. This can significantly
 #   speed up the process by reducing disk I/O.
-save_2d_patterns = 0
+save_2d_patterns = 1
 
 # Absolute calibration toggle.
 # This step converts scattering intensities from arbitrary detector counts
@@ -199,7 +189,7 @@ save_2d_patterns = 0
 #   'water' standard measurement and its associated configuration.
 # - Set to 0 to skip absolute calibration. Intensities will remain in
 #   arbitrary units, suitable for relative comparisons.
-perform_abs_calib = 0
+perform_abs_calib = 1
 
 # Force re-integration of data.
 # This flag controls whether previously integrated files are re-processed.
@@ -219,14 +209,14 @@ integration_points = 120
 # Number of angular sectors for azimuthal integration.
 # This divides the 2D detector image into this many angular slices (bins) for
 # azimuthal anisotropy analysis.
-sectors_nr = 32
+sectors_nr = 16
 
 # Pixel range for azimuthal integration.
 # Defines the radial pixel range (distance from the beam center) over which
 # azimuthal intensity will be averaged. This helps focus azimuthal analysis on
 # a specific 'q' region of interest.
 # Example: range(5, 40) means pixels from 5 to 39 (inclusive) from the beam center.
-pixel_range_azim = range(5,40)
+pixel_range_azim = range(5,100)
 
 
 # %% PIPELINE EXECUTION (DO NOT MODIFY BELOW THIS LINE)
@@ -296,7 +286,6 @@ configuration = {'SANS-I':{
                  'exclude_files':exclude_files, # List of scans to exclude (from above).
                  'perform_abs_calib':perform_abs_calib, # Absolute calibration toggle (from above).
                  'force_reintegrate': force_reintegrate, # Force re-integration toggle (from above).
-                 'replace_18m':replace_18m, # 18m replacement distance (from above).
                  "plot_azimuthal":plot_azimuthal, # Azimuthal plot toggle (from above).
                  "plot_radial":plot_radial, # Radial plot toggle (from above).
                  'add_id':add_id, # Analysis folder ID (from above).

@@ -191,17 +191,18 @@ def integrate(config, result, det_str, path_rad_int):
             if perform_abs_calib == 1:
                 # Load and apply all normalizations (time, deadtime, flux, attenuator, transmission, thickness)
                 # `load_and_normalize` will use hdf_name_raw internally to get data.
-                img_raw_normalized = load_and_normalize(config, result, hdf_name) #
+                img_raw_normalized, img_variance = load_and_normalize(config, result, hdf_name, return_variance=True) #
 
                 # Get correction images from 'result' (loaded by load_standards)
-                dark_img = result['integration'].get('cadmium')
                 empty_cell_img = result['integration'].get('empty_cell')
+                empty_cell_variance = result['integration'].get('empty_cell_variance')
 
-                if dark_img is None or empty_cell_img is None:
+                if empty_cell_img is None:
                     print(f"Error: Dark or empty cell images not found in 'result' for {hdf_name}, Frame {ff}. Skipping corrections.")
                     # If this happens, it means load_standards failed critically.
                     # We continue with raw normalized image for this frame.
-                    img1 = img_raw_normalized[ff, :, :] if frame_nr_total > 1 else img_raw_normalized
+                    img_corr = img_raw_normalized[ff, :, :] if frame_nr_total > 1 else img_raw_normalized
+                    img_corr_variance = img_variance[ff, :, :] if frame_nr_total > 1 else img_variance
                 else:
                     # Apply empty cell, thickness, flat field corrections
                     # and absolute scaling
@@ -209,14 +210,20 @@ def integrate(config, result, det_str, path_rad_int):
                         # If multi-frame, select the specific frame for correction
                         # img_corrected_dark = correct_dark(img_raw_normalized[ff,:,:], dark_img) #
                         img1 = correct_EC(img_raw_normalized[ff,:,:], empty_cell_img)
+                        img1_variance = img_variance[ff,:,:] + empty_cell_variance
                         img2 = norm.normalize_thickness(config, hdf_name, result, img1)
+                        img2_variance = np.square(norm.normalize_thickness(config, hdf_name, result, np.sqrt(img1_variance)))
                         img_corr = absolute_calibration_2D(config, result, scanNr, img2, result['integration'].get('water'))
+                        img_corr_variance = np.square(absolute_calibration_2D(config, result, scanNr, np.sqrt(img2_variance), result['integration'].get('water')))
                     else:
                         # Single-frame image
                         # img_corrected_dark = correct_dark(img_raw_normalized, dark_img) #
                         img1 = correct_EC(img_raw_normalized, empty_cell_img)
+                        img1_variance = img_variance + empty_cell_variance
                         img2 = norm.normalize_thickness(config, hdf_name, result, img1)#
+                        img2_variance = np.square(norm.normalize_thickness(config, hdf_name, result, np.sqrt(img1_variance)))
                         img_corr = absolute_calibration_2D(config, result, scanNr, img2, result['integration'].get('water'))
+                        img_corr_variance = np.square(absolute_calibration_2D(config, result, scanNr, np.sqrt(img2_variance), result['integration'].get('water')))
 
                 print(f'Corrected scan {scanNr}, Frame: {ff}')
             else:
@@ -228,20 +235,27 @@ def integrate(config, result, det_str, path_rad_int):
 
                 if frame_nr_total > 1:
                     img_corr = img_raw[ff,:,:]
+                    img_corr_variance = img_raw[ff,:,:].copy()
                 else:
                     img_corr = img_raw
+                    img_corr_variance = img_raw.copy()
                 print(f'NOT corrected scan {scanNr}, Frame: {ff}')
 
            # Ensure corrected img is 2D (remove singleton dimensions)
             img_corr = np.squeeze(img_corr)
+            img_corr_variance = np.squeeze(img_corr_variance)
                 
             # --- Save the 2D pattern (Conditional) ---
             if config['analysis'].get('save_2d_patterns', 0) == 1: # Default to 0 if not defined
                 prefix_pattern2D = 'pattern2D'
+                prefix_variance2D = 'variance2D'
                 file_name_pattern2D = make_file_name(path_rad_int, prefix_pattern2D, sufix_dat,
+                                                      sample_name, det_str, scanNr, ff)
+                file_name_variance2D = make_file_name(path_rad_int, prefix_variance2D, sufix_dat,
                                                       sample_name, det_str, scanNr, ff)
                 try:
                     np.savetxt(file_name_pattern2D, img_corr, delimiter=',')
+                    np.savetxt(file_name_variance2D, img_corr_variance, delimiter=',')
                 except Exception as e:
                     print(f"Error saving 2D pattern to {file_name_pattern2D}: {e}. Skipping further processing for this frame.")
                     continue # Skip to next frame if saving fails
@@ -251,13 +265,13 @@ def integrate(config, result, det_str, path_rad_int):
             file_name_radial = make_file_name(path_rad_int, prefix_radial, sufix_dat,
                                                 sample_name, det_str, scanNr, ff)
             # Revert: Do NOT pass hdf_name_raw here.
-            radial_integ(config, result, img_corr, file_name_radial)
+            radial_integ(config, result, img_corr, file_name_radial, img1_variance=img_corr_variance)
 
             # --- Perform Azimuthal Integration (Conditional) ---
             prefix_azim = 'azim_integ'
             file_name_azim = make_file_name(path_rad_int, prefix_azim, sufix_dat,
                                                  sample_name, det_str, scanNr, ff)
-            data_azimuth = azimuthal_integ(config, result, img_corr, file_name_azim)
+            data_azimuth = azimuthal_integ(config, result, img_corr, file_name_azim, img1_variance=img_corr_variance)
 
 
             # --- Plot Radial and Azimuthal Integration Results (Conditional) ---
@@ -282,7 +296,7 @@ def integrate(config, result, det_str, path_rad_int):
     return result
 
 
-def radial_integ(config, result, img1, file_name): # MODIFIED: removed hdf_name_raw
+def radial_integ(config, result, img1, file_name, img1_variance=None): # MODIFIED: removed hdf_name_raw
     """
     Performs 1D radial (azimuthally averaged) integration of a 2D detector image.
     The integrated data (q, I, sigma) is saved to a CSV file.
@@ -308,16 +322,22 @@ def radial_integ(config, result, img1, file_name): # MODIFIED: removed hdf_name_
     # Ensure mask has appropriate dtype for pyFAI
     if mask.dtype != bool:
         mask = mask.astype(bool)
+        
+    if img1_variance is None:
+        error_model = "azimuthal"
+    else:
+        error_model = None
 
     # Perform azimuthal integration (1D radial profile)
     try:
         q, I, sigma = ai.integrate1d(img1, integration_points,
                                      correctSolidAngle = True, # Correct for solid angle effects
+                                     variance = img1_variance,
                                      mask = mask,
                                      method = 'nosplit_csr', # Fast integration method
                                      unit = 'q_A^-1', # Output q-units in inverse Angstroms
                                      safe = True, # Perform checks for NaNs/Infs
-                                     error_model="azimuthal", # Use azimuthal error model
+                                     error_model = error_model, # Use azimuthal error model if variance is unknown
                                      flat = None, # Flat field already applied as 2D correction
                                      dark = None)
     except Exception as e:
@@ -337,7 +357,7 @@ def radial_integ(config, result, img1, file_name): # MODIFIED: removed hdf_name_
     save_results(path_dir_an, result) #
 
 
-def azimuthal_integ(config, result, img1, file_name): # MODIFIED: removed hdf_name_raw
+def azimuthal_integ(config, result, img1, file_name, img1_variance=None): # MODIFIED: removed hdf_name_raw
     """
     Performs 1D azimuthal integration (intensity vs. angle) for a specific q-range.
     The integrated data (q, I_sectors, sigma_sectors) is saved to a CSV file.
@@ -372,12 +392,18 @@ def azimuthal_integ(config, result, img1, file_name): # MODIFIED: removed hdf_na
     sigma_all = None
     q_all_sectors = None # To store q for the sectors, should be consistent
     
+    if img1_variance is None:
+        error_model = "azimuthal"
+    else:
+        error_model = None
+    
     
     I_all, q_all_sectors, angles_all, sigma_all = ai.integrate2d_ng(img1, 
                                  integration_points, npt_azim=sectors_nr,
-                                 correctSolidAngle = True, mask = mask,
+                                 correctSolidAngle = True, variance=img1_variance,
+                                 mask = mask,
                                  method = ('full', 'csr', 'cython'), unit = 'q_A^-1',
-                                 safe = True, error_model = "azimuthal",
+                                 safe = True, error_model = error_model,
                                  flat = None, dark = None)
 
 
