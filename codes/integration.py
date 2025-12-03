@@ -154,7 +154,6 @@ def integrate(config, result, det_str, path_rad_int):
     path_hdf_raw = config['analysis']['path_hdf_raw'] # Path to raw HDF5 files
     class_file = result['overview']['det_files_' + det_str] # File overview for current detector
     perform_abs_calib = config['analysis']['perform_abs_calib'] # Flag for absolute calibration
-    calibration_names = config['experiment']['calibration'] # Calibration sample names
     force_reintegrate = config['analysis']['force_reintegrate'] # Flag to force re-integration
 
     # Define common file suffixes needed within this function
@@ -170,19 +169,19 @@ def integrate(config, result, det_str, path_rad_int):
         frame_nr_total = class_file['frame_nr'][ii] # Total number of frames in this HDF5 file
 
         # Skip integration if the sample is a calibration standard (standards are handled separately)
-        if sample_name in calibration_names.values():
-            print(f"Skipping '{sample_name}' (Scan: {scanNr}) as it is a calibration standard.")
-            continue # Move to the next file (scan)
+        #if sample_name in calibration_names.values():
+        #    print(f"Skipping '{sample_name}' (Scan: {scanNr}) as it is a calibration standard.")
+        #    continue # Move to the next file (scan)
 
-        # NEW LOGIC: Check for existing integrated file for *this specific scan*
-        # We'll check for the radial_integ file for the first frame (frame 0) as an indicator
-        # that this entire scan has been processed. This needs to be done *before* the frame loop.
-        file_name_radial_check = make_file_name(path_rad_int, 'radial_integ', sufix_dat,
-                                                  sample_name, det_str, scanNr, 0) # Check frame 0
+        # NEW LOGIC: check if the present s complete either for monitors or time
+        flux_monit = load_hdf(path_hdf_raw, hdf_name, 'flux_monit')
+        time_s = load_hdf(path_hdf_raw, hdf_name, 'time')
+        preset = load_hdf(path_hdf_raw, hdf_name, 'moni') # needs to be fixed: moni is either time in s or monitors in e4
 
-        if os.path.exists(file_name_radial_check) and force_reintegrate == 0:
-            print(f"Scan {scanNr} ('{sample_name}') already integrated. Skipping due to force_reintegrate=0.")
+        if flux_monit == preset*1e4 or time_s == preset and force_reintegrate == 0:
+            print(f"Scan {scanNr} ('{sample_name}') already integrated. Skipping due to force_reintegrate = 0.")
             continue # Skip to the next scan if already processed and not forcing re-integration
+
 
         # Loop through each frame within a multi-frame HDF5 file (if applicable)
         for ff in range(0, frame_nr_total):
@@ -244,7 +243,7 @@ def integrate(config, result, det_str, path_rad_int):
            # Ensure corrected img is 2D (remove singleton dimensions)
             img_corr = np.squeeze(img_corr)
             img_corr_variance = np.squeeze(img_corr_variance)
-                
+
             # --- Save the 2D pattern (Conditional) ---
             if config['analysis'].get('save_2d_patterns', 0) == 1: # Default to 0 if not defined
                 prefix_pattern2D = 'pattern2D'
@@ -322,7 +321,7 @@ def radial_integ(config, result, img1, file_name, img1_variance=None): # MODIFIE
     # Ensure mask has appropriate dtype for pyFAI
     if mask.dtype != bool:
         mask = mask.astype(bool)
-        
+
     if img1_variance is None:
         error_model = "azimuthal"
     else:
@@ -391,14 +390,14 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None): # MODI
     I_all = None
     sigma_all = None
     q_all_sectors = None # To store q for the sectors, should be consistent
-    
+
     if img1_variance is None:
         error_model = "azimuthal"
     else:
         error_model = None
-    
-    
-    I_all, q_all_sectors, angles_all, sigma_all = ai.integrate2d_ng(img1, 
+
+
+    I_all, q_all_sectors, angles_all, sigma_all = ai.integrate2d_ng(img1,
                                  integration_points, npt_azim=sectors_nr,
                                  correctSolidAngle = True, variance=img1_variance,
                                  mask = mask,
@@ -411,8 +410,8 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None): # MODI
     if q_all_sectors is None or I_all is None or sigma_all is None or q_all_sectors.size == 0:
         print(f"Warning: No valid azimuthal integration data generated for {file_name}. Skipping file save.")
         return
-    
-    
+
+
 
     # The control to save is handled by 'plot_azimuthal' flag that triggers the call to this function.
     # If plot_azimuthal is 0, this function isn't called, so data isn't saved.
