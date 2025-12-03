@@ -297,7 +297,7 @@ configuration = {'SANS-I':{
                  'target_detector_distances': target_detector_distances # Target detector distances (from above).
                  }},
                   'SANS-LLB':{ # Placeholder for another instrument configuration (SANS-LLB).
-    'instrument': {'deadtime':1e5}, # Example instrument-specific parameter for LLB.
+    'instrument': {'deadtime':1e7}, # Example instrument-specific parameter for LLB.
                     'experiment': {}, # Placeholder for experiment parameters specific to LLB.
                     'analysis': {}}} # Placeholder for analysis parameters specific to LLB.
 
