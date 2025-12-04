@@ -7,7 +7,7 @@ Created on Thu Aug 17 16:33:06 2023
 
 
 # %% Plot the detector distances in the same graphic
-path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/'
+path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/"
 
 
 import os

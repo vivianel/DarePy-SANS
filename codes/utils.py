@@ -57,23 +57,43 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
         with h5py.File(full_hdf_path, 'r') as file_hdf:
             # Handle scalar properties first
             if which_property == 'beamstop_y':
-                prop = file_hdf['entry1/SANS/beam_stop/y_position'][0]
+                try:
+                    prop = file_hdf['entry1/SANS/beam_stop/y_position'][0]
+                except:
+                    prop = file_hdf['entry0/SANS-LLB/beam_stop/y'][0]
                 res = check_dimension(prop)
             elif which_property == 'att':
-                prop = file_hdf['entry1/SANS/attenuator/selection'][0]
+                try:
+                    prop = file_hdf['entry1/SANS/attenuator/selection'][0]
+                except:
+                    prop = file_hdf['entry0/SANS-LLB/attenuator/selection'][0]
                 res = check_dimension(prop)
             elif which_property == 'coll':
-                prop = file_hdf['/entry1/SANS/collimator/length'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/collimator/length'][0]
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/collimator/geometry/size'][0]
+                    prop = prop/1000 # in m
                 res = check_dimension(prop) # in m
             elif which_property == 'detx':
-                prop = file_hdf['/entry1/SANS/detector/x_position'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/detector/distance'][0]
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/central_detector/distance'][0]
                 res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
             elif which_property == 'dety':
-                prop = file_hdf['/entry1/SANS/detector/y_position'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/detector/y_position'][0]
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/central_detector/x'][0]
                 res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
             elif which_property == 'wl':
-                prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0]
-                res = check_dimension(prop)*10 # convert from nm to A
+                try:
+                    prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0]
+                    prop = prop*10 # convert from nm to A
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/velocity_selector/wavelength'][0] # in A
+                res = check_dimension(prop)
             elif which_property == 'abs_time':
                 prop = file_hdf['/entry1/control/absolute_time'][0]
                 res = check_dimension(prop)
@@ -81,25 +101,31 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 prop = file_hdf['/entry1/sample/position'][0]
                 res = check_dimension(prop)
             elif which_property == 'flux_monit':
-                prop = file_hdf['/entry1/SANS/monitor2/counts'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/monitor2/counts'][0]
+                except:
+                    prop = file_hdf['/entry0/monitor1/integral'][0]
                 res = check_dimension(prop)
             elif which_property == 'beam_stop': # This specific property returns a boolean/flag
                 res = file_hdf['/entry1/SANS/beam_stop/out_flag'][0]
             elif which_property == 'sample_name':
                 try:
-                    # Attempt to get name from 'name_new' first (newer HDF5 structure)
-                    prop = file_hdf['/entry1/sample/name_new']
-                    res = prop.asstr()[()] # Convert numpy bytes to string
-                except KeyError:
-                    # Fallback to 'name' (older HDF5 structure)
                     prop = file_hdf['/entry1/sample/name'][0]
-                    res = check_dimension(prop) # Will handle decoding bytes if necessary
+                except:
+                    prop = file_hdf['/entry0/sample/name'][0]
+                res = check_dimension(prop) # Will handle decoding bytes if necessary
             # Handle array properties
             elif which_property == 'time':
-                prop = np.asarray(file_hdf['/entry1/SANS/detector/counting_time'])
+                try:
+                    prop = np.asarray(file_hdf['/entry1/SANS/detector/counting_time'])
+                except:
+                    prop = np.asarray(file_hdf['/entry0/control/count_time'])
                 res = check_dimension(prop)  # in s
             elif which_property == 'moni':
-                prop = np.asarray(file_hdf['/entry1/SANS/detector/preset'])
+                try:
+                    prop = np.asarray(file_hdf['/entry1/SANS/detector/preset'])
+                except:
+                    prop = np.asarray(file_hdf['/entry0/control/preset'])
                 res = check_dimension(prop)/1e4 # To have monitors as 1e4, as per existing logic
             elif which_property == 'temp': # Read in Celsius
                 try:
@@ -114,7 +140,10 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                     print(f"Warning: Could not load temperature for {hdf_name}: {e}")
                     res = ''
             elif which_property == 'counts':
-                prop = np.array(file_hdf['entry1/SANS/detector/counts'])
+                try:
+                    prop = np.array(file_hdf['entry1/SANS/detector/counts'])
+                except:
+                    prop = np.array(file_hdf['entry0/central_detector/data'])
                 res = check_dimension(prop)
                 # Correction to avoid negative values in counts data
                 res[res < 0] = 0

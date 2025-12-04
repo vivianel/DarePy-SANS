@@ -14,19 +14,28 @@ plt.ion() # Turn on interactive mode for immediate plot updates
 
 # %% Configuration
 # where are the hdf files saved
-path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2282_MF_3mm_pump/DarePy-SANS/raw_data/"
+path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/raw_data/"
 # number of the AgBE scan
-scanNr = 23179
+scanNr = 1219
+instrument = 'SANS-LLB'
 
-# As requested, keep the name_hdf fixed with 'sans2025n0' + scanNr
-name_hdf = 'sans2023n0' + str(scanNr) + '.hdf'
+# for SANS-1
+if instrument == 'SANS-I':
+    name_hdf = 'sans2023n0' + str(scanNr) + '.hdf'
+    # Pixel size
+    pixel1 = 7.5e-3 # mm
+    pixel2 = 7.5e-3 # mm
+elif instrument == 'SANS-LLB':
+    name_hdf = 'sans-llb2025n00' + str(scanNr) + '.hdf'
+    # Pixel size
+    pixel1 = 5e-3 # mm
+    pixel2 = 5e-3 # mm
+
 
 print(f"Attempting to load: {name_hdf}") # Added for debugging/clarity
 
 
-# Pixel size (common for many SANS detectors)
-pixel1 = 7.5e-3 # mm
-pixel2 = 7.5e-3 # mm
+
 
 # %% Load Data
 img = load_hdf(path_hdf_raw, name_hdf, 'counts')

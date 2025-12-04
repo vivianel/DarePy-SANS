@@ -23,8 +23,8 @@ analysis directory.
 # Select the SANS instrument used for data collection.
 # This choice determines which instrument-specific configurations (e.g., deadtime,
 # attenuator values, absolute calibration constants) are applied.
-# Current options: 'SANS-I'
-instrument = 'SANS-I'
+# Current options: 'SANS-I' and 'SANS-LLB'
+which_instrument = 'SANS-LLB'
 
 # Calibration standards required for data reduction.
 # These sample names MUST EXACTLY MATCH the 'sample_name' metadata in your
@@ -76,7 +76,7 @@ sample_thickness = {'all':0.1}
 #   were taken at this distance, and transmission correction will be applied.
 # - Set to a non-positive value (e.g., 0, -1) if transmission correction is
 #   not needed for your experiment or if transmission data is not available.
-trans_dist = 18.
+trans_dist = -1
 
 # Wavelength of the incident neutrons.
 # This value is crucial for converting scattering angles to the scattering vector 'q'.
@@ -94,9 +94,9 @@ wl = 'auto' # Options: 'auto' (read from HDF5) or a float value in Angstroms (e.
 # - (y_min_pixel, y_max_pixel): Vertical pixel range of the beam stopper.
 # - (x_min_pixel, x_max_pixel): Horizontal pixel range of the beam stopper.
 beamstopper_coordinates = {
-    1.6:[57, 70, 53, 66],
-    4.5:[57, 69, 53, 65],
-    18.0:[58, 68, 54, 64]
+    1.7:[55, 72, 54, 71],
+    8.0:[56, 71, 56, 70],
+    18.3:[53, 68, 55, 70]
 }
 
 # Beam center guess.
@@ -105,9 +105,9 @@ beamstopper_coordinates = {
 # and azimuthal integration as they define the origin for q-space conversion.
 # Format: {detector_distance_in_meters (float): [center_x_pixel, center_y_pixel]}
 beam_center_guess = {
-    1.6:[59.52, 63.92],
-    4.5:[59.89, 64.1],
-    18.0:[59.14, 63.04]
+    1.7:[62.79, 63.56],
+    8.0:[62.87, 63.49],
+    18.3:[63.54, 61.35]
 }
 
 # Target detector distances for processing.
@@ -125,12 +125,12 @@ target_detector_distances = 'all' # Options: 'all' or a list of floats (e.g., [6
 
 # Path where the raw HDF5 data files are located.
 # Ensure this path points directly to the directory containing your `.hdf` files.
-path_hdf_raw = "C:/Users/gruene_e/Documents/SANS_reduction/Cuvettes_Oct25/DarePy-SANS/raw_data/"
+path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/raw_data/"
 
 # Path to the working directory where all analysis results (integrated data, plots, logs) will be saved.
 # A main analysis folder (e.g., 'analysis/') or a uniquely identified subfolder
 # (e.g., 'analysis_batch1/') will be created within this directory.
-path_dir = "C:/Users/gruene_e/Documents/SANS_reduction/error_propagation/DarePy-SANS/"
+path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/"
 
 # Identifier for the analysis output folder.
 # This string will be appended to the default 'analysis/' folder name.
@@ -145,7 +145,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = list(range(74261)) + [74262, 74263] + list(range(74331, 99999))
+exclude_files = list(range(0, 1189)) + list(range(1221, 2000))
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
@@ -189,7 +189,7 @@ save_2d_patterns = 1
 #   'water' standard measurement and its associated configuration.
 # - Set to 0 to skip absolute calibration. Intensities will remain in
 #   arbitrary units, suitable for relative comparisons.
-perform_abs_calib = 1
+perform_abs_calib = 0
 
 # Force re-integration of data.
 # This flag controls whether previously integrated files are re-processed.
@@ -261,22 +261,40 @@ result = {'transmission':{},
 
 # Create the complete configuration dictionary for the selected instrument.
 # This consolidates all parameters for easy access throughout the pipeline.
-configuration = {'SANS-I':{
-    'instrument': {'deadtime': 6.6e-7, # Detector deadtime in seconds.
-                   # Attenuator transmission factors: A dictionary where keys are
-                   # attenuator settings (e.g., '0', '1') as strings, and values
-                   # are their corresponding transmission factors (e.g., 1 for no att., 1/485 for att. 1).
-                   'list_attenuation': {'0':1, '1':1/485,'2':1/88,'3':1/8, '4':1/3.5,'5':1/8.3},
-                   'pixel_size':7.5e-3, # Physical size of a single detector pixel in meters.
-                   'detector_size': 128, # Number of pixels along one side of the (assumed square) detector.
-                   # List of beam stopper sizes (if applicable, often not used directly in this pipeline).
-                   'list_bs': {'1':40, '2':70,'3':85,'4':100},
-                   'efficiency_map': "detector_efficiency_extrapolate_SINQ_SANS_I_HDF.mat",
-                   # Absolute calibration cross-sections for different wavelengths.
-                   # A dictionary where keys are rounded wavelengths in Angstroms (as strings)
-                   # and values are calibration factors (e.g., from water calibration)
-                   # to convert to cm^-1 units.
-                   'list_abs_calib': {'5':0.909, '6':0.989, '8':1.090, '10':1.241, '12':1.452}},
+instrument = {'SANS-I': {'deadtime': 6.6e-7, # Detector deadtime in seconds.
+               # Attenuator transmission factors: A dictionary where keys are
+               # attenuator settings (e.g., '0', '1') as strings, and values
+               # are their corresponding transmission factors (e.g., 1 for no att., 1/485 for att. 1).
+               'list_attenuation': {'0':1, '1':1/485,'2':1/88,'3':1/8, '4':1/3.5,'5':1/8.3},
+               'pixel_size':7.5e-3, # Physical size of a single detector pixel in meters.
+               'detector_size': 128, # Number of pixels along one side of the (assumed square) detector.
+               # List of beam stopper sizes (if applicable, often not used directly in this pipeline).
+               'list_bs': {'1':40, '2':70,'3':85,'4':100},
+               'efficiency_map': "detector_efficiency_extrapolate_SINQ_SANS_I_HDF.mat",
+               # Absolute calibration cross-sections for different wavelengths.
+               # A dictionary where keys are rounded wavelengths in Angstroms (as strings)
+               # and values are calibration factors (e.g., from water calibration)
+               # to convert to cm^-1 units.
+               'list_abs_calib': {'5':0.909, '6':0.989, '8':1.090, '10':1.241, '12':1.452}},
+              'SANS-LLB': {'deadtime': 3.5e-6, # Detector deadtime in seconds.
+               # Attenuator transmission factors: A dictionary where keys are
+               # attenuator settings (e.g., '0', '1') as strings, and values
+               # are their corresponding transmission factors (e.g., 1 for no att., 1/485 for att. 1).
+               'list_attenuation': {'0':1, '1':1/485,'2':1/88,'3':1/8, '4':1/3.5,'5':1/8.3},
+               'pixel_size':5e-3, # Physical size of a single detector pixel in meters.
+               'detector_size': 128, # Number of pixels along one side of the (assumed square) detector.
+               # List of beam stopper sizes (if applicable, often not used directly in this pipeline).
+               'list_bs': {'1':40, '2':70,'3':85,'4':100},
+               'efficiency_map': "detector_efficiency_extrapolate_SINQ_SANS_I_HDF.mat",
+               # Absolute calibration cross-sections for different wavelengths.
+               # A dictionary where keys are rounded wavelengths in Angstroms (as strings)
+               # and values are calibration factors (e.g., from water calibration)
+               # to convert to cm^-1 units.
+               'list_abs_calib': {'5':0.909, '6':0.989, '8':1.090, '10':1.241, '12':1.452}}}
+
+# select the corrcet settings
+instrument_config = instrument[which_instrument]
+configuration = {'instrument':instrument_config,
     'experiment': {'trans_dist': trans_dist, # Transmission measurement distance (from above).
                    'calibration':calibration, # Calibration sample names (from above).
                    'sample_thickness':sample_thickness, # Sample thickness info (from above).
@@ -295,18 +313,14 @@ configuration = {'SANS-I':{
                  'beam_center_guess': beam_center_guess, # Beam center guesses (from above).
                  'beamstopper_coordinates': beamstopper_coordinates, # Beam stopper coords (from above).
                  'target_detector_distances': target_detector_distances # Target detector distances (from above).
-                 }},
-                  'SANS-LLB':{ # Placeholder for another instrument configuration (SANS-LLB).
-    'instrument': {'deadtime':1e7}, # Example instrument-specific parameter for LLB.
-                    'experiment': {}, # Placeholder for experiment parameters specific to LLB.
-                    'analysis': {}}} # Placeholder for analysis parameters specific to LLB.
+                 }}
 
 # %% STEP 1: Load all HDF5 files and create an overview.
 # This step scans the raw data directory, extracts relevant metadata (scan number,
 # sample name, detector distance, etc.) from each HDF5 file, and compiles it
 # into a structured dictionary ('class_files'). This overview is then saved
 # to the 'result' dictionary.
-config = configuration[instrument] # Select the configuration set for the chosen instrument.
+config = configuration # Select the configuration set for the chosen instrument.
 class_files = org.list_files(config, result)
 
 # %% STEP 2: Calculate transmission for samples (if applicable).
