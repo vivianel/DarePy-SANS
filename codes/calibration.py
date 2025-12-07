@@ -101,7 +101,7 @@ def absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat
         correction = float(list_cs[str(wl)])
     else:
         correction = 1
-        print('Wavelength has not been calibrated.')
+        print('Wavelength has not been calibrated for the g(lamba).')
     I_corr = I_corr*correction
 
     # 5. Error propagation.
@@ -195,7 +195,7 @@ def absolute_calibration_2D(config, result, file_name, I, I_flat, variance=None,
         correction = float(list_cs[str(wl)]) / I_flat_mean
     else:
         correction = 1
-        print('Wavelength has not been calibrated.')
+        print('Wavelength has not been calibrated, and the g(lambda cannnot be found).')
 
     I_corr = I_corr * correction
 

@@ -18,7 +18,7 @@ plt.ion() # Turn on interactive mode for immediate plot updates
 # where are the hdf files saved
 path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/raw_data/"
 # number of the AgBE scan
-scanNr = 1295
+scanNr = 1328
 instrument = 'SANS-LLB'
 
 # for SANS-1
@@ -38,6 +38,7 @@ elif instrument == 'SANS-LLB':
 print(f"Attempting to load: {name_hdf}")
 
 # %% Load Data (Assuming load_hdf is defined and works)
+plt.close('all')
 try:
     img = load_hdf(path_hdf_raw, name_hdf, 'counts')
     Detector_distance = load_hdf(path_hdf_raw, name_hdf, 'detx')
@@ -52,6 +53,8 @@ try:
     detector_rows, detector_cols = img.shape
     # RuntimeWarning occurs here for log(0) or log(negative). This is expected.
     img_log = np.log(img) # In log scale
+    #img_log = img
+
 except:
     frames, detector_rows, detector_cols = img.shape
     img_mean = np.mean(img, axis=0)

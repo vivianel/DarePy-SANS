@@ -54,7 +54,7 @@ def plot_all_data(path_dir_an):
     with open(file_config, 'rb') as handle:
         config = pickle.load(handle)
 
-    calibration = config['experiment']['calibration']
+    #calibration = config['experiment']['calibration']
     list_class_files = result['overview']
 
     merged_files = {} # Dictionary to store intensities, q, and errors for each sample
@@ -66,49 +66,45 @@ def plot_all_data(path_dir_an):
             for ii in range(total_samples):
                 sample_name = list_class_files[keys]['sample_name'][ii]
                 # Skip calibration samples as they are processed separately
-                if sample_name not in calibration.values():
-                    # Load the radial integration data for the current sample and detector
-                    prefix = 'radial_integ'
-                    sufix = 'dat'
-                    ScanNr = list_class_files[keys]['scan'][ii]
-                    det = list_class_files[keys]['detx_m'][ii]
-                    Frame = 0 # Assuming integration is done per scan/frame 0
-                    path_integ = path_dir_an + '/det_' + str(det).replace('.','p') + '/integration/'
-                    # Construct the file name using the utility function from integration module
-                    file_name = integ.make_file_name(path_integ, prefix, sufix, sample_name, str(det).replace('.','p'), ScanNr, Frame)
+                #if sample_name not in calibration.values():
+                # at the moment I want to double chech the value for water
+                # Load the radial integration data for the current sample and detector
+                prefix = 'radial_integ'
+                sufix = 'dat'
+                ScanNr = list_class_files[keys]['scan'][ii]
+                det = list_class_files[keys]['detx_m'][ii]
+                Frame = 0 # Assuming integration is done per scan/frame 0
+                path_integ = path_dir_an + '/det_' + str(det).replace('.','p') + '/integration/'
+                # Construct the file name using the utility function from integration module
+                file_name = integ.make_file_name(path_integ, prefix, sufix, sample_name, str(det).replace('.','p'), ScanNr, Frame)
 
-                    try:
-                        # Load q, Intensity (I), and error (e) from the integrated data file
-                        q = np.genfromtxt(file_name, dtype = None, delimiter = ',', usecols = 0)
-                        I = np.genfromtxt(file_name, dtype = None, delimiter = ',', usecols = 1)
-                        e = np.genfromtxt(file_name, dtype = None, delimiter = ',', usecols = 2) # Load error
-                    except Exception as e_load:
-                        print(f"Warning: Could not load data from {file_name}. Error: {e_load}. Skipping this file.")
-                        continue # Skip to the next file if loading fails
+                try:
+                    # Load q, Intensity (I), and error (e) from the integrated data file
+                    q = np.genfromtxt(file_name, dtype = None, delimiter = ',', usecols = 0)
+                    I = np.genfromtxt(file_name, dtype = None, delimiter = ',', usecols = 1)
+                    e = np.genfromtxt(file_name, dtype = None, delimiter = ',', usecols = 2) # Load error
+                except Exception as e_load:
+                    print(f"Warning: Could not load data from {file_name}. Error: {e_load}. Skipping this file.")
+                    continue # Skip to the next file if loading fails
 
-                    # Specific correction for a particular beamtime/detector
-                    #if det == 1.6:
-                    #    I = np.divide(I,2) # Example: Divide intensity by 2 for det 1.6m
-                    #    e = np.divide(e,2) # Propagate error for the intensity division
+                # Ensure errors are non-negative before storing
+                e = np.abs(e)
 
-                    # Ensure errors are non-negative before storing
-                    e = np.abs(e)
-
-                    # Aggregate data for each sample from different detector distances
-                    if sample_name in merged_files:
-                        # If sample already exists, append new data vertically
-                        temp_I = merged_files[sample_name]['I']
-                        merged_files[sample_name]['I'] =  np.vstack((temp_I, I))
-                        temp_q = merged_files[sample_name]['q']
-                        merged_files[sample_name]['q'] =  np.vstack((temp_q, q))
-                        temp_e = merged_files[sample_name]['error']
-                        merged_files[sample_name]['error'] =  np.vstack((temp_e, e)) # Include error
-                    else:
-                        # If sample is new, initialize its entry in the dictionary
-                        merged_files[sample_name] = {}
-                        merged_files[sample_name]['I'] = I
-                        merged_files[sample_name]['q'] = q
-                        merged_files[sample_name]['error'] = e
+                # Aggregate data for each sample from different detector distances
+                if sample_name in merged_files:
+                    # If sample already exists, append new data vertically
+                    temp_I = merged_files[sample_name]['I']
+                    merged_files[sample_name]['I'] =  np.vstack((temp_I, I))
+                    temp_q = merged_files[sample_name]['q']
+                    merged_files[sample_name]['q'] =  np.vstack((temp_q, q))
+                    temp_e = merged_files[sample_name]['error']
+                    merged_files[sample_name]['error'] =  np.vstack((temp_e, e)) # Include error
+                else:
+                    # If sample is new, initialize its entry in the dictionary
+                    merged_files[sample_name] = {}
+                    merged_files[sample_name]['I'] = I
+                    merged_files[sample_name]['q'] = q
+                    merged_files[sample_name]['error'] = e
 
     # Plot the raw (unmerged) data from all detectors for each sample
     for keys in merged_files:

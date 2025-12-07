@@ -22,13 +22,14 @@ from utils import load_hdf
 # Main base path for SANS analysis data.
 # Raw data will be looked for in 'MAIN_BASE_PATH/raw_data'
 # Results will be saved in 'MAIN_BASE_PATH/extra_results'
-MAIN_BASE_PATH = 'C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2024_0212_Wade/DarePy-SANS/'
+MAIN_BASE_PATH ="C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/"
 
 # List of scan numbers to process
-LIST_SCAN = list(range(37109,37110))
+LIST_SCAN = list(range(1316,1330))
 
+which_instrumennt = 'SANS-LLB'
 # file year saved
-file_year = '2024'
+file_year = '2025'
 
 # Background scan number (if background subtraction is enabled)
 BACKGROUND_SCAN_NR = 23088
@@ -82,8 +83,12 @@ def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable
     """
     current_year = file_year
 
-    name_hdf = f'sans{current_year}n0{scan_number}.hdf'
-    full_hdf_path = os.path.join(path_raw_dir, name_hdf)
+    if which_instrumennt == 'SANS-I':
+        name_hdf = f'sans{current_year}n0{scan_number}.hdf'
+        full_hdf_path = os.path.join(path_raw_dir, name_hdf)
+    elif which_instrumennt == 'SANS-LLB':
+        name_hdf = f'sans-llb{current_year}n00{scan_number}.hdf'
+        full_hdf_path = os.path.join(path_raw_dir, name_hdf)
     print(f"Attempting to load: {full_hdf_path}")
 
     try:

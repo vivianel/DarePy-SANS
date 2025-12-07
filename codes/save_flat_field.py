@@ -10,13 +10,14 @@ import normalization
 import os
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
 
 path_dir = 'C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS'
 
 # number of the AgBE scan
-scanNr = 1305
+scanNr = 883
 instrument = 'SANS-LLB'
-hdf_name = f'sans-llb2025n00{scanNr}.hdf'
+hdf_name = f'sans-llb2025n000{scanNr}.hdf'
 
 # %%
 print(f"Attempting to load: {hdf_name}")
@@ -36,9 +37,15 @@ counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
 #counts = normalization.normalize_deadtime(config, hdf_name, counts)
 counts = normalization.normalize_time(config, hdf_name, counts)
 
-file_name = "flat_field_SANS-LLB.txt"
+#plt.imshow(np.log(counts))
+# this is a "quick flat field correction
+# we need a better correction
+c =  [55, 71, 55, 71]
+counts[c[0]:c[1], c[2]:c[3]]  = np.median(counts)
+counts = counts/np.mean(counts)
+plt.imshow(counts)
+plt.show()
 
+file_name = "flat_field_SANS-LLB.txt"
 full_path = os.path.join(save_directory, file_name)
-np.savetxt(full_path, counts, fmt='%.5f',
-    delimiter='\t', # Using a tab delimiter for clean text columns
-)
+np.savetxt(full_path, counts, fmt='%.5f', delimiter='\t')

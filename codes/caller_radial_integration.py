@@ -94,16 +94,16 @@ wl = 'auto' # Options: 'auto' (read from HDF5) or a float value in Angstroms (e.
 # - (y_min_pixel, y_max_pixel): Vertical pixel range of the beam stopper.
 # - (x_min_pixel, x_max_pixel): Horizontal pixel range of the beam stopper.
 beamstopper_coordinates = {
-  1.65:{'bs0': [54, 73, 54, 71], 'bs1': [0, 12, 0, 128], 'bs2': [12, 128, 0, 5]},
-   8.0:[53, 73, 54, 72],
-    18.3:[52, 72, 54, 72]
+  1.65:{'bs0': [54, 72, 54, 71], 'bs1': [11, 128, 0, 8], 'bs2': [0, 12, 0, 128], 'bs3': [53, 73, 58, 68]},
+  8.0:{'bs0': [53, 72, 55, 70], 'bs1': [68, 72, 52, 72], 'bs2': [52, 57, 52, 72]},
+    18.3:[52, 71, 51, 73]
 }
 
 # fill with the transmission coordinates
 transmission_coordinates = {
-    1.65:[58, 67, 56, 70],
-   8.0:[60, 66, 57, 70],
-    18.3:[59, 65, 57, 69]
+    1.65: [59, 68, 56, 70],
+   8.0: [59, 67, 56, 69],
+    18.3: [58, 66, 57, 69]
 }
 
 # Beam center guess.
@@ -112,9 +112,9 @@ transmission_coordinates = {
 # and azimuthal integration as they define the origin for q-space conversion.
 # Format: {detector_distance_in_meters (float): [center_x_pixel, center_y_pixel]}
 beam_center_guess = {
-   1.65:[62.48, 62.5],
-    8.0:[62.86, 64.16],
-    18.3:[62.69, 61.82]
+  1.65: [62.73, 62.24],
+    8.0: [63.29, 63.39],
+    18.3: [62.43, 62.49]
 }
 
 # Target detector distances for processing.
