@@ -13,6 +13,9 @@ and sample thickness, allowing for comparison of scattering intensities.
 
 import numpy as np
 from utils import load_hdf # Importing load_hdf from the utils module
+import transmission
+from prepare_input import save_list_files
+from utils import create_analysis_folder
 
 def normalize_time(config, hdf_name, counts):
     """
@@ -169,6 +172,7 @@ def normalize_transmission(config, hdf_name, result, counts):
     # Access the overall list of all files, which should contain transmission info
     # 'class_trans' here refers to 'all_files' that now includes transmission
     class_all_files = result['overview']['all_files']
+    instrument = config['instrument']['name']
 
     if hdf_name in class_all_files['name_hdf']:
         # Find the index of the current HDF file in the list of all files
@@ -177,9 +181,44 @@ def normalize_transmission(config, hdf_name, result, counts):
         except ValueError:
             print(f"Warning: HDF file '{hdf_name}' not found in 'all_files' overview. Transmission correction skipped.")
             return counts
-
-        trans_value = class_all_files['transmission'][idx_file]
+        # already loads from the files
         sample_name = class_all_files['sample_name'][idx_file]
+        if instrument == 'SANS-I':
+            trans_value = class_all_files['transmission'][idx_file]
+        # needs to complete the files
+        elif instrument == 'SANS-LLB':
+            path_hdf_raw = config['analysis']['path_hdf_raw']
+            det_dist = load_hdf(path_hdf_raw, hdf_name, 'detx')
+            name_m = 'mask_' + str(det_dist)
+            mask =  result['transmission'][name_m]
+            name_m = 'mean_EB_' + str(det_dist)
+            EB_ref = result['transmission'][name_m]
+            img = load_hdf(path_hdf_raw, hdf_name, 'counts')
+            img = transmission.normalize_trans(config, result, hdf_name, img)
+            sum_counts = float(np.sum(np.multiply(img, mask)))
+            trans = np.divide(sum_counts,EB_ref)
+            trans_value = round(trans, 3)
+            print('detector = ', det_dist)
+            print('reference =', EB_ref)
+            print('sample =', sum_counts)
+            print('transmission is ', trans_value)
+
+            # save the transmission of the sample in the all_file
+            class_all = result['overview']['all_files']
+            try:
+                idx = class_all['name_hdf'].index(hdf_name)
+                class_all['tranmission'][idx] = trans_value
+            except:
+                # find index when class_all and the value being calculated here has the same name
+                class_all['tranmission'] = np.empty(len(class_all['detx_m'])).tolist()
+                #hdf_name
+                idx = class_all['name_hdf'].index(hdf_name)
+                class_all['tranmission'][idx] = trans_value
+            # print the updated list of the transmission files
+            path_dir_an = create_analysis_folder(config)
+            save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
+
+
 
         # Check if transmission value is a valid float and greater than zero
         if isinstance(trans_value, (float, np.float32, np.float64)) and trans_value > 0:
@@ -220,10 +259,10 @@ def normalize_thickness(config, hdf_name, result, counts):
             idx_file = list(class_all_files['name_hdf']).index(str(hdf_name))
         except ValueError:
             print(f"Warning: HDF file '{hdf_name}' not found in 'all_files' overview during thickness lookup. Using default thickness.")
-        
+
         thickness = class_all_files['thickness_cm'][idx_file]
         sample_name = class_all_files['sample_name'][idx_file]
-            
+
     else:
         print(f"Warning: HDF file '{hdf_name}' not found in main overview for thickness normalization. Using default thickness.")
 

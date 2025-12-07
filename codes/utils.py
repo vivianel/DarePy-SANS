@@ -89,10 +89,10 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
             elif which_property == 'wl':
                 try:
-                    prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0]
-                    prop = prop*10 # convert from nm to A
+                    prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0] # in nm
                 except:
-                    prop = file_hdf['/entry0/SANS-LLB/velocity_selector/wavelength'][0] # in A
+                    prop = file_hdf['/entry0/SANS-LLB/velocity_selector/wavelength'][0] # in nm
+                prop = prop*10 # convert from nm to A
                 res = check_dimension(prop)
             elif which_property == 'abs_time':
                 prop = file_hdf['/entry1/control/absolute_time'][0]
@@ -104,7 +104,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 try:
                     prop = file_hdf['/entry1/SANS/monitor2/counts'][0]
                 except:
-                    prop = file_hdf['/entry0/monitor1/integral'][0]
+                    prop = file_hdf['/entry0/monitor2/integral'][0]
                 res = check_dimension(prop)
             elif which_property == 'beam_stop': # This specific property returns a boolean/flag
                 res = file_hdf['/entry1/SANS/beam_stop/out_flag'][0]
@@ -143,7 +143,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 try:
                     prop = np.array(file_hdf['entry1/SANS/detector/counts'])
                 except:
-                    prop = np.array(file_hdf['entry0/central_detector/data'])
+                    prop = np.array(file_hdf['entry0/central_data/data'])
                 res = check_dimension(prop)
                 # Correction to avoid negative values in counts data
                 res[res < 0] = 0

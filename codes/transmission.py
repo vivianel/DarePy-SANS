@@ -10,67 +10,105 @@ import normalization as norm
 import sys
 
 def trans_calc(config, class_files, result):
-   result = select_transmission(config, class_files, result)
-   result = trans_calc_reference(config, result)
-   result = trans_calc_sample(config, result)
-   return result
+    instrument = config['instrument']['name']
+    if instrument == 'SANS-I':
+        result = select_transmission(config, class_files, result)
+        result = trans_calc_reference(config, result, class_files)
+        result = trans_calc_sample(config, result)
+    elif instrument == 'SANS-LLB':
+        result = trans_calc_reference(config, result, class_files)
+    return result
 
 
-def trans_calc_reference(config, result):
+def trans_calc_reference(config, result, class_files):
     path_dir_an = create_analysis_folder(config)
     #find transmission folder
-    path_transmission = os.path.join(path_dir_an, 'transmission/')
-    # open the list for all
-    class_trans  = result['overview']['trans_files']
+    instrument = config['instrument']['name']
     empty_beam = config['analysis']['empty_beam']
-    trans_dist = config['experiment']['trans_dist']
-    # calculate the number of counts of the EB measurement
-    array = np.array(class_trans['sample_name'])
-    index = np.where(array == empty_beam)[0]
-    if len(index) > 0 and class_trans['detx_m'][index[0]] == trans_dist:
-        path_hdf_raw = os.path.join(path_transmission, 'hdf_raw/')
-        scan_nr = class_trans['scan'][index[0]]
-        hdf_name = class_trans['name_hdf'][index[0]]
-        counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
-        img = normalize_trans(config, result, hdf_name, counts)
-        # calculation of the cuttoff value for the mask
-        cutoff = img[img > 0].mean()
-        # prepare the mask for selecting the direct beam
-        img1 = np.where(img < cutoff, 0, img)
-        mask = np.where(img1 >= cutoff, 1, img1)
-        # define the reference value from the empty beam
-        # when we get a reference for another beamtime, we might need to adjust the transmission
-        # knowing that water with 1 mm should have a transmission of around 0.5
-        # factor to correct the transmission (if needed)
-        Factor_correction = 1 # 1.14 # it should be mainly 1, if the calibration samples were measured properly
-        EB_ref = float(np.sum(np.multiply(img,mask)))*Factor_correction # needed only for this beamtime
-        # save the reference value
-        result['transmission']['mask'] = mask
-        result['transmission']['mean_EB'] = EB_ref
-        result['transmission']['EB_counts'] = img
-        save_results(path_dir_an, result)
+    coordinates = config['analysis']['transmission_coordinates']
+    if instrument == 'SANS-I':
+        path_transmission = os.path.join(path_dir_an, 'transmission/')
+        # open the list for all
+        class_trans  = result['overview']['trans_files']
+        trans_dist = config['experiment']['trans_dist']
+        # calculate the number of counts of the EB measurement
+        array = np.array(class_trans['sample_name'])
+        index = np.where(array == empty_beam)[0]
+        if len(index) > 0 and class_trans['detx_m'][index[0]] == trans_dist:
+            path_hdf_raw = os.path.join(path_transmission, 'hdf_raw/')
+            hdf_name = class_trans['name_hdf'][index[0]]
+            counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
+            img = normalize_trans(config, result, hdf_name, counts)
+            # calculation of the cuttoff value for the mask
+            cutoff = img[img > 0].mean()
+            # prepare the mask for selecting the direct beam
+            img1 = np.where(img < cutoff, 0, img)
+            mask = np.where(img1 >= cutoff, 1, img1)
+            # define the reference value from the empty beam
+            # when we get a reference for another beamtime, we might need to adjust the transmission
+            # knowing that water with 1 mm should have a transmission of around 0.5
+            # factor to correct the transmission (if needed)
+            Factor_correction = 1
+            EB_ref = float(np.sum(np.multiply(img,mask)))*Factor_correction
+            # save the reference value
+            result['transmission']['mask'] = mask
+            result['transmission']['mean_EB'] = EB_ref
+            result['transmission']['EB_counts'] = img
+        else:
+            sys.exit('Please measure an empty beam (EB) for the same detector distance, for calculating the relative transmission. \n Or change the trans_dist < 0 in "caller_radial_integration" for not correcting by transmission.')
+    elif instrument == 'SANS-LLB':
+        # list all files in the
+        det_dist = list(set(class_files['detx_m']))
+        for jj in det_dist:
+            for ii in range(0, len(class_files['detx_m'])):
+                if class_files['detx_m'][ii] == jj and class_files['sample_name'][ii] == empty_beam:
+                    path_hdf_raw = config['analysis']['path_hdf_raw']
+                    hdf_name = class_files['name_hdf'][ii]
+                    counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
+                    img = normalize_trans(config, result, hdf_name, counts)
+                    #img = counts
+                    mask = np.zeros_like(img)
+                    try:
+                        c = coordinates[jj]
+                    except:
+                        sys.exit('Please measure an empty beam (EB) for the same detector distance, for calculating the relative transmission. \n Or change the trans_dist < 0 in "caller_radial_integration" for not correcting by transmission.')
+                    mask[c[0]:c[1], c[2]:c[3]]  = 1
+                    # define the reference value from the empty beam
+                    # when we get a reference for another beamtime, we might need to adjust the transmission
+                    # knowing that water with 1 mm should have a transmission of around 0.5
+                    # factor to correct the transmission (if needed)
+                    Factor_correction = 1
+                    EB_ref = float(np.sum(np.multiply(img,mask)))*Factor_correction
+                    name_m = 'mask_' + str(jj)
+                    # save the reference value
+                    result['transmission'][name_m] = mask
+                    name_EB = 'mean_EB_' + str(jj)
+                    result['transmission'][name_EB] = EB_ref
+                    name_EB = 'counts_EB_' + str(jj)
+                    result['transmission'][name_EB] = img
+
+    save_results(path_dir_an, result)
 
 
-        #some plotting for checking the results
-        plt.figure()
-        plt.imshow(img, cmap='jet', origin='lower')
-        plt.colorbar(orientation = 'vertical', shrink = 0.5).set_label('Intensity (counts)')
-        im_title = 'Empty_beam_Intensity, cutoff = ' + str(round(cutoff)) + ', Scan: ' + str(scan_nr)
-        plt.title(im_title)
-        im_title = str(path_transmission + 'Empty_beam.jpg')
-        plt.savefig(im_title)
+    # #some plotting for checking the results
+    # plt.figure()
+    # plt.imshow(img, cmap='jet', origin='lower')
+    # plt.colorbar(orientation = 'vertical', shrink = 0.5).set_label('Intensity (counts)')
+    # #im_title = 'Empty_beam_Intensity, cutoff = ' + str(round(cutoff)) + ', Scan: ' + str(scan_nr)
+    # #plt.title(im_title)
+    # im_title = str(path_transmission + 'Empty_beam.jpg')
+    # plt.savefig(im_title)
 
-        plt.figure()
-        plt.imshow(mask, cmap='gray', origin='lower')
-        plt.colorbar(orientation = 'vertical', shrink = 0.5, ticks=[0, 1]).set_label('Binary')
-        im_title = 'Transmission_Mask, Scan: ' + str(scan_nr)
-        plt.title(im_title +  ', Total counts = ' + str(EB_ref))
-        im_title = str(path_transmission + 'transmission_mask.jpg')
-        plt.savefig(im_title)
-        plt.close('all')
-        return result
-    else:
-        sys.exit('Please measure an empty beam (EB) for the same detector distance, for calculating the relative transmission. \n Or change the trans_dist < 0 in "caller_radial_integration" for not correcting by transmission.')
+    # plt.figure()
+    # plt.imshow(mask, cmap='gray', origin='lower')
+    # plt.colorbar(orientation = 'vertical', shrink = 0.5, ticks=[0, 1]).set_label('Binary')
+    # im_title = 'Transmission_Mask, Scan: ' + str(scan_nr)
+    # plt.title(im_title +  ', Total counts = ' + str(EB_ref))
+    # im_title = str(path_transmission + 'transmission_mask.jpg')
+    # plt.savefig(im_title)
+    # plt.close('all')
+    return result
+
 
 
 
@@ -123,22 +161,21 @@ def trans_calc_sample(config, result):
 
 
 def normalize_trans(config, result, hdf_name, counts):
-    #counts = norm.normalize_time(config, hdf_name, counts)
     counts = norm.normalize_deadtime(config, hdf_name, counts)
     counts = norm.normalize_flux(config, hdf_name, counts)
     counts = norm.normalize_attenuator(config, hdf_name, counts)
-    # counts = norm.normalize_thickness(config, hdf_name, result, counts)
     return counts
 
 def select_transmission(config, class_files, result):
     #generate the analysis folder
     path_hdf_raw = config['analysis']['path_hdf_raw']
-    trans_dist = config['experiment']['trans_dist']
     path_dir_an = create_analysis_folder(config)
-    #create a folder
+    trans_dist = config['experiment']['trans_dist']
+    #create a folder to save the files of the tranmission - SANS-I
     path_transmission = os.path.join(path_dir_an, 'transmission/')
     if not os.path.exists(path_transmission):
         os.mkdir(path_transmission)
+    # list all files in the
     list_trans = list(class_files.keys())
     class_trans = {key: [] for key in list_trans}
     for ii in range(0, len(class_files['att'])):
@@ -152,4 +189,5 @@ def select_transmission(config, class_files, result):
                  os.mkdir(destination)
              shutil.copyfile(source, destination + class_files['name_hdf'][ii])
     save_list_files(path_transmission, path_dir_an, class_trans, 'trans_files', result)
+
     return result

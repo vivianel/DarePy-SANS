@@ -68,7 +68,7 @@ empty_cell = 'EC'
 # If a sample name is not found here and 'all' is not specified, a default of 0.1 cm will be used.
 sample_thickness = {'all':0.1}
 
-# Transmission measurement distance.
+# Transmission measurement distance - Only needed for SANS-I
 # This specifies the detector distance (in meters) at which transmission measurements
 # were performed. Transmission correction is crucial for absolute intensity scaling
 # and accounting for sample absorption.
@@ -76,7 +76,7 @@ sample_thickness = {'all':0.1}
 #   were taken at this distance, and transmission correction will be applied.
 # - Set to a non-positive value (e.g., 0, -1) if transmission correction is
 #   not needed for your experiment or if transmission data is not available.
-trans_dist = -1
+trans_dist = 18.3
 
 # Wavelength of the incident neutrons.
 # This value is crucial for converting scattering angles to the scattering vector 'q'.
@@ -94,9 +94,16 @@ wl = 'auto' # Options: 'auto' (read from HDF5) or a float value in Angstroms (e.
 # - (y_min_pixel, y_max_pixel): Vertical pixel range of the beam stopper.
 # - (x_min_pixel, x_max_pixel): Horizontal pixel range of the beam stopper.
 beamstopper_coordinates = {
-    1.7:[55, 72, 54, 71],
-    8.0:[56, 71, 56, 70],
-    18.3:[53, 68, 55, 70]
+  1.65:{'bs0': [54, 73, 54, 71], 'bs1': [0, 12, 0, 128], 'bs2': [12, 128, 0, 5]},
+   8.0:[53, 73, 54, 72],
+    18.3:[52, 72, 54, 72]
+}
+
+# fill with the transmission coordinates
+transmission_coordinates = {
+    1.65:[58, 67, 56, 70],
+   8.0:[60, 66, 57, 70],
+    18.3:[59, 65, 57, 69]
 }
 
 # Beam center guess.
@@ -105,9 +112,9 @@ beamstopper_coordinates = {
 # and azimuthal integration as they define the origin for q-space conversion.
 # Format: {detector_distance_in_meters (float): [center_x_pixel, center_y_pixel]}
 beam_center_guess = {
-    1.7:[62.79, 63.56],
-    8.0:[62.87, 63.49],
-    18.3:[63.54, 61.35]
+   1.65:[62.48, 62.5],
+    8.0:[62.86, 64.16],
+    18.3:[62.69, 61.82]
 }
 
 # Target detector distances for processing.
@@ -145,7 +152,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = list(range(0, 1189)) + list(range(1221, 2000))
+exclude_files = list(range(0, 1288)) + list(range(1330, 5000))
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
@@ -189,7 +196,7 @@ save_2d_patterns = 1
 #   'water' standard measurement and its associated configuration.
 # - Set to 0 to skip absolute calibration. Intensities will remain in
 #   arbitrary units, suitable for relative comparisons.
-perform_abs_calib = 0
+perform_abs_calib = 1
 
 # Force re-integration of data.
 # This flag controls whether previously integrated files are re-processed.
@@ -261,7 +268,7 @@ result = {'transmission':{},
 
 # Create the complete configuration dictionary for the selected instrument.
 # This consolidates all parameters for easy access throughout the pipeline.
-instrument = {'SANS-I': {'deadtime': 6.6e-7, # Detector deadtime in seconds.
+instrument = {'SANS-I': {'name':'SANS-I', 'deadtime': 6.6e-7, # Detector deadtime in seconds.
                # Attenuator transmission factors: A dictionary where keys are
                # attenuator settings (e.g., '0', '1') as strings, and values
                # are their corresponding transmission factors (e.g., 1 for no att., 1/485 for att. 1).
@@ -270,13 +277,13 @@ instrument = {'SANS-I': {'deadtime': 6.6e-7, # Detector deadtime in seconds.
                'detector_size': 128, # Number of pixels along one side of the (assumed square) detector.
                # List of beam stopper sizes (if applicable, often not used directly in this pipeline).
                'list_bs': {'1':40, '2':70,'3':85,'4':100},
-               'efficiency_map': "detector_efficiency_extrapolate_SINQ_SANS_I_HDF.mat",
+               'efficiency_map': "flat_field_SANS-I.txt",
                # Absolute calibration cross-sections for different wavelengths.
                # A dictionary where keys are rounded wavelengths in Angstroms (as strings)
                # and values are calibration factors (e.g., from water calibration)
                # to convert to cm^-1 units.
                'list_abs_calib': {'5':0.909, '6':0.989, '8':1.090, '10':1.241, '12':1.452}},
-              'SANS-LLB': {'deadtime': 3.5e-6, # Detector deadtime in seconds.
+              'SANS-LLB': {'name':'SANS-LLB', 'deadtime': 3.5e-6, # Detector deadtime in seconds.
                # Attenuator transmission factors: A dictionary where keys are
                # attenuator settings (e.g., '0', '1') as strings, and values
                # are their corresponding transmission factors (e.g., 1 for no att., 1/485 for att. 1).
@@ -285,7 +292,7 @@ instrument = {'SANS-I': {'deadtime': 6.6e-7, # Detector deadtime in seconds.
                'detector_size': 128, # Number of pixels along one side of the (assumed square) detector.
                # List of beam stopper sizes (if applicable, often not used directly in this pipeline).
                'list_bs': {'1':40, '2':70,'3':85,'4':100},
-               'efficiency_map': "detector_efficiency_extrapolate_SINQ_SANS_I_HDF.mat",
+               'efficiency_map': "flat_field_SANS-LLB.txt",
                # Absolute calibration cross-sections for different wavelengths.
                # A dictionary where keys are rounded wavelengths in Angstroms (as strings)
                # and values are calibration factors (e.g., from water calibration)
@@ -312,6 +319,7 @@ configuration = {'instrument':instrument_config,
                  'empty_beam':empty_beam, # Empty beam sample name (from above).
                  'beam_center_guess': beam_center_guess, # Beam center guesses (from above).
                  'beamstopper_coordinates': beamstopper_coordinates, # Beam stopper coords (from above).
+                 'transmission_coordinates': transmission_coordinates, # transmission coords (from above).
                  'target_detector_distances': target_detector_distances # Target detector distances (from above).
                  }}
 

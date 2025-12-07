@@ -178,9 +178,10 @@ def integrate(config, result, det_str, path_rad_int):
         time_s = load_hdf(path_hdf_raw, hdf_name, 'time')
         preset = load_hdf(path_hdf_raw, hdf_name, 'moni') # needs to be fixed: moni is either time in s or monitors in e4
 
-        if flux_monit == preset*1e4 or time_s == preset and force_reintegrate == 0:
-            print(f"Scan {scanNr} ('{sample_name}') already integrated. Skipping due to force_reintegrate = 0.")
-            continue # Skip to the next scan if already processed and not forcing re-integration
+        if force_reintegrate == 0:
+            if flux_monit == preset*1e4 or time_s == preset:
+                print(f"Scan {scanNr} ('{sample_name}') already integrated. Skipping due to force_reintegrate = 0.")
+                continue # Skip to the next scan if already processed and not forcing re-integration
 
 
         # Loop through each frame within a multi-frame HDF5 file (if applicable)

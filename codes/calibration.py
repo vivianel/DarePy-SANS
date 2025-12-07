@@ -13,7 +13,7 @@ and propagates the associated errors.
 
 import numpy as np
 import sys # Import sys for potential exit on critical errors
-import scipy.io
+import os
 
 def absolute_calibration(config, result, file_name, I, sigma, I_flat, sigma_flat):
     """
@@ -156,8 +156,8 @@ def absolute_calibration_2D(config, result, file_name, I, I_flat, variance=None,
             I_safe[I_safe <= 0] = np.median(I[I > 0]) #
         else:
             I_safe[I_safe <= 0] = np.finfo(I_safe.dtype).eps
-    
-    
+
+
     I_flat_safe = I_flat.copy() # Work on a copy to avoid modifying the original array in 'result'
     if I_flat_safe.size == 0 or np.all(I_flat_safe <= 0):
         print(f"Error: Flat field intensity (I_flat) is empty or all non-positive for '{file_name}'. Cannot perform absolute calibration.")
@@ -167,23 +167,27 @@ def absolute_calibration_2D(config, result, file_name, I, I_flat, variance=None,
             return I, variance
         else:
             return I
-        
+
     # import and apply mask to avoid devision by 0
     mask = result['integration'].get('int_mask')
     I_flat_safe[I_flat_safe <= 0] = 0
     masked_I_flat = np.ma.MaskedArray(data=I_flat_safe, mask=mask)
     masked_I = np.ma.MaskedArray(data=I_safe, mask=mask)
-    
+
     # import detector efficiency map and mask it
     eff_file = config['instrument']['efficiency_map']
-    det_eff_dict = scipy.io.loadmat(eff_file)
-    detector_eff = np.ma.MaskedArray(data=det_eff_dict['eff_data'], mask=mask)
-    
+    path = config['analysis']['path_dir']
+    eff_file = os.path.join(path, "codes" , eff_file)
+    detector_eff = np.loadtxt(eff_file,
+        delimiter='\t', # Use your specific delimiter
+
+    )
+
     # correct for detector efficiency
     I_corr = np.ma.divide(masked_I, detector_eff)
-    
+
     I_flat_mean = masked_I_flat.mean()
-    
+
     # calculate correction coefficient for absolute scaling and apply
     list_cs = config['instrument']['list_abs_calib']
     wl = str(int(result['overview']['all_files']['wl_A'][1]))
@@ -192,8 +196,8 @@ def absolute_calibration_2D(config, result, file_name, I, I_flat, variance=None,
     else:
         correction = 1
         print('Wavelength has not been calibrated.')
-    
+
     I_corr = I_corr * correction
-    
-    
+
+
     return I_corr

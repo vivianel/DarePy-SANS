@@ -103,33 +103,61 @@ def prepare_corrections(config, result, det):
     # Apply beam stopper mask based on configured coordinates
     beamstopper_coordinates = config['analysis']['beamstopper_coordinates'] # Dictionary of beam stopper coordinates
     if det_float_key in beamstopper_coordinates:
-        bs_coords = beamstopper_coordinates[det_float_key]
-        if len(bs_coords) == 4:
-            y_n, y_p, x_n, x_p = bs_coords # Unpack y_min, y_max, x_min, x_max
-            mask[y_n:y_p, x_n:x_p] = 1 # Mark beam stopper region as masked (1)
-        else:
-            print(f"Warning: Beamstopper coordinates for {det_float_key}m are not in [y_min, y_max, x_min, x_max] format. Beamstopper mask not applied.")
+        bs_all = beamstopper_coordinates[det_float_key]
+        try:
+            for jj in range(0, len(bs_all)):
+                bs_select = 'bs' + str(jj)
+                bs_coords = bs_all[bs_select]
+                if len(bs_coords) == 4:
+                    y_n, y_p, x_n, x_p = bs_coords # Unpack y_min, y_max, x_min, x_max
+                    mask[y_n:y_p, x_n:x_p] = 1 # Mark beam stopper region as masked (1)
+                else:
+                    print(f"Warning: Beamstopper coordinates for {det_float_key}m are not in [y_min, y_max, x_min, x_max] format. Beamstopper mask not applied.")
+        except:
+            if len(bs_all) == 4:
+                y_n, y_p, x_n, x_p = bs_all # Unpack y_min, y_max, x_min, x_max
+                mask[y_n:y_p, x_n:x_p] = 1 # Mark beam stopper region as masked (1)
+            else:
+                print(f"Warning: Beamstopper coordinates for {det_float_key}m are not in [y_min, y_max, x_min, x_max] format. Beamstopper mask not applied.")
     else:
         print(f"Warning: No beamstopper coordinates defined for detector distance {det_float_key}m. Ensure no beamstopper interferes or define its coordinates if present.")
 
-    # Remove the edge lines around the detector (common for most detectors)
-    lines = 2 # Number of pixels to mask from the edges
-    mask[:, 0:lines] = 1 # Left edge
-    mask[:, detector_size - lines : detector_size] = 1 # Right edge (corrected slice end)
-    mask[0:lines, :] = 1 # Bottom edge
-    mask[detector_size - lines : detector_size, :] = 1 # Top edge (corrected slice end)
+    if config['instrument']['name'] == 'SANS-I':
+        # Remove the edge lines around the detector (common for most detectors)
+        lines = 2 # Number of pixels to mask from the edges
+        mask[:, 0:lines] = 1 # Left edge
+        mask[:, detector_size - lines : detector_size] = 1 # Right edge (corrected slice end)
+        mask[0:lines, :] = 1 # Bottom edge
+        mask[detector_size - lines : detector_size, :] = 1 # Top edge (corrected slice end)
 
-    # Remove the last thick line - only for SANS-I (specific to instrument setup)
-    if dist > 15: # Assuming this applies to 18m distance
-        lines = 6 # Larger number of pixels to mask
-        mask[:, detector_size - lines : detector_size] = 1 # Mask thicker section on the right edge
+        # Remove the last thick line - only for SANS-I (specific to instrument setup)
+        if dist > 15: # Assuming this applies to 18m distance
+            lines = 6 # Larger number of pixels to mask
+            mask[:, detector_size - lines : detector_size] = 1 # Mask thicker section on the right edge
 
-    # Remove the corners (to avoid noisy regions)
-    corner = 10 # Size of the square corner to mask
-    mask[0:corner, 0:corner] = 1 # Bottom-left
-    mask[detector_size - corner:detector_size, 0:corner] = 1 # Top-left (corrected slice start)
-    mask[detector_size - corner:detector_size, detector_size - corner:detector_size] = 1 # Top-right (corrected slice starts)
-    mask[0:corner, detector_size - corner:detector_size] = 1 # Bottom-right (corrected slice starts)
+        # Remove the corners (to avoid noisy regions)
+        corner = 10 # Size of the square corner to mask
+        mask[0:corner, 0:corner] = 1 # Bottom-left
+        mask[detector_size - corner:detector_size, 0:corner] = 1 # Top-left (corrected slice start)
+        mask[detector_size - corner:detector_size, detector_size - corner:detector_size] = 1 # Top-right (corrected slice starts)
+        mask[0:corner, detector_size - corner:detector_size] = 1 # Bottom-right (corrected slice starts)
+    elif config['instrument']['name'] == 'SANS-LLB':
+        # Remove the edge lines around the detector (common for most detectors)
+        lines = 2 # Number of pixels to mask from the edges
+        mask[:, 0:lines] = 1 # Left edge
+        mask[:, detector_size - 6 : detector_size] = 1 # Right edge (corrected slice end)
+        mask[0:lines, :] = 1 # Bottom edge
+        mask[detector_size - lines : detector_size, :] = 1 # Top edge (corrected slice end)
+
+        if dist < 2: # Assuming this applies to short distance
+            lines = 6
+            mask[:, 0:lines] = 1 # Left edge
+            lines = 10
+            mask[0:lines, :] = 1 # Bottom edge
+            lines = 6 # Larger number of pixels to mask
+            mask[:, detector_size - lines : detector_size] = 1 # Mask thicker section on the right edge
+
+
 
     result['integration']['int_mask'] = mask # Store the final mask in results
 
@@ -222,7 +250,7 @@ def load_standards(config, result, det):
             if counts is None:
                 print(f"Error: Could not load counts data for {hdf_name}. Skipping normalizations.")
                 img = np.array([[]]) # Return an empty/invalid array if counts cannot be loaded
-                
+
             else:
                 counts = norm.normalize_deadtime(config, hdf_name, counts)
                 counts_per_sec = norm.normalize_time(config, hdf_name, counts)
@@ -233,7 +261,7 @@ def load_standards(config, result, det):
         if standard_key == 'water':
             water_hdf_name = hdf_name
         result['integration'][standard_key] = img
-        
+
 
     # Subtract empty cell from water to get pure water scattering for flat field
     img_h2o = result['integration']['water']
@@ -281,34 +309,35 @@ def load_and_normalize(config, result, hdf_name, return_variance=False):
 
     dark_per_sec_img = (result['integration'].get('cadmium')).copy()
     meas_time = load_hdf(path_hdf_raw, hdf_name, 'time')
-    
+
     dark_img = dark_per_sec_img * meas_time
 
-    # Apply normalizations in sequence
-    # Note: `normalize_time` is commented out in original, consider if it should be active.
-    # counts = norm.normalize_time(config, hdf_name, counts)
-    counts = norm.normalize_deadtime(config, hdf_name, counts)
-    counts = correct_dark(counts, dark_img)
-    counts = norm.normalize_flux(config, hdf_name, counts)
-    counts = norm.normalize_attenuator(config, hdf_name, counts)
-    
-    counts_deviation = norm.normalize_deadtime(config, hdf_name, counts_deviation)
-    counts_deviation = np.sqrt(dark_img + counts_deviation**2)
-    counts_deviation = norm.normalize_flux(config, hdf_name, counts_deviation)
-    counts_deviation = norm.normalize_attenuator(config, hdf_name, counts_deviation)
-
-    # Transmission normalization is conditional based on 'trans_dist' setting
+    # Transmission normalization is conditional based on 'trans_dist' setting for SANS-I
+    # for SANS-LLB it happens for all samples and must be performed first
     if config['experiment']['trans_dist'] > 0:
         counts = norm.normalize_transmission(config, hdf_name, result, counts)
         counts_deviation = norm.normalize_transmission(config, hdf_name, result, counts_deviation)
     else:
         print(f"Error: trans_dist is < 0. Skipping transmission normalization for {hdf_name}.")
-    
+
     if return_variance:
         return counts, np.square(counts_deviation)
     else:
         return counts
-    
+
+    # Apply normalizations in sequence
+    counts = norm.normalize_deadtime(config, hdf_name, counts)
+    counts = correct_dark(counts, dark_img)
+    counts = norm.normalize_flux(config, hdf_name, counts)
+    counts = norm.normalize_attenuator(config, hdf_name, counts)
+
+    counts_deviation = norm.normalize_deadtime(config, hdf_name, counts_deviation)
+    counts_deviation = np.sqrt(dark_img + counts_deviation**2)
+    counts_deviation = norm.normalize_flux(config, hdf_name, counts_deviation)
+    counts_deviation = norm.normalize_attenuator(config, hdf_name, counts_deviation)
+
+
+
 def correct_dark(img, dark):
     """
     Performs dark field correction by subtracting a dark current image from the data.
