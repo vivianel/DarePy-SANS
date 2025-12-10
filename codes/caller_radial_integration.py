@@ -94,16 +94,16 @@ wl = 'auto' # Options: 'auto' (read from HDF5) or a float value in Angstroms (e.
 # - (y_min_pixel, y_max_pixel): Vertical pixel range of the beam stopper.
 # - (x_min_pixel, x_max_pixel): Horizontal pixel range of the beam stopper.
 beamstopper_coordinates = {
-  1.65:{'bs0': [54, 72, 54, 71], 'bs1': [11, 128, 0, 8], 'bs2': [0, 12, 0, 128], 'bs3': [53, 73, 58, 68]},
-  8.0:{'bs0': [53, 72, 55, 70], 'bs1': [68, 72, 52, 72], 'bs2': [52, 57, 52, 72]},
-    18.3:[52, 71, 51, 73]
+  2.0:{'bs0': [55, 72, 55, 71], 'bs1': [0, 128, 0, 4], 'bs2': [0, 9, 2, 128]},
+  8.0:{'bs0': [55, 71, 56, 70]},
+    18.3:{'bs0': [53, 68, 56, 69], 'bs1': [53, 68, 55, 69], 'bs2': [53, 68, 57, 70]}
 }
 
 # fill with the transmission coordinates
 transmission_coordinates = {
-    1.65: [59, 68, 56, 70],
-   8.0: [59, 67, 56, 69],
-    18.3: [58, 66, 57, 69]
+    2.0: [56, 70, 57, 69],
+   8.0: [59, 66, 56, 69],
+    18.3: [58, 64, 56, 69]
 }
 
 # Beam center guess.
@@ -112,9 +112,9 @@ transmission_coordinates = {
 # and azimuthal integration as they define the origin for q-space conversion.
 # Format: {detector_distance_in_meters (float): [center_x_pixel, center_y_pixel]}
 beam_center_guess = {
-  1.65: [62.73, 62.24],
-    8.0: [63.29, 63.39],
-    18.3: [62.43, 62.49]
+  2.0: [63.02, 61.99],
+    8.0: [62.72, 62.41],
+    18.3: [62.45, 61.66]
 }
 
 # Target detector distances for processing.
@@ -132,12 +132,12 @@ target_detector_distances = 'all' # Options: 'all' or a list of floats (e.g., [6
 
 # Path where the raw HDF5 data files are located.
 # Ensure this path points directly to the directory containing your `.hdf` files.
-path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/raw_data/"
+path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/Maria_test/raw_data/"
 
 # Path to the working directory where all analysis results (integrated data, plots, logs) will be saved.
 # A main analysis folder (e.g., 'analysis/') or a uniquely identified subfolder
 # (e.g., 'analysis_batch1/') will be created within this directory.
-path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/"
+path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/Maria_test/"
 
 # Identifier for the analysis output folder.
 # This string will be appended to the default 'analysis/' folder name.
@@ -152,7 +152,7 @@ add_id = ''
 # Example: [23177, 23178, 23180]
 # You can also use list(range(start, end)) for a sequence of scans.
 # Keep as an empty list [] if no files need to be excluded.
-exclude_files = list(range(0, 1288)) + list(range(1330, 5000))
+exclude_files = list(range(1000, 1457)) + list(range(1531, 1600)) + [1458]
 
 # Control radial integration and plotting.
 # Radial integration produces 1D scattering curves (Intensity vs. q).
@@ -178,7 +178,7 @@ plot_azimuthal = 0
 # - Set to 0 to skip saving these data files, even if 'plot_azimuthal' is 1
 #   (the plots will still be generated if plot_azimuthal is 1).
 #   Note: Setting 'plot_azimuthal' to 0 will implicitly skip saving data as well.
-save_azimuthal = 1
+save_azimuthal = 0
 
 # Control saving of raw 2D detector patterns (.dat).
 # These files are direct representations of the corrected 2D detector images.
@@ -186,7 +186,7 @@ save_azimuthal = 1
 # - Set to 1 if you need to save these raw 2D patterns for every frame.
 # - Set to 0 to skip saving these 2D pattern files. This can significantly
 #   speed up the process by reducing disk I/O.
-save_2d_patterns = 1
+save_2d_patterns = 0
 
 # Absolute calibration toggle.
 # This step converts scattering intensities from arbitrary detector counts

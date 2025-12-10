@@ -143,6 +143,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 try:
                     prop = np.array(file_hdf['entry1/SANS/detector/counts'])
                 except:
+                    #prop = np.array(file_hdf['entry0/central_detector/data'])
                     prop = np.array(file_hdf['entry0/central_data/data'])
                 res = check_dimension(prop)
                 # Correction to avoid negative values in counts data

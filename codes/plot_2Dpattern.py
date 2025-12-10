@@ -11,7 +11,6 @@ It automatically detects the year in filenames and supports background subtracti
 import numpy as np
 import matplotlib.pyplot as plt # Matplotlib imported for interactive use
 import os
-import re
 from matplotlib.animation import FuncAnimation
 from PIL import Image # For saving GIFs from individual frames (fallback method)
 
@@ -22,14 +21,16 @@ from utils import load_hdf
 # Main base path for SANS analysis data.
 # Raw data will be looked for in 'MAIN_BASE_PATH/raw_data'
 # Results will be saved in 'MAIN_BASE_PATH/extra_results'
-MAIN_BASE_PATH ="C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/"
+MAIN_BASE_PATH ="C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/Maria_test/"
 
 # List of scan numbers to process
-LIST_SCAN = list(range(1316,1330))
+LIST_SCAN = list(range(1477,1485))
 
 which_instrumennt = 'SANS-LLB'
 # file year saved
 file_year = '2025'
+clim = [0, 10]
+plot_scale = 'log' # or 'lin'
 
 # Background scan number (if background subtraction is enabled)
 BACKGROUND_SCAN_NR = 23088
@@ -125,39 +126,8 @@ def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable
     sample_name = load_hdf(path_raw_dir, name_hdf, 'sample_name')
     return processed_images, sample_name, name_hdf
 
-def get_plot_clim(image_data_list):
-    """
-    Determines a reasonable global color limit (clim) for plotting based on a
-    collection of image data. This is crucial for consistent animation scaling.
 
-    Args:
-        image_data_list (list): A list of numpy arrays, where each array is an image frame.
-
-    Returns:
-        tuple: (vmin, vmax) for color scaling.
-    """
-    valid_data_frames = [arr for arr in image_data_list if arr is not None]
-
-    if not valid_data_frames:
-        print("Warning: No valid image data to determine global CLIM. Defaulting to (0, 100).")
-        return (0, 100)
-
-    all_vals = np.concatenate([arr.flatten() for arr in valid_data_frames])
-    positive_vals = all_vals[all_vals > 0]
-
-    if positive_vals.size > 0:
-        clim_vmax = np.mean(positive_vals) + 0.5 * np.std(positive_vals)
-        if clim_vmax <= 0 or np.isinf(clim_vmax) or np.isnan(clim_vmax):
-             clim_vmax = np.max(positive_vals)
-             if clim_vmax <= 0:
-                 clim_vmax = 100
-    else:
-        clim_vmax = 100
-
-    return (0, max(1, clim_vmax))
-
-
-def save_individual_frames(processed_data, output_folder, global_clim, output_format, dpi):
+def save_individual_frames(processed_data, output_folder, output_format, dpi, clim):
     """
     Saves each processed image as a separate file directly into the specified output_folder.
     Figures are kept open after saving.
@@ -166,7 +136,10 @@ def save_individual_frames(processed_data, output_folder, global_clim, output_fo
 
     for idx, (img_data, plot_title) in enumerate(processed_data):
         fig_frame, ax_frame = plt.subplots(figsize=(8, 6))
-        imgplot_frame = ax_frame.imshow(img_data, clim=global_clim, origin='lower', cmap='jet')
+        if plot_scale == 'lin':
+            imgplot_frame = ax_frame.imshow(img_data, origin='lower', cmap='jet', clim = clim)
+        elif plot_scale == 'log':
+            imgplot_frame = ax_frame.imshow(np.log(img_data), origin='lower', cmap='jet', clim = clim)
         fig_frame.colorbar(imgplot_frame, ax=ax_frame, fraction=0.046, pad=0.04)
         ax_frame.set_title(plot_title)
 
@@ -184,7 +157,7 @@ def save_individual_frames(processed_data, output_folder, global_clim, output_fo
 
 
 def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, output_folder,
-                                  list_scan_info, fps, loop, dpi):
+                                  list_scan_info, fps, loop, dpi, clim):
     """
     Handles the creation and saving of the GIF animation.
     This function will still close its internal figure after saving,
@@ -202,12 +175,12 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
     # This figure is intended for rendering to file, not for interactive display.
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    global_clim = get_plot_clim(raw_image_data_for_clim)
-    print(f"Calculated global color limits (clim): {global_clim}")
 
     initial_img_data, initial_plot_title = processed_data[0]
-    img_plot = ax.imshow(initial_img_data, clim=global_clim, origin='lower', cmap='jet')
-    cbar = fig.colorbar(img_plot, ax=ax, fraction=0.046, pad=0.04)
+    if plot_scale == 'lin':
+        img_plot = ax.imshow(initial_img_data, origin='lower', cmap='jet', clim = clim)
+    elif plot_scale == 'log':
+        img_plot = ax.imshow(np.log(initial_img_data), origin='lower', cmap='jet', clim = clim)
     title_obj = ax.set_title(initial_plot_title)
 
     def update_frame(frame_index):
@@ -245,7 +218,10 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
         frames_for_pil = []
         for idx, (img_data, plot_title) in enumerate(processed_data):
             fig_frame, ax_frame = plt.subplots(figsize=(8, 6))
-            imgplot_frame = ax_frame.imshow(img_data, clim=global_clim, origin='lower', cmap='jet')
+            if plot_scale == 'lin':
+                imgplot_frame = ax_frame.imshow(img_data, origin='lower', cmap='jet', clim = clim)
+            elif plot_scale == 'log':
+                imgplot_frame = ax_frame.imshow(np.log(img_data), origin='lower', cmap='jet', clim = clim)
             fig_frame.colorbar(imgplot_frame, ax=ax_frame, fraction=0.046, pad=0.04)
             ax_frame.set_title(plot_title)
 
@@ -341,10 +317,9 @@ if __name__ == '__main__':
 
     elif OUTPUT_MODE == 'frames':
         # Calculate global clim once for consistency across individual frames
-        global_clim_for_frames = get_plot_clim(raw_image_data_for_clim)
 
-        save_individual_frames(processed_scan_data, OUTPUT_FOLDER, global_clim_for_frames,
-                               FRAME_OUTPUT_FORMAT, FRAME_QUALITY_DPI)
+        save_individual_frames(processed_scan_data, OUTPUT_FOLDER,
+                               FRAME_OUTPUT_FORMAT, FRAME_QUALITY_DPI, clim)
 
         # After saving all frames and leaving their figures open, call plt.show()
         # to ensure they are actually displayed and interactive in your environment.
