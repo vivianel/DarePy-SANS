@@ -231,23 +231,10 @@ pixel_range_azim = range(5,100)
 # It initializes the configuration, orchestrates the various processing steps,
 # and manages module imports.
 
-import os
-import sys # Import sys for controlled exits
-# Change the current working directory to the 'codes' subfolder within your path_dir.
-# This is crucial for importing other Python modules (like prepare_input, transmission, integration).
-# Ensure your main script and all other necessary Python modules are located in
-# a 'codes' folder (e.g., 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/codes/').
-try:
-    os.chdir(path_dir + '/codes/')
-except FileNotFoundError:
-    print(f"Error: The 'codes' directory expected at '{path_dir}/codes/' was not found.")
-    print("Please ensure your Python scripts are in this location or update 'path_dir' accordingly.")
-    sys.exit(1) # Exit if the code directory is not found
-
-# Import necessary modules from your project
-import prepare_input as org
-from transmission import trans_calc
-import integration as ri
+# Import necessary modules for reduction
+import darepy_sans.prepare_input as org
+from darepy_sans.transmission import trans_calc
+import darepy_sans.integration as ri
 
 
 
