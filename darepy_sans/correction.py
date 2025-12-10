@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 10:59:14 2023
-
-@author: lutzbueno_v
-"""
 """
 This module handles various corrections and preparatory steps for SANS data
 integration. It includes defining the integration mask and beam center,
 loading and applying standard sample corrections (dark field, empty cell,
 flat field), and orchestrating the initial normalization steps before
 radial and azimuthal integration.
+
+Created on Wed Aug 16 10:59:14 2023
+
+@author: lutzbueno_v
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os

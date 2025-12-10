@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jul 27 21:47:30 2023
-
-@author: lutzbueno_v
-"""
 """
 This module performs the core data integration and preliminary plotting for SANS data.
 It orchestrates the process of radial and azimuthal integration of 2D detector images
 into 1D scattering curves, applies corrections, and prepares the output files and plots.
 It relies on pre-processed configuration and calibration data.
+
+Created on Thu Jul 27 21:47:30 2023
+
+@author: lutzbueno_v
 """
 
 import numpy as np

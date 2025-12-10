@@ -1,16 +1,15 @@
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from utils import create_analysis_folder # Used for getting analysis folder path
-import integration as integ # Used for make_file_name
-from scipy import optimize
-import re # Used for extracting scan and frame numbers
-
 """
 This module contains functions for generating 2D and 1D plots of integrated
 Small-Angle Neutron Scattering (SANS) data. It visualizes the raw 2D scattering
 patterns, radial intensity profiles, and azimuthal anisotropy information.
 """
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from darepy_sans.utils import create_analysis_folder # Used for getting analysis folder path
+import integration as integ # Used for make_file_name
+from scipy import optimize
 
 def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
     """

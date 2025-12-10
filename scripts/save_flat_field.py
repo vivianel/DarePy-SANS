@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Sun Dec  7 12:04:30 2025
 
@@ -46,6 +45,6 @@ counts = counts/np.mean(counts)
 plt.imshow(counts)
 plt.show()
 
-file_name = "../darepy_sans/flat_field_SANS-LLB.txt"
+file_name = "../darepy_sans/data/flat_field_SANS-LLB.txt"
 full_path = os.path.join(save_directory, file_name)
 np.savetxt(full_path, counts, fmt='%.5f', delimiter='\t')

@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
+This function automatically marges the data collected in different detector distances
+
 Created on Wed Jul 13 20:50:57 2022
 
 @author: lutzbueno_v
-
-This function automatically marges the data collected in different detector distances
 """
 
 import numpy as np

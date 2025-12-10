@@ -1,20 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 09:23:28 2023
-
-@author: lutzbueno_v
-"""
 """
 This module provides essential utility functions for the SANS data reduction
 pipeline. It handles loading data from HDF5 files, managing the analysis
 folder structure, saving results, and performing basic data manipulation
 like smoothing.
+
+Created on Wed Aug 16 09:23:28 2023
+
+@author: lutzbueno_v
 """
 
 import numpy as np
 import h5py
 import os
-import math
 import pickle
 import sys # Added for sys.exit in case of critical errors
 

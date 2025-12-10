@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 27 12:38:56 2022
-
-@author: lutzbueno_v
-"""
 """
 This module contains functions for normalizing SANS detector counts by various
 experimental parameters. Normalizations include corrections for measurement time,
 detector deadtime, incident flux, attenuator transmission, sample transmission,
 and sample thickness, allowing for comparison of scattering intensities.
+
+Created on Mon Jun 27 12:38:56 2022
+
+@author: lutzbueno_v
 """
 
 import numpy as np
