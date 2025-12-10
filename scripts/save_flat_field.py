@@ -5,8 +5,8 @@ Created on Sun Dec  7 12:04:30 2025
 @author: lutzbueno_v
 """
 
-from utils import load_hdf
-import normalization
+from darepy_sans.utils import load_hdf
+from darepy_sans import normalization
 import os
 import pickle
 import numpy as np
@@ -46,6 +46,6 @@ counts = counts/np.mean(counts)
 plt.imshow(counts)
 plt.show()
 
-file_name = "flat_field_SANS-LLB.txt"
+file_name = "../darepy_sans/flat_field_SANS-LLB.txt"
 full_path = os.path.join(save_directory, file_name)
 np.savetxt(full_path, counts, fmt='%.5f', delimiter='\t')

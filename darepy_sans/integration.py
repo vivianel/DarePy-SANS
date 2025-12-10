@@ -22,11 +22,10 @@ from utils import save_results # Used for saving intermediate results
 from correction import prepare_corrections # Used for setting up pyFAI and masks
 from correction import load_standards # Used for loading and correcting standard samples
 from correction import load_and_normalize # Used for loading and applying full normalizations
-from correction import correct_dark # Used for dark field subtraction
 from correction import correct_EC # Used for empty cell subtraction
 from calibration import absolute_calibration_2D # Used for absolute intensity calibration
-import normalization as norm
-import plot_integration as plot_integ # Used for plotting integrated data
+from . import normalization as norm
+from .plotting import integration as plot_integ
 
 
 def set_integration(config, result, det_str):
