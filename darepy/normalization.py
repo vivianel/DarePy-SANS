@@ -10,10 +10,10 @@ Created on Mon Jun 27 12:38:56 2022
 """
 
 import numpy as np
-from utils import load_hdf # Importing load_hdf from the utils module
-import transmission
-from prepare_input import save_list_files
-from utils import create_analysis_folder
+from darepy.utils import load_hdf # Importing load_hdf from the utils module
+from darepy import transmission
+from darepy.prepare_input import save_list_files
+from darepy.utils import create_analysis_folder
 
 def normalize_time(config, hdf_name, counts):
     """

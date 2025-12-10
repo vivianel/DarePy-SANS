@@ -1,11 +1,9 @@
 import numpy as np
 import os
 import shutil
-from utils import load_hdf
-from utils import create_analysis_folder
-from utils import save_results
-from prepare_input import save_list_files
-import normalization as norm
+from darepy.utils import load_hdf, create_analysis_folder, save_results
+from darepy.prepare_input import save_list_files
+import darepy.normalization as norm
 import sys
 
 def trans_calc(config, class_files, result):

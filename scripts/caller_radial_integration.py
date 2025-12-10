@@ -1,9 +1,4 @@
 """
-Created on Wed Jul 26 13:31:39 2023
-
-@author: lutzbueno_v
-"""
-"""
 This is the main script for the DarePy-SANS data reduction pipeline.
 It orchestrates the entire process from loading raw HDF5 files to performing
 radial and azimuthal integration, applying various corrections (dark field,
@@ -15,6 +10,10 @@ and detailed analysis options. The pipeline supports processing for all
 detected detector distances or a selection of specific distances.
 Results, including integrated data and plots, are saved to a designated
 analysis directory.
+
+Created on Wed Jul 26 13:31:39 2023
+
+@author: lutzbueno_v
 """
 # %% EXPERIMENTAL PARAMETERS
 # This section defines parameters related to the SANS experiment and instrument setup.
@@ -131,12 +130,12 @@ target_detector_distances = 'all' # Options: 'all' or a list of floats (e.g., [6
 
 # Path where the raw HDF5 data files are located.
 # Ensure this path points directly to the directory containing your `.hdf` files.
-path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/Maria_test/raw_data/"
+path_hdf_raw = "C:/Users/glavic_a/DarePy-SANS/raw_data"
 
 # Path to the working directory where all analysis results (integrated data, plots, logs) will be saved.
 # A main analysis folder (e.g., 'analysis/') or a uniquely identified subfolder
 # (e.g., 'analysis_batch1/') will be created within this directory.
-path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/Maria_test/"
+path_dir = "C:/Users/glavic_a/DarePy-SANS/"
 
 # Identifier for the analysis output folder.
 # This string will be appended to the default 'analysis/' folder name.
@@ -231,9 +230,9 @@ pixel_range_azim = range(5,100)
 # and manages module imports.
 
 # Import necessary modules for reduction
-import darepy_sans.prepare_input as org
-from darepy_sans.transmission import trans_calc
-import darepy_sans.integration as ri
+import darepy.prepare_input as org
+from darepy.transmission import trans_calc
+import darepy.integration as ri
 
 
 

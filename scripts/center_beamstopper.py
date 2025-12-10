@@ -6,7 +6,7 @@ Created on Wed Dec 6 10:52:03 2023
 
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import load_hdf # Assuming utils.py is in the same directory or accessible
+from darepy.utils import load_hdf # Assuming utils.py is in the same directory or accessible
 # Using the preferred import path for PyFAI to avoid deprecation warnings
 import pyFAI.azimuthalIntegrator as pyFAI_ai
 import pyFAI
@@ -15,9 +15,9 @@ plt.ion() # Turn on interactive mode for immediate plot updates
 
 # %% Configuration (Assuming these variables are correctly loaded/defined)
 # where are the hdf files saved
-path_hdf_raw = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/DarePy-SANS/raw_data/"
+path_hdf_raw = "C:/Users/glavic_a/DarePy-SANS/raw_data"
 # number of the AgBE scan
-scanNr = 1328
+scanNr = 1301
 instrument = 'SANS-LLB'
 
 # for SANS-1
@@ -491,4 +491,5 @@ while plt.fignum_exists(interactive_fig.number) or click_manager.current_state !
     if click_manager.current_state == 'done':
         break
 
+plt.pause(5.0)
 print("\nAll interactive analysis steps completed.")

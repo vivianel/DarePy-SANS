@@ -175,7 +175,7 @@ def absolute_calibration_2D(config, result, file_name, I, I_flat, variance=None,
     # import detector efficiency map and mask it
     eff_file = config['instrument']['efficiency_map']
     path = config['analysis']['path_dir']
-    eff_file = os.path.join(path, "codes" , eff_file)
+    eff_file = os.path.join(path, "darepy", "data", eff_file)
     detector_eff = np.loadtxt(eff_file,
         delimiter='\t', # Use your specific delimiter
 

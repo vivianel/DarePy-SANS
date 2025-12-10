@@ -14,14 +14,14 @@ import matplotlib.pyplot as plt
 import os
 import re
 import sys # Import sys for controlled exits
-from utils import load_hdf # Used for loading HDF5 data
-from utils import create_analysis_folder # Used for creating analysis directories
-from utils import save_results # Used for saving intermediate results
-from correction import prepare_corrections # Used for setting up pyFAI and masks
-from correction import load_standards # Used for loading and correcting standard samples
-from correction import load_and_normalize # Used for loading and applying full normalizations
-from correction import correct_EC # Used for empty cell subtraction
-from calibration import absolute_calibration_2D # Used for absolute intensity calibration
+from .utils import load_hdf # Used for loading HDF5 data
+from .utils import create_analysis_folder # Used for creating analysis directories
+from .utils import save_results # Used for saving intermediate results
+from .correction import prepare_corrections # Used for setting up pyFAI and masks
+from .correction import load_standards # Used for loading and correcting standard samples
+from .correction import load_and_normalize # Used for loading and applying full normalizations
+from .correction import correct_EC # Used for empty cell subtraction
+from .calibration import absolute_calibration_2D # Used for absolute intensity calibration
 from . import normalization as norm
 from .plotting import integration as plot_integ
 

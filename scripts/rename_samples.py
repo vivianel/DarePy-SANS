@@ -1,13 +1,12 @@
 """
-Created on Mon Jul 18 12:37:26 2022
-
-@author: lutzbueno_v
-"""
-"""
 This script is designed to rename sample entries within SANS HDF5 raw data files.
 It allows users to batch-rename samples based on scan numbers, append a temperature
 subscript, or replace the sample name entirely. This is particularly useful for
 correcting metadata directly in the HDF5 files.
+
+Created on Mon Jul 18 12:37:26 2022
+
+@author: lutzbueno_v
 """
 
 import h5py
@@ -21,7 +20,7 @@ import math # Added for math.isnan
 # 1. Path to Raw HDF5 Data
 #    Specify the absolute path to the directory containing your HDF5 raw data files.
 #    Example: 'C:/SANS_Data/MyExperiment/raw/'
-path_hdf_raw = 'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS/raw_data/'
+path_hdf_raw = 'C:/Users/glavic_a/DarePy-SANS/raw_data'
 
 # 2. Files to Change (Scan Numbers)
 #    Provide a list of integer scan numbers for the HDF5 files you want to modify.
@@ -96,9 +95,8 @@ def _load_hdf_string(hdf_file_object, dataset_path):
 
 
 # Iterate through each identified HDF5 file
-for ii in range(0, len(files)):
-    file_name = files[ii]
-    scan_nr_str = file_name[9:-4] # Assumes 'sans2025nXXXXXX.hdf' format based on error message
+for file_name in files:
+    scan_nr_str = file_name.rsplit('n',1)[1].split('.',1)[0] # Assumes 'InstrYYYYnXXXXXX.hdf' format based on error message
 
     # Validate scan number extraction
     try:

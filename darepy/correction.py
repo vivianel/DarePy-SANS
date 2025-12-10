@@ -14,11 +14,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys # Imported for sys.exit
-from utils import create_analysis_folder # Imported from utils
-from utils import save_results # Imported from utils
-from utils import load_hdf # Imported from utils
-import normalization as norm # Imported for normalization functions
-import pyFAI
+from .utils import create_analysis_folder # Imported from utils
+from .utils import save_results # Imported from utils
+from .utils import load_hdf # Imported from utils
+from . import normalization as norm # Imported for normalization functions
+from pyFAI.integrator.azimuthal import AzimuthalIntegrator
 
 def prepare_corrections(config, result, det):
     """
@@ -161,7 +161,7 @@ def prepare_corrections(config, result, det):
     result['integration']['int_mask'] = mask # Store the final mask in results
 
     # Create the pyFAI AzimuthalIntegrator object
-    ai = pyFAI.AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,
+    ai = AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,
                                    rot1=0, rot2=0, rot3=0, # Rotation angles, typically 0 for SANS
                                    pixel1=pixel1, pixel2=pixel2,
                                    splineFile=None, detector=None, wavelength=wl)

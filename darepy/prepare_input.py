@@ -10,9 +10,7 @@ from tabulate import tabulate
 from contextlib import redirect_stdout
 import shutil
 import pickle
-from utils import load_hdf
-from utils import create_analysis_folder
-from utils import save_results
+from darepy.utils import load_hdf, create_analysis_folder, save_results
 
 
 def list_files(config, result):

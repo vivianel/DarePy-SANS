@@ -10,7 +10,7 @@ path_dir = "C:/Users/lutzbueno_v/Documents/Analysis/data/SANS-LLB/2024_SANS-LLB/
 
 import os
 path_dir_an = os.path.join(path_dir, 'analysis')
-import darepy_sans.post_processing as pp
+import darepy.post_processing as pp
 
 # %% STEP 1: PLOT DATA TOGETHER
 
