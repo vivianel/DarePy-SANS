@@ -250,7 +250,7 @@ def normalize_thickness(config, hdf_name, result, counts):
     """
     class_all_files = result['overview']['all_files']
     sample_name = "Unknown Sample" # Default for logging if not found
-    thickness = 0.1 # Default thickness as per caller_radial_integration.py config
+    thickness = 0.1 # Default thickness as per radint.py config
 
     if hdf_name in class_all_files['name_hdf']:
         try:

@@ -2,7 +2,7 @@
 Create a new configuration for this data reduction
 """
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from ..config import instruments, experiment
+from ..config import instruments, experiment, reduction
 
 try:
     from enum import StrEnum
@@ -41,6 +41,12 @@ class Action:
         e = experiment.Experiment()
         e.path_hdf_raw = self.arguments.raw_path
         e.save()
+
+        r = reduction.Reduction()
+        r.save()
+
+        m = reduction.Merging()
+        m.save()
 
         # optionally add instrument configuration options
         if self.arguments.instrument_config == 'SANS-I':

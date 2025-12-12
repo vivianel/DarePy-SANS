@@ -384,7 +384,7 @@ def plot_integ_azimuthal(config, result, ScanNr, Frame):
     # Retrieve q_range and npt_azim for plotting setup
     # Note: `pixel_range_azim` is used in plot_integ_radial (AXS4).
     # `q_range` is used here. Ensure consistency in naming.
-    # The original code used `pixel_range` but it was not defined in the provided `caller_radial_integration.py` or `integration.py`.
+    # The original code used `pixel_range` but it was not defined in the provided `radint.py` or `integration.py`.
     # Let's assume `pixel_range_azim` from config is meant for the radial range to plot for azimuthal data.
     q_range_for_plot = result['integration'].get('pixel_range_azim')
     sectors_nr = result['integration'].get('sectors_nr')

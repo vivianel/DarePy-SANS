@@ -240,7 +240,7 @@ def load_standards(config, result, det):
         print(f"Loading and normalizing standard: {standard_sample_name} for {det.replace('p', '.')}m")
         # Load and normalize the standard measurement (time, deadtime, flux, attenuator, thickness)
         # Transmission is NOT applied here, as standards often have 100% transmission or are not measured with it.
-        # This function implicitly skips transmission for standards based on 'trans_dist' in caller_radial_integration.py
+        # This function implicitly skips transmission for standards based on 'trans_dist' in radint.py
         # and its logic in normalization.py.
         if standard_key == 'cadmium':
             path_hdf_raw = config['analysis']['path_hdf_raw']

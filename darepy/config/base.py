@@ -8,16 +8,16 @@ from pathlib import Path
 from dataclasses import dataclass, fields, field
 from ruamel.yaml import YAML, CommentedMap
 
-def cf(default=None, doc=None, default_factor=None):
+def cf(default=None, doc=None, default_factory=None):
     # convenience function to define a field with doc-string
     if doc is None:
         metadata = None
     else:
         metadata = {'doc': doc}
-    if default_factor is None:
+    if default_factory is None:
         return field(default=default, metadata=metadata)
     else:
-        return field(default_factor=default_factor, metadata=metadata)
+        return field(default_factory=default_factory, metadata=metadata)
 
 @dataclass
 class ConfigObject:
@@ -53,6 +53,7 @@ class ConfigObject:
     def save(self):
         config_file = ConfigObject.config_file
         yaml = YAML()
+        yaml.width=120
         if os.path.exists(config_file):
             with open(config_file, "r") as f:
                 data = yaml.load(f) or CommentedMap()

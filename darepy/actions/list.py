@@ -25,6 +25,8 @@ class Action:
                                             'By default the columns shown are sample,coll and detz')
         parser.add_argument('-a', '--add-column', action='append', dest='add_column', default=[],
                             nargs=2, help='Show additional column, must supply hdf path as second argument')
+        parser.add_argument('-f', '--filter-sampe',
+                            help='Search the sample name for given string and only output matches')
         return parser
 
     def __init__(self, arguments):
@@ -34,9 +36,13 @@ class Action:
     def run(self):
         from ..config import cfg
 
+        smpl_path = [hdf_path for key, hdf_path in self.mapping if key=='sample'][0]
         data = dict([('filename', [])]+[(key, []) for key,_ in self.mapping])
         for fn in sorted(glob(os.path.join(cfg.experiment.path_hdf_raw, '*.hdf'))):
             hdf = File(fn)
+            if (self.arguments.filter_sampe is not None and
+                    self.arguments.filter_sampe.lower() not in self.read_key(hdf, smpl_path).lower()):
+                continue
             data['filename'].append(os.path.basename(fn))
             for key, hdf_path in self.mapping:
                 data[key].append(self.read_key(hdf, hdf_path))
