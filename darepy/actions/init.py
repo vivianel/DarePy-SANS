@@ -1,5 +1,5 @@
 """
-Create a new configuration for this data reduction.
+Create a new configuration for this data reduction
 """
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from ..config import instruments, experiment

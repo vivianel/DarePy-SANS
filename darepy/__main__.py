@@ -9,9 +9,14 @@ from .config import base
 
 def print_help():
     print("Usage: darepy ACTION [-h] [...]\n    Available actions:")
+    action_output = []
     for action in actions.actions:
         module = importlib.import_module(f'darepy.actions.{action.name}', package='darepy.actions')
-        print(f"        {action.name} - {module.__doc__.strip().splitlines()[0]}")
+        action_output.append((module.Action.priority, action.name,
+                              module.__doc__.strip().splitlines()[0]))
+    action_output.sort()
+    for _,name,doc in action_output:
+        print(f"        {name} - {doc}")
 
 def add_global_options(parser):
     parser.add_argument('-c', '--config', dest='config_file', default=base.ConfigObject.config_file,
