@@ -6,6 +6,10 @@ For practicle purposes this behavior makes the module behave similar to a Single
 """
 
 from .experiment import Experiment
+from .instruments import SANS1Cfg, SANSLLBCfg
 
 experiment = Experiment.load()
+
+sans1 = SANS1Cfg.load()
+sansllb = SANSLLBCfg.load()
 
