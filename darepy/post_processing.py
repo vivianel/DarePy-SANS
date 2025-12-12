@@ -1,20 +1,19 @@
-# -*- coding: utf-8 -*-
 """
+This function automatically marges the data collected in different detector distances
+
 Created on Wed Jul 13 20:50:57 2022
 
 @author: lutzbueno_v
-
-This function automatically marges the data collected in different detector distances
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-import integration as integ
+from . import integration as integ
 from scipy.interpolate import interp1d
 import scipy.optimize
 import os
-from utils import smooth
+from .utils import smooth
 from scipy.stats import linregress # To check for linearity/constancy
 
 # %% plot_all_data

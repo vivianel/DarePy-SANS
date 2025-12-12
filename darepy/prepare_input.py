@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Wed Aug 16 10:21:49 2023
 
@@ -7,14 +6,11 @@ Created on Wed Aug 16 10:21:49 2023
 import os
 import re
 import numpy as np
-import pandas as pd
 from tabulate import tabulate
 from contextlib import redirect_stdout
 import shutil
 import pickle
-from utils import load_hdf
-from utils import create_analysis_folder
-from utils import save_results
+from darepy.utils import load_hdf, create_analysis_folder, save_results
 
 
 def list_files(config, result):
@@ -81,8 +77,7 @@ def list_files(config, result):
 # print the list and save files
 # name is'trans_files.json'
 def save_list_files(path_save, path_dir_an, class_files, name, result):
-    df = pd.DataFrame(class_files)
-    data = tabulate(df, headers='keys', tablefmt='psql')
+    data = tabulate(class_files, headers='keys', tablefmt='psql')
     save_file = os.path.join(path_save, name + '.txt')
     with open(save_file, 'w') as f:
         with redirect_stdout(f):

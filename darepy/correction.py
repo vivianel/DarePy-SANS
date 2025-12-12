@@ -1,25 +1,24 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 10:59:14 2023
-
-@author: lutzbueno_v
-"""
 """
 This module handles various corrections and preparatory steps for SANS data
 integration. It includes defining the integration mask and beam center,
 loading and applying standard sample corrections (dark field, empty cell,
 flat field), and orchestrating the initial normalization steps before
 radial and azimuthal integration.
+
+Created on Wed Aug 16 10:59:14 2023
+
+@author: lutzbueno_v
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys # Imported for sys.exit
-from utils import create_analysis_folder # Imported from utils
-from utils import save_results # Imported from utils
-from utils import load_hdf # Imported from utils
-import normalization as norm # Imported for normalization functions
-import pyFAI
+from .utils import create_analysis_folder # Imported from utils
+from .utils import save_results # Imported from utils
+from .utils import load_hdf # Imported from utils
+from . import normalization as norm # Imported for normalization functions
+from pyFAI.integrator.azimuthal import AzimuthalIntegrator
 
 def prepare_corrections(config, result, det):
     """
@@ -162,7 +161,7 @@ def prepare_corrections(config, result, det):
     result['integration']['int_mask'] = mask # Store the final mask in results
 
     # Create the pyFAI AzimuthalIntegrator object
-    ai = pyFAI.AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,
+    ai = AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,
                                    rot1=0, rot2=0, rot3=0, # Rotation angles, typically 0 for SANS
                                    pixel1=pixel1, pixel2=pixel2,
                                    splineFile=None, detector=None, wavelength=wl)
@@ -241,7 +240,7 @@ def load_standards(config, result, det):
         print(f"Loading and normalizing standard: {standard_sample_name} for {det.replace('p', '.')}m")
         # Load and normalize the standard measurement (time, deadtime, flux, attenuator, thickness)
         # Transmission is NOT applied here, as standards often have 100% transmission or are not measured with it.
-        # This function implicitly skips transmission for standards based on 'trans_dist' in caller_radial_integration.py
+        # This function implicitly skips transmission for standards based on 'trans_dist' in radint.py
         # and its logic in normalization.py.
         if standard_key == 'cadmium':
             path_hdf_raw = config['analysis']['path_hdf_raw']

@@ -1,21 +1,19 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 27 12:38:56 2022
-
-@author: lutzbueno_v
-"""
 """
 This module contains functions for normalizing SANS detector counts by various
 experimental parameters. Normalizations include corrections for measurement time,
 detector deadtime, incident flux, attenuator transmission, sample transmission,
 and sample thickness, allowing for comparison of scattering intensities.
+
+Created on Mon Jun 27 12:38:56 2022
+
+@author: lutzbueno_v
 """
 
 import numpy as np
-from utils import load_hdf # Importing load_hdf from the utils module
-import transmission
-from prepare_input import save_list_files
-from utils import create_analysis_folder
+from darepy.utils import load_hdf # Importing load_hdf from the utils module
+from darepy import transmission
+from darepy.prepare_input import save_list_files
+from darepy.utils import create_analysis_folder
 
 def normalize_time(config, hdf_name, counts):
     """
@@ -252,7 +250,7 @@ def normalize_thickness(config, hdf_name, result, counts):
     """
     class_all_files = result['overview']['all_files']
     sample_name = "Unknown Sample" # Default for logging if not found
-    thickness = 0.1 # Default thickness as per caller_radial_integration.py config
+    thickness = 0.1 # Default thickness as per radint.py config
 
     if hdf_name in class_all_files['name_hdf']:
         try:

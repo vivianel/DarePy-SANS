@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Spyder Editor
 
@@ -15,7 +14,7 @@ from matplotlib.animation import FuncAnimation
 from PIL import Image # For saving GIFs from individual frames (fallback method)
 
 # Assuming utils.py is in the same directory or accessible in your Python path
-from utils import load_hdf
+from darepy.utils import load_hdf
 
 # --- User Options ---
 # Main base path for SANS analysis data.

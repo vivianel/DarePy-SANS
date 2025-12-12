@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 11:13:29 2023
-
-@author: lutzbueno_v
-"""
 """
 This module provides the function for performing absolute intensity calibration
 of Small-Angle Neutron Scattering (SANS) data. It scales the scattering
 intensity (I) to absolute units (cm^-1) using a flat field standard (typically water)
 and propagates the associated errors.
+
+Created on Wed Aug 16 11:13:29 2023
+
+@author: lutzbueno_v
 """
 
 import numpy as np
@@ -177,7 +175,7 @@ def absolute_calibration_2D(config, result, file_name, I, I_flat, variance=None,
     # import detector efficiency map and mask it
     eff_file = config['instrument']['efficiency_map']
     path = config['analysis']['path_dir']
-    eff_file = os.path.join(path, "codes" , eff_file)
+    eff_file = os.path.join(path, "darepy", "data", eff_file)
     detector_eff = np.loadtxt(eff_file,
         delimiter='\t', # Use your specific delimiter
 

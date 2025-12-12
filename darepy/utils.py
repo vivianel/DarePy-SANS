@@ -1,20 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 16 09:23:28 2023
-
-@author: lutzbueno_v
-"""
 """
 This module provides essential utility functions for the SANS data reduction
 pipeline. It handles loading data from HDF5 files, managing the analysis
 folder structure, saving results, and performing basic data manipulation
 like smoothing.
+
+Created on Wed Aug 16 09:23:28 2023
+
+@author: lutzbueno_v
 """
 
 import numpy as np
 import h5py
 import os
-import math
 import pickle
 import sys # Added for sys.exit in case of critical errors
 
@@ -87,6 +84,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 except:
                     prop = file_hdf['/entry0/SANS-LLB/central_detector/x'][0]
                 res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
+            elif which_property=='dthx':
+                prop = file_hdf['/entry0/SANS-LLB/left_detector/distance'][0]
+                res = round(check_dimension(prop)/1000, 2)  # convert from mm to m and round
             elif which_property == 'wl':
                 try:
                     prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0] # in nm
@@ -148,6 +148,16 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 res = check_dimension(prop)
                 # Correction to avoid negative values in counts data
                 res[res < 0] = 0
+            elif which_property=='counts_left':
+                prop = np.array(file_hdf['entry0/left_data/data'])
+                res = check_dimension(prop)
+                # Correction to avoid negative values in counts data
+                res[res<0] = 0
+            elif which_property=='counts_bottom':
+                prop = np.array(file_hdf['entry0/bottom_data/data'])
+                res = check_dimension(prop)
+                # Correction to avoid negative values in counts data
+                res[res<0] = 0
             else:
                 print(f"Warning: Unknown property '{which_property}' requested for file '{hdf_name}'.")
                 res = None # Explicitly set to None for unsupported property

@@ -1,16 +1,15 @@
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from utils import create_analysis_folder # Used for getting analysis folder path
-import integration as integ # Used for make_file_name
-from scipy import optimize
-import re # Used for extracting scan and frame numbers
-
 """
 This module contains functions for generating 2D and 1D plots of integrated
 Small-Angle Neutron Scattering (SANS) data. It visualizes the raw 2D scattering
 patterns, radial intensity profiles, and azimuthal anisotropy information.
 """
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from darepy.utils import create_analysis_folder # Used for getting analysis folder path
+from darepy import integration as integ # Used for make_file_name
+from scipy import optimize
 
 def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
     """
@@ -385,7 +384,7 @@ def plot_integ_azimuthal(config, result, ScanNr, Frame):
     # Retrieve q_range and npt_azim for plotting setup
     # Note: `pixel_range_azim` is used in plot_integ_radial (AXS4).
     # `q_range` is used here. Ensure consistency in naming.
-    # The original code used `pixel_range` but it was not defined in the provided `caller_radial_integration.py` or `integration.py`.
+    # The original code used `pixel_range` but it was not defined in the provided `radint.py` or `integration.py`.
     # Let's assume `pixel_range_azim` from config is meant for the radial range to plot for azimuthal data.
     q_range_for_plot = result['integration'].get('pixel_range_azim')
     sectors_nr = result['integration'].get('sectors_nr')
