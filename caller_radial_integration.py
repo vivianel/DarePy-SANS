@@ -99,7 +99,6 @@ import integration as ri
 configuration = {
     'instrument': INSTRUMENT_REGISTRY[selected_inst],
     'experiment': {
-        'trans_dist': ext_cfg['instrument_setup']['transmission_dist'],
         'calibration': ext_cfg['calibration_samples'],
         'wl_input': ext_cfg['instrument_setup']['wavelength']
     },
@@ -159,7 +158,7 @@ while True:
         class_files = {}
 
     # 2. Transmission
-    trans_dist_val = configuration['experiment']['trans_dist']
+    trans_dist_val = configuration['physics_corrections']['transmission_dist']
 
     # Check if it's a number and greater than 0
     if isinstance(trans_dist_val, (int, float)) and trans_dist_val > 0:

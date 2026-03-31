@@ -37,7 +37,7 @@ def trans_calc_reference(config, result, class_files):
 
     if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['experiment']['trans_dist'] > 0):
         class_trans = result['overview']['trans_files']
-        trans_dist = config['experiment']['trans_dist']
+        trans_dist = config['physics_corrections']['transmission_dist']
 
         eb_hdf = find_hdf_by_identifier(eb_id, class_trans)
 
@@ -45,18 +45,66 @@ def trans_calc_reference(config, result, class_files):
             idx = class_trans['name_hdf'].index(eb_hdf)
             if class_trans['detx_m'][idx] == trans_dist:
                 counts = load_hdf(path_hdf_raw, eb_hdf, 'counts')
-                img = normalize_trans(config, result, eb_hdf, counts)
+                img_eb = normalize_trans(config, result, eb_hdf, counts)
 
-                cutoff = img[img > 0].mean()
-                img1 = np.where(img < cutoff, 0, img)
-                mask = np.where(img1 >= cutoff, 1, img1)
+                # ---------------------------------------------------------
+                # AUTO-MASK CALIBRATION USING WATER
+                # ---------------------------------------------------------
+                # 1. Find the Water scan for this distance
+                water_id = config.get('calibration_samples', {}).get('water', 'H2O')
+                water_hdf = find_hdf_by_identifier(water_id, class_trans)
+
+                mask = None
+
+                if water_hdf is not None:
+                    # Load water data
+                    counts_w = load_hdf(path_hdf_raw, water_hdf, 'counts')
+                    img_w = normalize_trans(config, result, water_hdf, counts_w)
+
+                    max_intensity = img_eb.max()
+                    target_transmission = 0.50
+                    best_diff = 999
+
+                    print(f"\n[AUTO-MASK] Calibrating mask using Water ({water_id}) at {trans_dist}m...")
+
+                    # Test thresholds from 0.5% to 20% of the maximum peak
+                    for percent in [0.005, 0.01, 0.02, 0.05, 0.10, 0.20]:
+                        cutoff = max_intensity * percent
+                        temp_mask = np.where(img_eb >= cutoff, 1, 0)
+
+                        eb_sum = np.sum(img_eb * temp_mask)
+                        w_sum = np.sum(img_w * temp_mask)
+
+                        if eb_sum > 0:
+                            t_water = w_sum / eb_sum
+                            diff = abs(t_water - target_transmission)
+
+                            # Keep the mask that gets us closest to 0.50
+                            if diff < best_diff:
+                                best_diff = diff
+                                mask = temp_mask
+                                best_percent = percent
+                                best_t = t_water
+
+                    print(f" -> Selected threshold: {best_percent*100}% of Peak Intensity.")
+                    print(f" -> Resulting Water Transmission: {best_t:.3f}")
+
+                else:
+                    # FALLBACK: If water wasn't measured at this distance, use a safe, tight 5% threshold
+                    print(f"\n[AUTO-MASK] Warning: No Water scan found at {trans_dist}m for calibration.")
+                    print(" -> Falling back to safe default threshold (5% of Peak Intensity).")
+                    max_intensity = img_eb.max()
+                    cutoff = max_intensity * 0.05
+                    mask = np.where(img_eb >= cutoff, 1, 0)
+
+                # ---------------------------------------------------------
 
                 Factor_correction = 1
-                EB_ref = float(np.sum(np.multiply(img,mask))) * Factor_correction
+                EB_ref = float(np.sum(np.multiply(img_eb, mask))) * Factor_correction
 
                 result['transmission']['mask'] = mask
                 result['transmission']['mean_EB'] = EB_ref
-                result['transmission']['EB_counts'] = img
+                result['transmission']['EB_counts'] = img_eb
         else:
             sys.exit(f'Please measure an empty beam ({eb_id}) for the same detector distance ({trans_dist}m).')
 
@@ -102,7 +150,7 @@ def trans_calc_sample(config, result):
     EB_ref = result['transmission']['mean_EB']
 
     class_trans = result['overview']['trans_files']
-    trans_dist = config['experiment']['trans_dist']
+    trans_dist = config['physics_corrections']['transmission_dist']
     eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
 
     # --- LOG BOOK SETUP ---
@@ -176,8 +224,7 @@ def normalize_trans(config, result, hdf_name, counts):
     return counts
 
 def select_transmission(config, class_files, result):
-    path_dir_an = create_analysis_folder(config)
-    trans_dist = config['experiment']['trans_dist']
+    trans_dist = config['physics_corrections']['transmission_dist']
 
     if not trans_dist or not isinstance(trans_dist, (int, float)):
         return result

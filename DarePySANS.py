@@ -10,7 +10,7 @@ DarePy-SANS Master Pipeline Orchestrator (Spyder Optimized)
 RUN_RENAME_SAMPLES       = False
 RUN_PLOT_2D              = False
 RUN_MASK_BEAMSTOP        = False
-RUN_RADIAL_INTEGRATION   = False
+RUN_RADIAL_INTEGRATION   = True
 RUN_MERGING              = False
 
 # ==========================================
