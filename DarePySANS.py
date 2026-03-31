@@ -7,7 +7,7 @@ DarePy-SANS Master Pipeline Orchestrator (Spyder Optimized)
 # ==========================================
 # PIPELINE EXECUTION FLAGS (ON / OFF)
 # ==========================================
-RUN_RENAME_SAMPLES       = True
+RUN_RENAME_SAMPLES       = False
 RUN_PLOT_2D              = False
 RUN_MASK_BEAMSTOP        = False
 RUN_RADIAL_INTEGRATION   = False
