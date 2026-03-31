@@ -47,7 +47,7 @@ instrument = config['instrument_setup']['which_instrument']
 # Assuming you move this down to where config = load_config() is called:
 scanNr = config['beam_center_mask']['scan_nr']
 
-yaml_filepath = config['analysis_paths']['project_base']
+yaml_filepath = config['analysis_paths']['scripts_dir']
 yaml_filepath = os.path.join(yaml_filepath, 'config_experiment.yaml')
 
 # ==========================================
@@ -428,16 +428,26 @@ def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
     """
     Reads the YAML, compares old vs new coordinates for the specific distance,
     and asks for user confirmation before overwriting inside 'detector_geometry'.
+    Preserves all comments using ruamel.yaml.
     """
     import os
-    import yaml
     import numpy as np
+
+    # Try to import ruamel.yaml to preserve comments
+    try:
+        from ruamel.yaml import YAML
+    except ImportError:
+        print("\n[ERROR] ruamel.yaml is not installed. Please run 'pip install ruamel.yaml'.")
+        print("Falling back to standard yaml (WARNING: Comments will be lost!)")
+        import yaml
+        yaml_parser = 'standard'
+    else:
+        yaml_parser = 'ruamel'
 
     if not os.path.exists(yaml_path):
         print(f"\n[ERROR] '{yaml_path}' not found in the current directory.")
         return
 
-    # --- THE FIX: Convert to float (number) instead of string ---
     dist_key = float(distance_val)
 
     new_bs = {}
@@ -447,8 +457,14 @@ def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
     new_trans = manager.trans_area_coords
     new_center = [float(np.round(manager.center_x, 2)), float(np.round(manager.center_y, 2))]
 
+    # Load the YAML file
     with open(yaml_path, 'r') as f:
-        config = yaml.safe_load(f) or {}
+        if yaml_parser == 'ruamel':
+            ryaml = YAML()
+            ryaml.preserve_quotes = True
+            config = ryaml.load(f) or {}
+        else:
+            config = yaml.safe_load(f) or {}
 
     if 'detector_geometry' not in config:
         config['detector_geometry'] = {}
@@ -457,7 +473,6 @@ def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
         if section not in config['detector_geometry']:
             config['detector_geometry'][section] = {}
 
-    # Use dist_key (which is a number now) to fetch and set values
     old_bs = config['detector_geometry']['beamstopper_coordinates'].get(dist_key, "Not Set")
     old_trans = config['detector_geometry']['transmission_coordinates'].get(dist_key, "Not Set")
     old_center = config['detector_geometry']['beam_center_guess'].get(dist_key, "Not Set")
@@ -484,22 +499,27 @@ def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
     while True:
         choice = input("Overwrite these values in config_experiment.yaml? (y/n): ").strip().lower()
         if choice in ['y', 'yes']:
-            # Save into the nested dictionary using the float key
+
+            # Update the configuration dictionary
             config['detector_geometry']['beamstopper_coordinates'][dist_key] = new_bs
             if new_trans is not None:
                 config['detector_geometry']['transmission_coordinates'][dist_key] = new_trans
             config['detector_geometry']['beam_center_guess'][dist_key] = new_center
 
+            # Save it back out
             with open(yaml_path, 'w') as f:
-                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-            print("\n[SUCCESS] YAML file successfully updated!")
+                if yaml_parser == 'ruamel':
+                    ryaml.dump(config, f)
+                else:
+                    yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
+            print("\n[SUCCESS] YAML file successfully updated with comments preserved!")
             break
         elif choice in ['n', 'no']:
             print("\n[CANCELLED] Update aborted. YAML file remains unchanged.")
             break
         else:
             print("Invalid input. Please type 'y' or 'n'.")
-
 
 # ==========================================
 # %% Main Execution
