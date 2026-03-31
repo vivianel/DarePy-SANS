@@ -57,23 +57,43 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
         with h5py.File(full_hdf_path, 'r') as file_hdf:
             # Handle scalar properties first
             if which_property == 'beamstop_y':
-                prop = file_hdf['entry1/SANS/beam_stop/y_position'][0]
+                try:
+                    prop = file_hdf['entry1/SANS/beam_stop/y_position'][0]
+                except:
+                    prop = file_hdf['entry0/SANS-LLB/beam_stop/y'][0]
                 res = check_dimension(prop)
             elif which_property == 'att':
-                prop = file_hdf['entry1/SANS/attenuator/selection'][0]
+                try:
+                    prop = file_hdf['entry1/SANS/attenuator/selection'][0]
+                except:
+                    prop = file_hdf['entry0/SANS-LLB/attenuator/selection'][0]
                 res = check_dimension(prop)
             elif which_property == 'coll':
-                prop = file_hdf['/entry1/SANS/collimator/length'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/collimator/length'][0]
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/collimator/geometry/size'][0]
+                    prop = prop/1000 # in m
                 res = check_dimension(prop) # in m
             elif which_property == 'detx':
-                prop = file_hdf['/entry1/SANS/detector/x_position'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/detector/x_position'][0]
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/central_detector/distance'][0]
                 res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
             elif which_property == 'dety':
-                prop = file_hdf['/entry1/SANS/detector/y_position'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/detector/y_position'][0]
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/central_detector/x'][0]
                 res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
             elif which_property == 'wl':
-                prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0]
-                res = check_dimension(prop)*10 # convert from nm to A
+                try:
+                    prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0] # in nm
+                except:
+                    prop = file_hdf['/entry0/SANS-LLB/velocity_selector/wavelength'][0] # in nm
+                prop = prop*10 # convert from nm to A
+                res = check_dimension(prop)
             elif which_property == 'abs_time':
                 prop = file_hdf['/entry1/control/absolute_time'][0]
                 res = check_dimension(prop)
@@ -81,25 +101,31 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 prop = file_hdf['/entry1/sample/position'][0]
                 res = check_dimension(prop)
             elif which_property == 'flux_monit':
-                prop = file_hdf['/entry1/SANS/monitor2/counts'][0]
+                try:
+                    prop = file_hdf['/entry1/SANS/monitor2/counts'][0]
+                except:
+                    prop = file_hdf['/entry0/monitor2/integral'][0]
                 res = check_dimension(prop)
             elif which_property == 'beam_stop': # This specific property returns a boolean/flag
                 res = file_hdf['/entry1/SANS/beam_stop/out_flag'][0]
             elif which_property == 'sample_name':
                 try:
-                    # Attempt to get name from 'name_new' first (newer HDF5 structure)
-                    prop = file_hdf['/entry1/sample/name_new']
-                    res = prop.asstr()[()] # Convert numpy bytes to string
-                except KeyError:
-                    # Fallback to 'name' (older HDF5 structure)
                     prop = file_hdf['/entry1/sample/name'][0]
-                    res = check_dimension(prop) # Will handle decoding bytes if necessary
+                except:
+                    prop = file_hdf['/entry0/sample/name'][0]
+                res = check_dimension(prop) # Will handle decoding bytes if necessary
             # Handle array properties
             elif which_property == 'time':
-                prop = np.asarray(file_hdf['/entry1/SANS/detector/counting_time'])
+                try:
+                    prop = np.asarray(file_hdf['/entry1/SANS/detector/counting_time'])
+                except:
+                    prop = np.asarray(file_hdf['/entry0/control/count_time'])
                 res = check_dimension(prop)  # in s
             elif which_property == 'moni':
-                prop = np.asarray(file_hdf['/entry1/SANS/detector/preset'])
+                try:
+                    prop = np.asarray(file_hdf['/entry1/SANS/detector/preset'])
+                except:
+                    prop = np.asarray(file_hdf['/entry0/control/preset'])
                 res = check_dimension(prop)/1e4 # To have monitors as 1e4, as per existing logic
             elif which_property == 'temp': # Read in Celsius
                 try:
@@ -114,10 +140,23 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                     print(f"Warning: Could not load temperature for {hdf_name}: {e}")
                     res = ''
             elif which_property == 'counts':
-                prop = np.array(file_hdf['entry1/SANS/detector/counts'])
+                try:
+                    prop = np.array(file_hdf['entry1/SANS/detector/counts'])
+                except:
+                    prop = np.array(file_hdf['entry0/central_data/data'])
                 res = check_dimension(prop)
                 # Correction to avoid negative values in counts data
-                res[res < 0] = 0
+                #res[res < 0] = 1e-6
+            elif which_property == 'counts_left':
+                prop = np.array(file_hdf['entry0/left_data/data'])
+                res = check_dimension(prop)
+                # Correction to avoid negative values in counts data
+                #res[res < 0] = 1e-6
+            elif which_property == 'counts_bottom':
+                prop = np.array(file_hdf['entry0/bottom_data/data'])
+                res = check_dimension(prop)
+                # Correction to avoid negative values in counts data
+                #res[res < 0] = 1e-6
             else:
                 print(f"Warning: Unknown property '{which_property}' requested for file '{hdf_name}'.")
                 res = None # Explicitly set to None for unsupported property
@@ -269,3 +308,125 @@ def smooth(y, box_pts):
     # 'same' mode pads the array so that the output has the same length as y
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
+
+def get_flexible_value(config_block, sample_name, default_fallback=None):
+    """
+    Look up values in a case-insensitive way.
+    Handles: {'CTAB': 0.1, 'default': 0.1}
+    """
+    if not isinstance(config_block, dict):
+        return config_block if config_block is not None else default_fallback
+
+    # Clean the input sample name
+    target = str(sample_name).strip().lower()
+
+    # Create a lower-case version of the dictionary keys for matching
+    lower_dict = {str(k).lower(): v for k, v in config_block.items()}
+
+    if target in lower_dict:
+        return lower_dict[target]
+
+    return config_block.get('default', default_fallback)
+
+def find_hdf_by_identifier(identifier, class_all_files):
+    """
+    Finds an HDF5 filename whether the identifier is a
+    sample_name (str) or a scan_number (int).
+    Includes automatic whitespace cleaning for robust string matching.
+    """
+    if identifier is None:
+        return None
+
+    # CASE 1: The identifier is a Scan Number (e.g., 83905)
+    if isinstance(identifier, int):
+        if identifier in class_all_files['scan']:
+            idx = class_all_files['scan'].index(identifier)
+            return class_all_files['name_hdf'][idx]
+
+    # CASE 2: The identifier is a Sample Name (e.g., 'CTAB' or 'EC')
+    else:
+        clean_target = str(identifier).strip()
+
+        # Clean the list from the metadata to ensure a perfect match
+        clean_sample_list = [str(name).strip() for name in class_all_files['sample_name']]
+
+        if clean_target in clean_sample_list:
+            idx = clean_sample_list.index(clean_target)
+            return class_all_files['name_hdf'][idx]
+
+    # If not found in either column
+    return None
+
+
+
+import re
+
+def find_hdf_filename(path_raw_dir, scan_number):
+    """
+    Automatically finds the HDF filename for a given scan number,
+    regardless of the instrument prefix, year, or zero-padding.
+
+    Args:
+        path_raw_dir (str): Path to the raw_data folder.
+        scan_number (int): The integer scan number to look for.
+
+    Returns:
+        str: The exact filename (e.g., 'sans2022n083907.hdf') or None if not found.
+    """
+    if not os.path.exists(path_raw_dir):
+        print(f"[ERROR] Directory not found: {path_raw_dir}")
+        return None
+
+    # Regex explanation:
+    # (\d+) captures the consecutive digits.
+    # \.hdf$ ensures those digits are immediately followed by .hdf at the end of the line.
+    pattern = re.compile(r'(\d+)\.hdf$', re.IGNORECASE)
+
+    for filename in os.listdir(path_raw_dir):
+        match = pattern.search(filename)
+        if match:
+            # Convert the matched string (e.g., "083907") to an integer (83907)
+            file_scan_nr = int(match.group(1))
+
+            if file_scan_nr == scan_number:
+                return filename
+
+    return None
+
+
+import yaml
+
+# ==========================================
+# MASTER CONFIGURATION PATHS
+# Automatically dynamically detects the current directory.
+# ==========================================
+
+# 1. Find the exact folder where utils.py is physically located
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+#Go back one folder above it (e.g., /.../2022_2358_beamtime)
+CURRENT_DIR = os.path.dirname(CURRENT_DIR)
+
+# 2. Attach the YAML filenames to that folder path
+DEFAULT_CONFIG_PATH = os.path.join(CURRENT_DIR, "config_experiment.yaml")
+DEFAULT_REGISTRY_PATH = os.path.join(CURRENT_DIR, "instrument_registry.yaml")
+
+
+def load_config(filepath=DEFAULT_CONFIG_PATH):
+    """Loads the main experiment YAML configuration file."""
+    try:
+        with open(filepath, 'r') as f:
+            return yaml.safe_load(f)
+    except FileNotFoundError:
+        print(f"\n[ERROR] config_experiment.yaml not found at:\n{filepath}")
+        print("Please ensure the YAML file is in the same directory as utils.py")
+        sys.exit(1)
+
+def load_instrument_registry(filepath=DEFAULT_REGISTRY_PATH):
+    """Loads the instrument hardware registry YAML."""
+    try:
+        with open(filepath, 'r') as f:
+            return yaml.safe_load(f)
+    except FileNotFoundError:
+        print(f"\n[ERROR] instrument_registry.yaml not found at:\n{filepath}")
+        print("Please ensure the YAML file is in the same directory as utils.py")
+        sys.exit(1)
