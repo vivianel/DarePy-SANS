@@ -7,90 +7,71 @@ conda activate spyder-env
 This script processes SANS HDF5 data to create a GIF animation or save individual frames.
 It automatically detects the year in filenames and supports background subtraction.
 """
-
 import numpy as np
+import matplotlib
+# Force an interactive backend BEFORE importing pyplot
+try:
+    matplotlib.use('Qt5Agg')
+except:
+    matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt # Matplotlib imported for interactive use
 import os
-import re
 from matplotlib.animation import FuncAnimation
 from PIL import Image # For saving GIFs from individual frames (fallback method)
+from utils import load_hdf, find_hdf_filename, load_config
 
-# Assuming utils.py is in the same directory or accessible in your Python path
-from utils import load_hdf
+# Automatically loads config_experiment.yaml using your utils file
+config = load_config()
+cfg_2d = config['plot_2d']
 
-# --- User Options ---
-# Main base path for SANS analysis data.
-# Raw data will be looked for in 'MAIN_BASE_PATH/raw_data'
-# Results will be saved in 'MAIN_BASE_PATH/extra_results'
-MAIN_BASE_PATH = 'C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2024_0212_Wade/DarePy-SANS/'
+LIST_SCAN = cfg_2d['list_scan']
+clim = cfg_2d['clim']
+plot_scale = cfg_2d['plot_scale']
+ENABLE_BACKGROUND_SUBTRACTION = cfg_2d['enable_bg_subtraction']
+BACKGROUND_SCAN_NR = cfg_2d['background_scan_nr']
+OUTPUT_MODE = cfg_2d['output_mode']
 
-# List of scan numbers to process
-LIST_SCAN = list(range(37109,37110))
+# --- Animation Options (Only used if OUTPUT_MODE is 'gif') ---
+ANIMATION_FPS = 5            # Frames per second
+ANIMATION_LOOP = 0           # 0 = loop infinitely, 1 = play once
+ANIMATION_QUALITY_DPI = 150  # DPI resolution for the animation
 
-# file year saved
-file_year = '2024'
-
-# Background scan number (if background subtraction is enabled)
-BACKGROUND_SCAN_NR = 23088
-
-# Enable or disable background subtraction
-ENABLE_BACKGROUND_SUBTRACTION = False
-
-# --- Output Mode Selection ---
-# Choose 'gif' to save a single GIF animation.
-# Choose 'frames' to save each processed image as a separate PNG/JPEG file AND keep them open.
-OUTPUT_MODE = 'frames' # Options: 'gif', 'frames'
-
-# --- Animation Specific Options (if OUTPUT_MODE is 'gif') ---
-ANIMATION_FPS = 5 # Frames per second for the GIF animation
-ANIMATION_LOOP = 0 # 0 means loop infinitely for GIF, 1 means play once
-ANIMATION_QUALITY_DPI = 150 # DPI for the animation frames (affects resolution)
-
-# --- Individual Frame Specific Options (if OUTPUT_MODE is 'frames') ---
-FRAME_OUTPUT_FORMAT = 'png' # File format for individual frames (e.g., 'png', 'jpeg')
-FRAME_QUALITY_DPI = 150 # DPI for individual frame images
-
-
-# --- Derived Paths (Do not modify directly) ---
-PATH_HDF_RAW = os.path.join(MAIN_BASE_PATH, 'raw_data')
-OUTPUT_FOLDER = os.path.join(MAIN_BASE_PATH, 'extra_results')
-
-
+# --- Frame Options (Only used if OUTPUT_MODE is 'frames') ---
+FRAME_OUTPUT_FORMAT = 'png'  # Options: 'png', 'jpeg', etc.
+FRAME_QUALITY_DPI = 150      # DPI resolution for individual images
 # --- Functions and Definitions ---
 
+# ==========================================
+# %% 2. DYNAMIC PATHS (Loaded from YAML)
+# ==========================================
 
-def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable_bg_sub=False, file_year=None):
+
+# Pull paths dynamically
+PROJECT_BASE = config['analysis_paths']['project_base']
+PATH_HDF_RAW = config['analysis_paths']['raw_data']
+
+# Derived Paths (Automatically places output in your project folder)
+OUTPUT_FOLDER = os.path.join(PROJECT_BASE, 'extra_results')
+
+
+def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable_bg_sub=False):
     """
     Loads an HDF scan, performs background subtraction if enabled, and prepares
-    the image data. This function is updated to handle files with multiple
-    2D scattering patterns.
-
-    Args:
-        scan_number (int): The scan number to load.
-        path_raw_dir (str): The specific raw data directory where the HDF files are located.
-        background_img (numpy.ndarray, optional): The background image to subtract.
-                                                   Required if enable_bg_sub is True. Defaults to None.
-        enable_bg_sub (bool, optional): Whether to perform background subtraction. Defaults to False.
-        file_year (str, optional): The four-digit year to use in the filename. If None, it will be determined.
-
-    Returns:
-        tuple: A tuple containing:
-            - list: A list of processed image data (numpy.ndarray).
-            - str: The sample name.
-            - str: The full name of the HDF file.
-            Returns (None, None, None) if the file cannot be loaded.
+    the image data. (Dynamically finds the filename).
     """
-    current_year = file_year
 
-    name_hdf = f'sans{current_year}n0{scan_number}.hdf'
+    # --- NEW AUTOMATIC LOOKUP ---
+    name_hdf = find_hdf_filename(path_raw_dir, scan_number)
+
+    if not name_hdf:
+        print(f"Error: Could not automatically find HDF file for scan {scan_number} in '{path_raw_dir}'.")
+        return None, None, None
+
     full_hdf_path = os.path.join(path_raw_dir, name_hdf)
     print(f"Attempting to load: {full_hdf_path}")
 
     try:
         img = load_hdf(path_raw_dir, name_hdf, 'counts')
-    except FileNotFoundError:
-        print(f"Error: File '{name_hdf}' not found in '{path_raw_dir}'. Skipping scan {scan_number}.")
-        return None, None, None
     except Exception as e:
         print(f"An error occurred loading {name_hdf} from {path_raw_dir}: {e}. Skipping scan {scan_number}.")
         return None, None, None
@@ -120,39 +101,7 @@ def load_and_process_scan(scan_number, path_raw_dir, background_img=None, enable
     sample_name = load_hdf(path_raw_dir, name_hdf, 'sample_name')
     return processed_images, sample_name, name_hdf
 
-def get_plot_clim(image_data_list):
-    """
-    Determines a reasonable global color limit (clim) for plotting based on a
-    collection of image data. This is crucial for consistent animation scaling.
-
-    Args:
-        image_data_list (list): A list of numpy arrays, where each array is an image frame.
-
-    Returns:
-        tuple: (vmin, vmax) for color scaling.
-    """
-    valid_data_frames = [arr for arr in image_data_list if arr is not None]
-
-    if not valid_data_frames:
-        print("Warning: No valid image data to determine global CLIM. Defaulting to (0, 100).")
-        return (0, 100)
-
-    all_vals = np.concatenate([arr.flatten() for arr in valid_data_frames])
-    positive_vals = all_vals[all_vals > 0]
-
-    if positive_vals.size > 0:
-        clim_vmax = np.mean(positive_vals) + 0.5 * np.std(positive_vals)
-        if clim_vmax <= 0 or np.isinf(clim_vmax) or np.isnan(clim_vmax):
-             clim_vmax = np.max(positive_vals)
-             if clim_vmax <= 0:
-                 clim_vmax = 100
-    else:
-        clim_vmax = 100
-
-    return (0, max(1, clim_vmax))
-
-
-def save_individual_frames(processed_data, output_folder, global_clim, output_format, dpi):
+def save_individual_frames(processed_data, output_folder, output_format, dpi, clim):
     """
     Saves each processed image as a separate file directly into the specified output_folder.
     Figures are kept open after saving.
@@ -161,7 +110,10 @@ def save_individual_frames(processed_data, output_folder, global_clim, output_fo
 
     for idx, (img_data, plot_title) in enumerate(processed_data):
         fig_frame, ax_frame = plt.subplots(figsize=(8, 6))
-        imgplot_frame = ax_frame.imshow(img_data, clim=global_clim, origin='lower', cmap='jet')
+        if plot_scale == 'lin':
+            imgplot_frame = ax_frame.imshow(img_data, origin='lower', cmap='jet', clim = clim)
+        elif plot_scale == 'log':
+            imgplot_frame = ax_frame.imshow(np.log(img_data), origin='lower', cmap='jet', clim = clim)
         fig_frame.colorbar(imgplot_frame, ax=ax_frame, fraction=0.046, pad=0.04)
         ax_frame.set_title(plot_title)
 
@@ -179,7 +131,7 @@ def save_individual_frames(processed_data, output_folder, global_clim, output_fo
 
 
 def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, output_folder,
-                                  list_scan_info, fps, loop, dpi):
+                                  list_scan_info, fps, loop, dpi, clim):
     """
     Handles the creation and saving of the GIF animation.
     This function will still close its internal figure after saving,
@@ -197,12 +149,12 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
     # This figure is intended for rendering to file, not for interactive display.
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    global_clim = get_plot_clim(raw_image_data_for_clim)
-    print(f"Calculated global color limits (clim): {global_clim}")
 
     initial_img_data, initial_plot_title = processed_data[0]
-    img_plot = ax.imshow(initial_img_data, clim=global_clim, origin='lower', cmap='jet')
-    cbar = fig.colorbar(img_plot, ax=ax, fraction=0.046, pad=0.04)
+    if plot_scale == 'lin':
+        img_plot = ax.imshow(initial_img_data, origin='lower', cmap='jet', clim = clim)
+    elif plot_scale == 'log':
+        img_plot = ax.imshow(np.log(initial_img_data), origin='lower', cmap='jet', clim = clim)
     title_obj = ax.set_title(initial_plot_title)
 
     def update_frame(frame_index):
@@ -240,7 +192,10 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
         frames_for_pil = []
         for idx, (img_data, plot_title) in enumerate(processed_data):
             fig_frame, ax_frame = plt.subplots(figsize=(8, 6))
-            imgplot_frame = ax_frame.imshow(img_data, clim=global_clim, origin='lower', cmap='jet')
+            if plot_scale == 'lin':
+                imgplot_frame = ax_frame.imshow(img_data, origin='lower', cmap='jet', clim = clim)
+            elif plot_scale == 'log':
+                imgplot_frame = ax_frame.imshow(np.log(img_data), origin='lower', cmap='jet', clim = clim)
             fig_frame.colorbar(imgplot_frame, ax=ax_frame, fraction=0.046, pad=0.04)
             ax_frame.set_title(plot_title)
 
@@ -288,11 +243,10 @@ if __name__ == '__main__':
 
     if ENABLE_BACKGROUND_SUBTRACTION:
         print(f"Determining year for background scan: {BACKGROUND_SCAN_NR}")
-        background_file_year = file_year
         if background_file_year:
             print(f"Loading background scan: sans{background_file_year}n0{BACKGROUND_SCAN_NR}.hdf from {PATH_HDF_RAW}")
             # Load background, which may also be a list of images. We'll use the first one.
-            bg_imgs, _, _ = load_and_process_scan(BACKGROUND_SCAN_NR, PATH_HDF_RAW, file_year=background_file_year)
+            bg_imgs, _, _ = load_and_process_scan(BACKGROUND_SCAN_NR, PATH_HDF_RAW)
             if bg_imgs is not None and len(bg_imgs) > 0:
                 background_image = np.where(bg_imgs[0] == 0, 1e-4, bg_imgs[0])
                 print("Background loaded successfully.")
@@ -309,8 +263,7 @@ if __name__ == '__main__':
     for i, scan_nr in enumerate(LIST_SCAN):
         print(f"Processing scan: {scan_nr}")
         images_data, sample_name, hdf_name = load_and_process_scan(
-            scan_nr, PATH_HDF_RAW, background_image, ENABLE_BACKGROUND_SUBTRACTION, file_year=file_year
-        )
+            scan_nr, PATH_HDF_RAW, background_image, ENABLE_BACKGROUND_SUBTRACTION)
 
         if images_data is None:
             continue
@@ -336,10 +289,9 @@ if __name__ == '__main__':
 
     elif OUTPUT_MODE == 'frames':
         # Calculate global clim once for consistency across individual frames
-        global_clim_for_frames = get_plot_clim(raw_image_data_for_clim)
 
-        save_individual_frames(processed_scan_data, OUTPUT_FOLDER, global_clim_for_frames,
-                               FRAME_OUTPUT_FORMAT, FRAME_QUALITY_DPI)
+        save_individual_frames(processed_scan_data, OUTPUT_FOLDER,
+                               FRAME_OUTPUT_FORMAT, FRAME_QUALITY_DPI, clim)
 
         # After saving all frames and leaving their figures open, call plt.show()
         # to ensure they are actually displayed and interactive in your environment.

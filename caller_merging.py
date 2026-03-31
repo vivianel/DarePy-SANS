@@ -1,0 +1,105 @@
+# -*- coding: utf-8 -*-
+"""
+DarePy-SANS: Post-Processing & Merging Caller
+Orchestrates a 4-step modular pipeline:
+1. Overlay/Noise Analysis, 2. Stitched Merging, 3. Interpolation, 4. Background Subtraction
+"""
+import sys
+import os
+from pathlib import Path
+
+# ==========================================
+# %% DYNAMIC PATH INJECTION
+# ==========================================
+# Safely find the 'codes' folder even when running in Spyder's interactive console
+try:
+    current_dir = Path(__file__).resolve().parent
+except NameError:
+    current_dir = Path(os.getcwd()).resolve()
+
+codes_dir = current_dir / 'codes'
+
+if str(codes_dir) not in sys.path:
+    sys.path.insert(0, str(codes_dir))
+
+# ==========================================
+# %% STANDARD IMPORTS
+# ==========================================
+import post_processing as pp
+from utils import load_config
+
+# ==========================================
+# STEP 0: LOAD CONFIGURATION
+# ==========================================
+# This one line replaces the entire try/except block!
+ext_cfg = load_config()
+
+project_base = ext_cfg['analysis_paths']['project_base']
+scripts_dir = ext_cfg['analysis_paths']['scripts_dir']
+path_dir_an = os.path.join(project_base, 'analysis')
+
+# Ensure the codes directory is in the system path so Python can find 'post_processing.py'
+if scripts_dir not in sys.path:
+    sys.path.append(scripts_dir)
+
+
+m_set = ext_cfg.get('merging_settings', {})
+
+print("\n" + "="*60)
+print("DAREPY-SANS: POST-PROCESSING & MERGING")
+print("="*60)
+
+# ==========================================
+# FUNCTION 1: INITIAL OVERLAY & NOISE CHECK
+# ==========================================
+# Retrieve the YAML parameters first so we can pass them to the plot function
+skip_start = m_set.get('skip_start', {'0': 0, '1': 0, '2': 0})
+skip_end = m_set.get('skip_end', {'0': 0, '1': 0, '2': 0})
+
+if m_set.get('run_step_1_analysis', True):
+    print(f"\n[STEP 1] Generating plots with current YAML skip settings...")
+    # Pass the skip settings so they can be highlighted in RED on the plots
+    merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end)
+else:
+    print(f"\n[SKIP] Step 1: Noise analysis plots disabled.")
+    # We still need to call this to load the 'merged_files' object for Step 2
+    merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end)
+
+# ==========================================
+# FUNCTION 2: SCALING & STITCHED MERGING (RAW)
+# ==========================================
+if m_set.get('run_step_2_merging', True):
+    skip_start = m_set.get('skip_start', {'0': 0, '1': 0, '2': 0})
+    skip_end = m_set.get('skip_end', {'0': 0, '1': 0, '2': 0})
+
+    print(f"\n[STEP 2] Stitching raw segments (Applying Skips)...")
+    pp.merging_data(path_dir_an, merged_files, skip_start, skip_end)
+else:
+    print(f"\n[SKIP] Step 2: Raw merging disabled.")
+
+# ==========================================
+# FUNCTION 3: OPTIONAL INTERPOLATION / REBINNING
+# ==========================================
+if m_set.get('run_step_3_interpolation', False):
+    i_type = m_set.get('interp_type', 'log')
+    i_pts = m_set.get('interp_points', 150)
+    s_win = m_set.get('smooth_window', 1)
+
+    print(f"\n[STEP 3] Interpolating data (Type: {i_type}, Points: {i_pts})...")
+    pp.interpolate_data(path_dir_an, interp_type=i_type, interp_points=i_pts, smooth_window=s_win)
+else:
+    print(f"\n[SKIP] Step 3: Interpolation/Rebinning disabled.")
+
+# ==========================================
+# FUNCTION 4: INCOHERENT BACKGROUND SUBTRACTION
+# ==========================================
+if m_set.get('run_step_4_incoherent', False):
+    last_points = m_set.get('last_points_to_fit', 50)
+    print(f"\n[STEP 4] Subtracting incoherent background (Last {last_points} pts)...")
+    pp.subtract_incoherent(path_dir_an, initial_last_points_fit=last_points)
+else:
+    print(f"\n[SKIP] Step 4: Background subtraction disabled.")
+
+print("\n" + "="*60)
+print("PROCESSING COMPLETE. Check the 'merged' folder.")
+print("="*60)

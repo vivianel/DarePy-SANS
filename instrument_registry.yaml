@@ -1,0 +1,63 @@
+# ==============================================================================
+# DAREPY-SANS: INSTRUMENT REGISTRY
+# This file stores the physical hardware constants for different SANS instruments.
+# The pipeline pulls these values automatically based on the 'which_instrument'
+# setting in your config_experiment.yaml file.
+# ==============================================================================
+
+SANS-I:
+  name: 'SANS-I'                     # The exact string identifier for this instrument.
+
+  # --- DETECTOR HARDWARE SPECIFICATIONS ---
+  deadtime: 6.6e-07                  # Detector deadtime in seconds. Used to correct for lost counts at high fluxes.
+  pixel_size: 0.0075                 # The physical size of a single detector pixel in meters (e.g., 7.5 mm).
+  detector_size: 128                 # The number of pixels along one axis (assuming a square 128x128 detector).
+  efficiency_map: 'flat_field_SANS-I.txt' # The filename of the flat-field matrix used to correct for uneven pixel sensitivity.
+
+  # --- NEUTRON BEAM MODIFIERS ---
+  # These map the integer index of the attenuator wheel/slider to its actual transmission factor.
+  list_attenuation:
+    '0': 1.0                         # Open beam (100% transmission)
+    '1': 0.002061856                 # Approx 1/485
+    '2': 0.011363636                 # Approx 1/88
+    '3': 0.125                       # Approx 1/8
+    '4': 0.285714286                 # Approx 1/3.5
+    '5': 0.120481928                 # Approx 1/8.3
+
+  # --- ABSOLUTE CALIBRATION SCALING ---
+  # These are the scaling factors used to convert raw intensities into absolute cross-sections (cm^-1).
+  # The keys (5, 6, 8, etc.) typically correspond to the neutron wavelength (in Å) used for the measurement.
+  list_abs_calib:
+    '5': 0.909
+    '6': 0.989
+    '8': 1.090
+    '10': 1.241
+    '12': 1.452
+
+# ==============================================================================
+
+SANS-LLB:
+  name: 'SANS-LLB'
+
+  # --- DETECTOR HARDWARE SPECIFICATIONS ---
+  deadtime: 3.5e-06                  # Note: LLB has a longer deadtime than SANS-I
+  pixel_size: 0.005                  # Smaller pixels (5.0 mm) giving higher spatial resolution
+  detector_size: 128
+  efficiency_map: 'flat_field_SANS-LLB.txt'
+
+  # --- NEUTRON BEAM MODIFIERS ---
+  list_attenuation:
+    '0': 1.0
+    '1': 0.002061856
+    '2': 0.011363636
+    '3': 0.125
+    '4': 0.285714286
+    '5': 0.120481928
+
+  # --- ABSOLUTE CALIBRATION SCALING ---
+  list_abs_calib:
+    '5': 0.909
+    '6': 0.989
+    '8': 1.090
+    '10': 1.241
+    '12': 1.452
