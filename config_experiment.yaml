@@ -1,14 +1,5 @@
 # ==========================================
-# 1. INSTRUMENT SETUP
-# Defines the physical conditions of your neutron scattering experiment.
-# ==========================================
-instrument_setup:
-  which_instrument: SANS-I         # MUST match the exact spelling in 'instrument_registry.yaml': Either SANS-I or SANS-LLB.
-  wavelength: auto                 # Neutron wavelength in Å. 'auto' reads from HDF5, or type a number (e.g., 6.0).
-  target_detector_distances: all   # Distances to process. Type 'all' or a list like [1.6, 6.0, 18.0].
-
-# ==========================================
-# 2. ANALYSIS PATHS
+# 1. ANALYSIS PATHS
 # Tells the pipeline where to find and save data. ALWAYS use absolute paths with forward slashes (/).
 # ==========================================
 analysis_paths:
@@ -17,7 +8,7 @@ analysis_paths:
   scripts_dir: C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_1mm_rest/DarePy-SANS/ # where the scripts are saved
 
 # ==========================================
-# 3. RENAME SAMPLES
+# 2. RENAME SAMPLES
 # Fix typos in sample names before processing to ensure correct matching.
 # ==========================================
 rename_samples:
@@ -26,38 +17,47 @@ rename_samples:
   replace_with: 'test_name'  # The brand-new sample name you want to use.
 
 # ==========================================
-# 4. PLOT 2D PATTERNS
+# 3. PLOT 2D PATTERNS
 # Settings for the plot_2Dpattern.py quick-visualization script.
 # ==========================================
 plot_2d:
-  list_scan: [83907, 83908, 83909, 83910] # e.g., range(83907, 83911)
-  clim: [1, 5]               # Color bar limits [min, max]
+  list_scan: [84173, 84168] # e.g., range(83907, 83911)
+  clim: [1, 3]               # Color bar limits [min, max]
   plot_scale: 'log'          # Options: 'log' or 'lin'
   enable_bg_subtraction: false # Set true to preview data with background subtracted.
   background_scan_nr: 23088
   output_mode: 'frames'      # Options: 'gif' (animation) or 'frames' (individual images).
 
 # ==========================================
-# 5. BEAM CENTER MASK
+# 4. BEAM CENTER MASK
 # ==========================================
 beam_center_mask:
   scan_nr: 83909             # The specific scan (e.g., AgBE or direct beam) to use for interactive masking.
 
 # ==========================================
-# 10. PIPELINE CONTROL
+# 5. INSTRUMENT SETUP
+# Defines the physical conditions of your neutron scattering experiment.
+# ==========================================
+instrument_setup:
+  which_instrument: SANS-I         # MUST match the exact spelling in 'instrument_registry.yaml': Either SANS-I or SANS-LLB.
+  wavelength: auto                 # Neutron wavelength in Å. 'auto' reads from HDF5, or type a number (e.g., 6.0).
+  target_detector_distances: all   # Distances to process. Type 'all' or a list like [1.6, 6.0, 18.0].
+
+# ==========================================
+# 6. PIPELINE CONTROL
 # Orchestration settings for the Master Script (DarePy-SANS.py).
 # in Yaml, the standard way to write booleans is entirely lowercase
 # ==========================================
 pipeline_control:
   dry_run: false             # Set true to verify paths/files without running heavy math.
   run_file_listing: true
-  run_transmission: false
+  run_transmission: true
   run_reduction: false
   live_monitoring: false     # Set true at the beamline to auto-process new files.
   monitor_interval: 10       # Seconds to wait between checking for new files in live mode.
 
 # ==========================================
-# 6. PHYSICS CORRECTIONS
+# 7. PHYSICS CORRECTIONS
 # Data reduction toggles. Set to true to apply the correction, false to skip.
 # in Yaml, the standard way to write booleans is entirely lowercase
 # ==========================================
@@ -73,7 +73,7 @@ physics_corrections:
 
 
 # ==========================================
-# 7. CALIBRATION SAMPLES
+# 8. CALIBRATION SAMPLES
 # Exact strings used in your raw data files to denote standard measurements.
 # ==========================================
 calibration_samples:
@@ -96,7 +96,7 @@ calibration_samples:
     default: 0.3                   # Fallback if a sample isn't explicitly listed above.
 
 # ==========================================
-# 8. DETECTOR GEOMETRY
+# 9. DETECTOR GEOMETRY
 # PRO-TIP: You usually do NOT need to fill this out manually!
 # Running 'mask_beamstop_center.py' automatically calculates and updates this section for you.
 # Format: Boxes = [Ymin, Ymax, Xmin, Xmax] in pixels. Centers = [X, Y].
@@ -165,7 +165,7 @@ detector_geometry:
 
 
 # ==========================================
-# 9. ANALYSIS FLAGS
+# 10. ANALYSIS FLAGS
 # Fine-tuning for the integration process.
 # ==========================================
 analysis_flags:
@@ -180,8 +180,6 @@ analysis_flags:
   - 80
   integration_points: 120    # Number of q-bins for 1D radial integration.
   sectors_nr: 18             # Number of "pizza slices" for azimuthal integration.
-
-
 
 # ==========================================
 # 11. MERGING SETTINGS

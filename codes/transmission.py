@@ -47,57 +47,60 @@ def trans_calc_reference(config, result, class_files):
                 counts = load_hdf(path_hdf_raw, eb_hdf, 'counts')
                 img_eb = normalize_trans(config, result, eb_hdf, counts)
 
-                # ---------------------------------------------------------
-                # AUTO-MASK CALIBRATION USING WATER
-                # ---------------------------------------------------------
-                # 1. Find the Water scan for this distance
-                water_id = config.get('calibration_samples', {}).get('water', 'H2O')
-                water_hdf = find_hdf_by_identifier(water_id, class_trans)
+                # =========================================================
+                # SHAPE-BASED MASKING (Image Moments & Gaussian Spread)
+                # =========================================================
+                print(f"\n[AUTO-MASK] Calculating shape-based elliptical mask for {trans_dist}m...")
 
-                mask = None
+                # 1. Isolate the core beam from detector noise
+                # The median of the detector is a great estimate of the dark noise floor
+                noise_floor = np.median(img_eb)
+                beam_only = img_eb - noise_floor
+                beam_only[beam_only < 0] = 0  # Zero out negative noise
 
-                if water_hdf is not None:
-                    # Load water data
-                    counts_w = load_hdf(path_hdf_raw, water_hdf, 'counts')
-                    img_w = normalize_trans(config, result, water_hdf, counts_w)
+                # We use the top 10% of the beam purely to calculate its mathematical shape
+                # without being skewed by random hot pixels at the edges of the detector.
+                shape_threshold = beam_only.max() * 0.10
+                core_beam = np.where(beam_only > shape_threshold, beam_only, 0)
 
-                    max_intensity = img_eb.max()
-                    target_transmission = 0.50
-                    best_diff = 999
+                total_intensity = core_beam.sum()
+                mask = np.zeros_like(img_eb)
 
-                    print(f"\n[AUTO-MASK] Calibrating mask using Water ({water_id}) at {trans_dist}m...")
+                if total_intensity > 0:
+                    # Create coordinate grids
+                    y_indices, x_indices = np.indices(core_beam.shape)
 
-                    # Test thresholds from 0.5% to 20% of the maximum peak
-                    for percent in [0.005, 0.01, 0.02, 0.05, 0.10, 0.20]:
-                        cutoff = max_intensity * percent
-                        temp_mask = np.where(img_eb >= cutoff, 1, 0)
+                    # 2. Calculate the Center of Mass (Weighted by Intensity)
+                    center_y = (y_indices * core_beam).sum() / total_intensity
+                    center_x = (x_indices * core_beam).sum() / total_intensity
 
-                        eb_sum = np.sum(img_eb * temp_mask)
-                        w_sum = np.sum(img_w * temp_mask)
+                    # 3. Calculate the Spatial Spread (Variance -> Standard Deviation)
+                    var_y = (((y_indices - center_y)**2) * core_beam).sum() / total_intensity
+                    var_x = (((x_indices - center_x)**2) * core_beam).sum() / total_intensity
 
-                        if eb_sum > 0:
-                            t_water = w_sum / eb_sum
-                            diff = abs(t_water - target_transmission)
+                    sigma_y = np.sqrt(var_y)
+                    sigma_x = np.sqrt(var_x)
 
-                            # Keep the mask that gets us closest to 0.50
-                            if diff < best_diff:
-                                best_diff = diff
-                                mask = temp_mask
-                                best_percent = percent
-                                best_t = t_water
+                    print(f" -> Beam Center: (X: {center_x:.1f}, Y: {center_y:.1f})")
+                    print(f" -> Beam Spread: (\u03C3_x: {sigma_x:.2f}, \u03C3_y: {sigma_y:.2f})")
 
-                    print(f" -> Selected threshold: {best_percent*100}% of Peak Intensity.")
-                    print(f" -> Resulting Water Transmission: {best_t:.3f}")
+                    # 4. Draw the Elliptical Mask
+                    # A multiplier of 4 standard deviations captures >99.9% of a real neutron beam
+                    radius_multiplier = 4.0
 
+                    # Prevent division by zero if the beam is impossibly thin
+                    rx = max(radius_multiplier * sigma_x, 1.0)
+                    ry = max(radius_multiplier * sigma_y, 1.0)
+
+                    # Equation of an ellipse: ((x - xc)/rx)^2 + ((y - yc)/ry)^2 <= 1
+                    ellipse_eq = ((x_indices - center_x)**2) / (rx**2) + ((y_indices - center_y)**2) / (ry**2)
+                    mask[ellipse_eq <= 1.0] = 1
+
+                    print(f" -> Mask created: Ellipse spanning {radius_multiplier} \u03C3.")
                 else:
-                    # FALLBACK: If water wasn't measured at this distance, use a safe, tight 5% threshold
-                    print(f"\n[AUTO-MASK] Warning: No Water scan found at {trans_dist}m for calibration.")
-                    print(" -> Falling back to safe default threshold (5% of Peak Intensity).")
-                    max_intensity = img_eb.max()
-                    cutoff = max_intensity * 0.05
-                    mask = np.where(img_eb >= cutoff, 1, 0)
-
-                # ---------------------------------------------------------
+                    print("\n[ERROR] Empty Beam has zero intensity! Cannot calculate mask.")
+                    sys.exit(1)
+                # =========================================================
 
                 Factor_correction = 1
                 EB_ref = float(np.sum(np.multiply(img_eb, mask))) * Factor_correction
