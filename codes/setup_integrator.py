@@ -19,8 +19,8 @@ from utils import create_analysis_folder, save_results, load_hdf
 # ==========================================
 def generate_beamstop_mask(config, result, det):
     """
-    Creates the 2D mask array based on beamstop coordinates and detector edges.
-    Extracts the beam center and saves both to the 'result' dictionary.
+    Creates the 2D mask array based on beamstop coordinates, detector edges,
+    and diagonal corner cutoffs. Extracts the beam center and saves both to the 'result' dictionary.
     """
     import sys
     import numpy as np
@@ -45,12 +45,40 @@ def generate_beamstop_mask(config, result, det):
                 y_n, y_p, x_n, x_p = bs_all
                 mask[y_n:y_p, x_n:x_p] = 1
 
-    # Edge masking
-    lines = 1
-    mask[:, 0:lines] = 1
-    mask[:, detector_size - lines:detector_size] = 1
-    mask[0:lines, :] = 1
-    mask[detector_size - lines:detector_size, :] = 1
+    # Edge masking (straight borders)
+    lines = 2
+    mask[:, 0:lines] = 1 # left edge
+    mask[0:lines, :] = 1 # top edge
+    mask[detector_size - lines:detector_size, :] = 1 #botton edge
+    # remove defect on the right side of the detector
+    if config['instrument']['name'] == 'SANS-I':
+        mask[:, detector_size - 7:detector_size] = 1 # right edge
+    else:
+        mask[:, detector_size - lines:detector_size] = 1 # right edge
+
+
+    # =======================================================
+    # DIAGONAL CORNER MASKING
+    # =======================================================
+    # Create a mathematical grid of X and Y coordinates
+    y_grid, x_grid = np.indices((detector_size, detector_size))
+
+    # Adjust this number to make the corner triangles larger or smaller!
+    # A value of 20 means it will chop a 20x20 pixel triangle off each corner.
+    corner_cutoff = 6
+
+    # Bottom-Left corner
+    mask[x_grid + y_grid < corner_cutoff] = 1
+
+    # Bottom-Right corner
+    mask[(detector_size - 1 - x_grid) + y_grid < corner_cutoff] = 1
+
+    # Top-Left corner
+    mask[x_grid + (detector_size - 1 - y_grid) < corner_cutoff] = 1
+
+    # Top-Right corner
+    mask[(detector_size - 1 - x_grid) + (detector_size - 1 - y_grid) < corner_cutoff] = 1
+    # =======================================================
 
     # --- 2. BEAM CENTER LOGIC ---
     beam_center_guess = config['analysis']['beam_center_guess']
