@@ -14,209 +14,169 @@ like smoothing.
 import numpy as np
 import h5py
 import os
-import math
 import pickle
 import sys # Added for sys.exit in case of critical errors
 
-# functions to load various values from hdf files
+# ==========================================
+# GLOBAL CACHE (Prevents severe pipeline slowdowns)
+# ==========================================
+_CACHED_CONFIG = None
+_CACHED_REGISTRY = None
 
 def load_hdf(path_hdf_raw, hdf_name, which_property):
     """
-    Loads a specific property (metadata or counts data) from an HDF5 file.
-
-    This function is designed to extract various experimental parameters and
-    detector counts from the standard HDF5 file structure used at PSI SANS.
-    It includes error handling for file access and data extraction.
-
-    Args:
-        path_hdf_raw (str): The base directory where the raw HDF5 files are located.
-        hdf_name (str): The filename of the HDF5 file (e.g., 'scan_000123.hdf').
-        which_property (str): The name of the property to load.
-                              Supported values: 'beamstop_y', 'att', 'coll',
-                              'detx', 'dety', 'wl', 'abs_time', 'spos',
-                              'flux_monit', 'beam_stop', 'sample_name',
-                              'time', 'moni', 'temp', 'counts'.
-
-    Returns:
-        Union[float, str, np.ndarray]: The loaded property value.
-            - Floats for scalar properties like positions, attenuator, wavelength.
-            - String for 'sample_name'.
-            - NumPy array for 'counts', 'time', 'moni', 'temp'.
-        Returns an empty string or 0 if a property is not found or is NaN (for 'temp').
-
-    Raises:
-        FileNotFoundError: If the specified HDF5 file does not exist.
-        KeyError: If the specified 'which_property' path does not exist in the HDF5 file.
-        Exception: For other unforeseen HDF5 reading errors.
+    Loads a specific property from an HDF5 file.
+    Automatically pulls the instrument name and monitor path from the YAML
+    registries without requiring them as function arguments.
     """
-    full_hdf_path = os.path.join(path_hdf_raw, hdf_name)
-    res = None # Initialize res to None
+    global _CACHED_CONFIG, _CACHED_REGISTRY
+
+    # 1. LAZY LOADING: Only read the YAML files from the hard drive ONCE.
+    if _CACHED_CONFIG is None or _CACHED_REGISTRY is None:
+        from utils import load_config, load_instrument_registry # Ensure imports match your structure
+        _CACHED_CONFIG = load_config()
+        _CACHED_REGISTRY = load_instrument_registry()
+
+    # 2. DYNAMICALLY PULL FROM YAML
+    instrument = _CACHED_CONFIG['instrument_setup']['which_instrument']
 
     try:
-        # Open the hdf file in read mode
+        registry_monitor_path = _CACHED_REGISTRY[instrument]['monitor_path']
+    except KeyError:
+        print(f"\n[ERROR] 'monitor_path' is missing for {instrument} in instrument_registry.yaml!")
+        sys.exit(1)
+
+    full_hdf_path = os.path.join(path_hdf_raw, hdf_name)
+
+    # 3. HDF5 PATH DICTIONARIES
+    PATHS = {
+        'SANS-I': {
+            'beamstop_y':  'entry1/SANS/beam_stop/y_position',
+            'att':         'entry1/SANS/attenuator/selection',
+            'coll':        '/entry1/SANS/collimator/length',
+            'detx':        '/entry1/SANS/detector/x_position',
+            'dety':        '/entry1/SANS/detector/y_position',
+            'wl':          '/entry1/SANS/Dornier-VS/lambda',
+            'abs_time':    '/entry1/control/absolute_time',
+            'spos':        '/entry1/sample/position',
+            'beam_stop':   '/entry1/SANS/beam_stop/out_flag',
+            'sample_name': '/entry1/sample/name',
+            'time':        '/entry1/SANS/detector/counting_time',
+            'moni':        '/entry1/SANS/detector/preset',
+            'temp':        '/entry1/sample/temperature',
+            'counts':      'entry1/SANS/detector/counts',
+            'flux_monit':  registry_monitor_path  # <-- INJECTED DIRECTLY FROM REGISTRY!
+        },
+        'SANS-LLB': {
+            'beamstop_y':  'entry0/SANS-LLB/beam_stop/y',
+            'att':         'entry0/SANS-LLB/attenuator/selection',
+            'coll':        '/entry0/SANS-LLB/collimator/geometry/size',
+            'detx':        '/entry0/SANS-LLB/central_detector/distance',
+            'dety':        '/entry0/SANS-LLB/central_detector/x',
+            'wl':          '/entry0/SANS-LLB/velocity_selector/wavelength',
+            'abs_time':    '/entry0/control/absolute_time',
+            'spos':        '/entry0/sample/position',
+            'beam_stop':   '/entry0/SANS-LLB/beam_stop/out_flag',
+            'sample_name': '/entry0/sample/name',
+            'time':        '/entry0/control/count_time',
+            'moni':        '/entry0/control/preset',
+            'temp':        '/entry0/sample/temperature',
+            'counts':      'entry0/central_data/data',
+            'counts_left': 'entry0/left_data/data',
+            'counts_bottom':'entry0/bottom_data/data',
+            'flux_monit':  registry_monitor_path  # <-- INJECTED DIRECTLY FROM REGISTRY!
+        }
+    }
+
+    try:
         with h5py.File(full_hdf_path, 'r') as file_hdf:
-            # Handle scalar properties first
-            if which_property == 'beamstop_y':
-                try:
-                    prop = file_hdf['entry1/SANS/beam_stop/y_position'][0]
-                except:
-                    prop = file_hdf['entry0/SANS-LLB/beam_stop/y'][0]
-                res = check_dimension(prop)
-            elif which_property == 'att':
-                try:
-                    prop = file_hdf['entry1/SANS/attenuator/selection'][0]
-                except:
-                    prop = file_hdf['entry0/SANS-LLB/attenuator/selection'][0]
-                res = check_dimension(prop)
-            elif which_property == 'coll':
-                try:
-                    prop = file_hdf['/entry1/SANS/collimator/length'][0]
-                except:
-                    prop = file_hdf['/entry0/SANS-LLB/collimator/geometry/size'][0]
-                    prop = prop/1000 # in m
-                res = check_dimension(prop) # in m
-            elif which_property == 'detx':
-                try:
-                    prop = file_hdf['/entry1/SANS/detector/x_position'][0]
-                except:
-                    prop = file_hdf['/entry0/SANS-LLB/central_detector/distance'][0]
-                res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
-            elif which_property == 'dety':
-                try:
-                    prop = file_hdf['/entry1/SANS/detector/y_position'][0]
-                except:
-                    prop = file_hdf['/entry0/SANS-LLB/central_detector/x'][0]
-                res = round(check_dimension(prop)/1000, 2) # convert from mm to m and round
-            elif which_property == 'wl':
-                try:
-                    prop = file_hdf['/entry1/SANS/Dornier-VS/lambda'][0] # in nm
-                except:
-                    prop = file_hdf['/entry0/SANS-LLB/velocity_selector/wavelength'][0] # in nm
-                prop = prop*10 # convert from nm to A
-                res = check_dimension(prop)
-            elif which_property == 'abs_time':
-                prop = file_hdf['/entry1/control/absolute_time'][0]
-                res = check_dimension(prop)
-            elif which_property == 'spos':
-                prop = file_hdf['/entry1/sample/position'][0]
-                res = check_dimension(prop)
-            elif which_property == 'flux_monit':
-                try:
-                    prop = file_hdf['/entry1/SANS/monitor2/counts'][0]
-                except:
-                    prop = file_hdf['/entry0/monitor2/integral'][0]
-                res = check_dimension(prop)
-            elif which_property == 'beam_stop': # This specific property returns a boolean/flag
-                res = file_hdf['/entry1/SANS/beam_stop/out_flag'][0]
-            elif which_property == 'sample_name':
-                try:
-                    prop = file_hdf['/entry1/sample/name'][0]
-                except:
-                    prop = file_hdf['/entry0/sample/name'][0]
-                res = check_dimension(prop) # Will handle decoding bytes if necessary
-            # Handle array properties
-            elif which_property == 'time':
-                try:
-                    prop = np.asarray(file_hdf['/entry1/SANS/detector/counting_time'])
-                except:
-                    prop = np.asarray(file_hdf['/entry0/control/count_time'])
-                res = check_dimension(prop)  # in s
-            elif which_property == 'moni':
-                try:
-                    prop = np.asarray(file_hdf['/entry1/SANS/detector/preset'])
-                except:
-                    prop = np.asarray(file_hdf['/entry0/control/preset'])
-                res = check_dimension(prop)/1e4 # To have monitors as 1e4, as per existing logic
-            elif which_property == 'temp': # Read in Celsius
-                try:
-                    prop = np.asarray(file_hdf['/entry1/sample/temperature'])
-                    if np.isnan(prop).any(): # Check if any element is NaN
-                        res = '' # Return empty string for NaN temperature
-                    else:
-                        res = check_dimension(prop)
-                except KeyError:
-                    res = '' # Return empty string if temperature path doesn't exist
-                except Exception as e:
-                    print(f"Warning: Could not load temperature for {hdf_name}: {e}")
-                    res = ''
-            elif which_property == 'counts':
-                try:
-                    prop = np.array(file_hdf['entry1/SANS/detector/counts'])
-                except:
-                    prop = np.array(file_hdf['entry0/central_data/data'])
-                res = check_dimension(prop)
-                # Correction to avoid negative values in counts data
-                #res[res < 0] = 1e-6
-            elif which_property == 'counts_left':
-                prop = np.array(file_hdf['entry0/left_data/data'])
-                res = check_dimension(prop)
-                # Correction to avoid negative values in counts data
-                #res[res < 0] = 1e-6
-            elif which_property == 'counts_bottom':
-                prop = np.array(file_hdf['entry0/bottom_data/data'])
-                res = check_dimension(prop)
-                # Correction to avoid negative values in counts data
-                #res[res < 0] = 1e-6
+
+            if which_property not in PATHS[instrument]:
+                return None
+
+            hdf_internal_path = PATHS[instrument][which_property]
+
+            if which_property == 'temp' and hdf_internal_path not in file_hdf:
+                return ''
+
+            raw_data = file_hdf[hdf_internal_path]
+
+            if which_property in ['time', 'moni', 'temp', 'counts', 'counts_left', 'counts_bottom']:
+                prop = np.asarray(raw_data)
             else:
-                print(f"Warning: Unknown property '{which_property}' requested for file '{hdf_name}'.")
-                res = None # Explicitly set to None for unsupported property
+                prop = raw_data[0]
+
+            # 4. MATH & CONVERSIONS
+            if which_property == 'temp' and np.isnan(prop).any():
+                return ''
+
+            if which_property == 'sample_name':
+                if isinstance(prop, bytes):
+                    return prop.decode('utf-8')
+                return str(prop)
+
+            prop = check_dimension(prop)
+
+            if which_property == 'coll' and instrument == 'SANS-LLB':
+                prop = prop / 1000.0
+            elif which_property in ['detx', 'dety']:
+                prop = round(prop / 1000.0, 2)
+            elif which_property == 'wl':
+                prop = prop * 10.0
+            elif which_property == 'moni':
+                prop = prop / 1e4
+
+            return prop
 
     except FileNotFoundError:
-        print(f"Error: HDF5 file not found: {full_hdf_path}")
-        sys.exit(1) # Exit the script as this is a critical error
+        print(f"\n[ERROR] HDF5 file not found: {full_hdf_path}")
+        sys.exit(1)
     except KeyError as e:
-        print(f"Error: Property path '{e}' not found in HDF5 file: {full_hdf_path} for '{which_property}'.")
-        print("This might indicate an inconsistency in the HDF5 file structure or a typo in 'which_property'.")
-        sys.exit(1) # Exit the script as this is a critical error
+        print(f"\n[ERROR] Path missing in {hdf_name}: {e}")
+        sys.exit(1)
     except Exception as e:
-        print(f"An unexpected error occurred while loading '{which_property}' from '{full_hdf_path}': {e}")
-        sys.exit(1) # Exit the script for other critical errors
+        print(f"\n[ERROR] Unexpected error reading '{which_property}' in {hdf_name}: {e}")
+        sys.exit(1)
 
-    return res
 
 def check_dimension(prop):
     """
     Helper function to standardize data types and dimensions loaded from HDF5.
-
-    It handles conversion from numpy byte strings to Python strings,
-    rounding of floats, and ensures NumPy arrays are returned as float32.
-
-    Args:
-        prop (Union[np.bytes_, np.int32, np.float64, np.float32, np.ndarray]):
-            The raw property value loaded from the HDF5 file.
-
-    Returns:
-        Union[float, str, np.ndarray]: The processed property value.
-            - Decoded string if prop is a numpy bytes object.
-            - Rounded float for scalar numeric types.
-            - np.float32 array for 2D or higher dimension arrays.
-            - Mean of values for 1D arrays (if numeric).
+    Safely extracts 0D scalars, averages 1D arrays, and casts 2D+ arrays to float32
+    WITHOUT forcing arbitrary rounding.
     """
-    if isinstance(prop, np.bytes_):
-        # Decode numpy byte string to standard Python string
-        prop_str = prop.decode('utf-8')
+    # 1. Handle Byte Strings
+    if isinstance(prop, (bytes, np.bytes_)):
+        prop_str = prop.decode('utf-8').strip()
         if prop_str == '':
             return ''
-        # Attempt to convert to float if all characters are digits (or period for decimal)
-        # This handles cases where numeric values might be stored as strings
+        # If it's a number hiding in a string, convert it, but don't round!
         try:
-            return round(float(prop_str), 2)
+            return float(prop_str)
         except ValueError:
-            return prop_str # Return as string if not purely numeric
-    elif isinstance(prop, (np.int32, np.float64, np.float32)):
-        # Round scalar numeric types to 2 decimal places
-        return round(float(prop), 2)
+            return prop_str
+
+    # 2. Extract standard Python floats from 0D numpy types (np.float64, np.int32, etc.)
+    elif isinstance(prop, np.generic) and not isinstance(prop, np.ndarray):
+        return float(prop)
+
+    # 3. Handle NumPy Arrays
     elif isinstance(prop, np.ndarray):
-        if prop.ndim == 1:
-            # For 1D arrays, return the mean if numeric, otherwise handle as string or pass through
-            if prop.dtype.kind in 'biufc': # Check if numeric (bool, int, uint, float, complex)
-                return round(float(np.mean(prop)), 2)
-            else:
-                return prop # Return the array if not numeric (e.g., array of strings)
+        if prop.ndim == 0:
+            # It's an array with a single item (e.g., array(6.0))
+            return float(prop)
+
+        elif prop.ndim == 1:
+            # For 1D numeric arrays (like temperature logs), return the exact mean
+            if prop.dtype.kind in 'biufc':
+                return float(np.mean(prop))
+            return prop
+
         elif prop.ndim >= 2:
-            # Ensure 2D or higher arrays are float32 for consistency
+            # Ensure 2D detector images are strictly float32 for memory efficiency
             return np.float32(prop)
-    # If none of the above types, return as is (e.g., Python int, float, or other object)
+
+    # 4. Fallback for standard Python ints/floats
     return prop
 
 def create_analysis_folder(config):

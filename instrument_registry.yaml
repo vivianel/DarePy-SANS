@@ -13,6 +13,7 @@ SANS-I:
   pixel_size: 0.0075                 # The physical size of a single detector pixel in meters (e.g., 7.5 mm).
   detector_size: 128                 # The number of pixels along one axis (assuming a square 128x128 detector).
   efficiency_map: 'flat_field_SANS-I.txt' # The filename of the flat-field matrix used to correct for uneven pixel sensitivity.
+  monitor_path: '/entry1/SANS/monitor2/counts'                  # Which beam monitor should be read for flux normalization
 
   # --- NEUTRON BEAM MODIFIERS ---
   # These map the integer index of the attenuator wheel/slider to its actual transmission factor.
@@ -44,6 +45,7 @@ SANS-LLB:
   pixel_size: 0.005                  # Smaller pixels (5.0 mm) giving higher spatial resolution
   detector_size: 128
   efficiency_map: 'flat_field_SANS-LLB.txt'
+  monitor_path: '/entry0/monitor2/integral'
 
   # --- NEUTRON BEAM MODIFIERS ---
   list_attenuation:
