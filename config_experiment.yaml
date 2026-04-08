@@ -25,8 +25,8 @@ rename_samples:
 # ==========================================
 plot_2d:
   list_scan: [84489, 84240, 84239] # e.g., range(83907, 83911)
-  clim: [0, 10]               # Color bar limits [min, max]
-  plot_scale: 'lin'          # Options: 'log' or 'lin'
+  clim: [0, 5]               # Color bar limits [min, max]
+  plot_scale: 'log'          # Options: 'log' or 'lin'
   enable_bg_subtraction: false # Set true to preview data with background subtracted.
   background_scan_nr: 23088
   output_mode: 'frames'      # Options: 'gif' (animation) or 'frames' (individual images).
@@ -43,8 +43,6 @@ beam_center_mask:
 # ==========================================
 instrument_setup:
   which_instrument: SANS-I         # MUST match the exact spelling in 'instrument_registry.yaml': Either SANS-I or SANS-LLB.
-  wavelength: auto                 # Neutron wavelength in Å. 'auto' reads from HDF5, or type a number (e.g., 6.0).
-  target_detector_distances: all   # Distances to process. Type 'all' or a list like [1.6, 6.0, 18.0].
 
 # ==========================================
 # 6. PIPELINE CONTROL
@@ -53,8 +51,7 @@ instrument_setup:
 # ==========================================
 pipeline_control:
   dry_run: false             # Set true to verify paths/files without running heavy math.
-  run_file_listing: true
-  run_transmission: true
+  run_transmission: false
   run_reduction: true
   live_monitoring: false     # Set true at the beamline to auto-process new files.
   monitor_interval: 10       # Seconds to wait between checking for new files in live mode.
@@ -65,12 +62,14 @@ pipeline_control:
 # in Yaml, the standard way to write booleans is entirely lowercase
 # ==========================================
 physics_corrections:
+  wavelength: auto                 # Neutron wavelength in Å. 'auto' reads from HDF5, or type a number (e.g., 6.0).
+  target_detector_distances: all   # Distances to process. Type 'all' or a list like [1.6, 6.0, 18.0].
   transmission_dist: 18            # Detector distance (in meters) used for transmission measurements.
   normalize_to_monitor: true
   subtract_dark_current: true
   subtract_empty_cell: true
   apply_flat_field: true
-  apply_transmission: true
+  apply_transmission: false
   normalize_to_thickness: true
   perform_absolute_scaling: true
 
@@ -174,13 +173,13 @@ detector_geometry:
 analysis_flags:
   exclude_files: []          # List of scan numbers to completely ignore (e.g., [83901, 83902]).
   force_reintegrate: false   # If true, overwrites previously processed data. If false, skips to save time.
-  plot_azimuthal: false
-  plot_radial: false
-  save_azimuthal: false
-  save_2d_patterns: false
-  pixel_range_azim:          # The radial range [min, max] for azimuthal integrations.
-  - 10
-  - 80
+  plot_azimuthal: true
+  plot_radial: true
+  save_azimuthal: true
+  save_2d_patterns: true
+  pixel_range_azim:          # The radial ranges [min, max] for azimuthal integrations.
+  - [10, 40]                 # Range 1 (Low q)
+  - [50, 100]                # Range 2 (High q)
   integration_points: 120    # Number of q-bins for 1D radial integration.
   sectors_nr: 18             # Number of "pizza slices" for azimuthal integration.
 

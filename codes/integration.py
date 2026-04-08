@@ -12,6 +12,17 @@ from absolute_scaling import absolute_calibration_2D
 import normalize_counts as norm
 import plot_integration as plot_integ
 
+def _parse_pixel_ranges(raw_ranges):
+    """Helper function to cleanly parse legacy single ranges or nested lists."""
+    if isinstance(raw_ranges, range):
+        return [[raw_ranges.start, raw_ranges.stop]]
+    elif isinstance(raw_ranges, list) and len(raw_ranges) > 0:
+        if isinstance(raw_ranges[0], int):
+            return [raw_ranges]
+        elif isinstance(raw_ranges[0], list):
+            return raw_ranges
+    return [[0, 10]]
+
 def set_integration(config, result, det_str):
     """Orchestrates the integration process for a specific detector distance."""
     path_dir_an = create_analysis_folder(config)
@@ -62,7 +73,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
     force_reintegrate = config['analysis'].get('force_reintegrate', False)
     physics = config.get('physics_corrections', {})
 
-    # Log Book Setup - Headers reordered to match the new physics sequence!
+    # Log Book Setup
     reduction_log = []
     log_headers = ["Scan", "Sample", "Frame", "Monitor", "Dark_Curr", "Trans", "EC_Used", "Thick_cm", "Abs_Scal"]
 
@@ -87,12 +98,9 @@ def integrate(config, result, det_str, path_rad_int, path_det):
         print(f"\n--- Reducing Scan {scanNr} ({sample_name}) ---")
 
         for ff in range(frame_nr_total):
-            # Temporary log storage for this frame
             current_log = [scanNr, sample_name, ff]
 
-            # ==========================================
-            # STEP 1: Base Loading & Flux Normalization
-            # ==========================================
+            # 1: Base Loading
             if physics.get('normalize_to_monitor', True):
                 img_base, var_base = load_and_normalize(config, result, hdf_name, return_variance=True)
                 img = img_base[ff] if frame_nr_total > 1 else img_base
@@ -106,13 +114,9 @@ def integrate(config, result, det_str, path_rad_int, path_det):
 
             img = np.squeeze(img)
             var = np.squeeze(var)
-
-            # Clean the name from HDF5 first so all steps can use it
             clean_name = str(sample_name).strip()
 
-            # ==========================================
-            # STEP 2: LOG DARK CURRENT
-            # ==========================================
+            # 2: Dark Current
             if physics.get('subtract_dark_current', False):
                 dark_block = config['experiment']['calibration']['dark_current']
                 dark_id = get_flexible_value(dark_block, clean_name, default_fallback='MISSING')
@@ -120,9 +124,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             else:
                 current_log.append("OFF")
 
-            # ==========================================
-            # STEP 3: Transmission (Sample)
-            # ==========================================
+            # 3: Transmission (Sample)
             if physics.get('apply_transmission', False):
                 idx_all = list(result['overview']['all_files']['name_hdf']).index(hdf_name)
                 trans = result['overview']['all_files']['transmission'][idx_all]
@@ -136,38 +138,30 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             else:
                 current_log.append("1.000")
 
-            # ==========================================
-            # STEP 4: Empty Cell Subtraction
-            # ==========================================
+            # 4: Empty Cell
             ec_block = config['experiment']['calibration']['empty_cell']
             ec_id = get_flexible_value(ec_block, clean_name, default_fallback='EC')
 
             if physics.get('subtract_empty_cell', False):
                 ec_hdf = find_hdf_by_identifier(ec_id, result['overview']['all_files'])
                 if ec_hdf:
-                    # 1. Load the Dark-Corrected and Flux-Normalized Empty Cell
                     img_ec, var_ec = load_and_normalize(config, result, ec_hdf, return_variance=True)
                     img_ec = np.squeeze(img_ec)
                     var_ec = np.squeeze(var_ec)
 
-                    # 2. **CRITICAL PHYSICS FIX**: Apply the Empty Cell's specific transmission
                     if physics.get('apply_transmission', False):
                         img_ec = norm.normalize_transmission(config, ec_hdf, result, img_ec)
                         var_ec = np.square(norm.normalize_transmission(config, ec_hdf, result, np.sqrt(var_ec)))
 
-                    # 3. Subtract from the already-transmitted Sample
                     img = correct_EC(img, img_ec)
                     var = var + var_ec
-
                     current_log.append(str(ec_id))
                 else:
                     current_log.append("MISSING")
             else:
                 current_log.append("OFF")
 
-            # ==========================================
-            # STEP 5: Thickness Normalization
-            # ==========================================
+            # 5: Thickness
             thick_block = config['experiment']['calibration']['thickness']
             thick_val_for_log = get_flexible_value(thick_block, clean_name, default_fallback=0.1)
 
@@ -178,16 +172,12 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             else:
                 current_log.append("1.000")
 
-            # ==========================================
-            # STEP 6: Flat Field
-            # ==========================================
+            # 6: Flat Field
             if physics.get('apply_flat_field', False):
                 img = correct_flat_field(config, img)
                 var = np.square(correct_flat_field(config, np.sqrt(var)))
 
-            # ==========================================
-            # STEP 7: Absolute Scaling
-            # ==========================================
+            # 7: Absolute Scaling
             if physics.get('perform_absolute_scaling', False):
                 water_std = result['integration'].get('water')
                 if water_std is not None:
@@ -206,7 +196,6 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             f_azim = make_file_name(path_rad_int, 'azim_integ', 'dat', sample_name, det_str, scanNr, ff)
             data_azimuth = azimuthal_integ(config, result, img, f_azim, img1_variance=var)
 
-            # Save 2D Pattern
             if config['analysis'].get('save_2d_patterns', 0) == 1:
                 f_pat = make_file_name(path_rad_int, 'pattern2D', 'dat', sample_name, det_str, scanNr, ff)
                 f_var = make_file_name(path_rad_int, 'variance2D', 'dat', sample_name, det_str, scanNr, ff)
@@ -222,13 +211,11 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             reduction_log.append(current_log)
             print(f"  -> Success: Frame {ff} processed.")
 
-    # Print Log Table
     print("\n" + "="*80)
     print(f"REDUCTION LOG: {det_str.replace('p', '.')}m")
     print("="*80)
     print(tabulate(reduction_log, headers=log_headers, tablefmt="grid"))
 
-    # Save Log to CSV
     log_file = os.path.join(path_det, f"reduction_log_det{det_str}.csv")
     with open(log_file, 'w', newline='') as f:
         writer = csv.writer(f)
@@ -241,10 +228,6 @@ def integrate(config, result, det_str, path_rad_int, path_det):
 
     return result
 
-# ---------------------------------------------------------
-# Keep your existing radial_integ and azimuthal_integ
-# exactly as they were here at the bottom.
-# ---------------------------------------------------------
 def radial_integ(config, result, img1, file_name, img1_variance=None):
     """Performs 1D radial integration using a dynamic mask for non-positive pixels."""
     ai = result['integration'].get('ai')
@@ -254,14 +237,8 @@ def radial_integ(config, result, img1, file_name, img1_variance=None):
     if ai is None or permanent_mask is None or integration_points is None:
         return
 
-    # --- RIGOROUS MASKING LOGIC ---
-    # Create a dynamic mask:
-    # Mask if (Permanent Mask is 1) OR (Intensity is 0 or negative)
     dynamic_mask = (permanent_mask == 1) | (img1 <= 0)
-
-    # Ensure it is boolean for pyFAI
     mask = dynamic_mask.astype(bool)
-
     error_model = "azimuthal" if img1_variance is None else None
 
     try:
@@ -277,7 +254,7 @@ def radial_integ(config, result, img1, file_name, img1_variance=None):
         print(f"  [ERROR] Radial integration failed: {e}")
 
 def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
-    """Performs 2D azimuthal integration using a dynamic mask."""
+    """Performs 2D azimuthal integration, applies dynamic masking, and saves 1D profiles."""
     ai = result['integration'].get('ai')
     permanent_mask = result['integration'].get('int_mask')
     integration_points = result['integration'].get('integration_points')
@@ -286,10 +263,8 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
     if ai is None or permanent_mask is None or integration_points is None or sectors_nr is None:
         return None
 
-    # --- RIGOROUS MASKING LOGIC ---
     dynamic_mask = (permanent_mask == 1) | (img1 <= 0)
     mask = dynamic_mask.astype(bool)
-
     error_model = "azimuthal" if img1_variance is None else None
 
     try:
@@ -300,11 +275,41 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
         )
 
         if q_all_sectors is not None:
+            # 1. SAVE THE MASTER 2D CAKE PLOT (Optional based on YAML)
             data_save = np.column_stack((q_all_sectors, I_all.transpose(), sigma_all.transpose()))
-
             if config['analysis'].get('save_azimuthal', 0) == 1:
                 header_text = f'q (A-1), {sectors_nr} columns for absolute intensity\nAngles {angles_all}'
                 np.savetxt(file_name, data_save, delimiter=',', header=header_text, comments='# ')
+
+            # 2. EXTRACT AND SAVE INDIVIDUAL 1D AZIMUTHAL PROFILES
+            raw_ranges = result['integration'].get('pixel_range_azim')
+            if raw_ranges is not None:
+                ranges_to_save = _parse_pixel_ranges(raw_ranges)
+                q = q_all_sectors
+                I = I_all.transpose()
+                npt_azim_plot = np.linspace(0, 360, sectors_nr + 1)
+                range_angle_midpoints = [(npt_azim_plot[rr] + npt_azim_plot[rr+1]) / 2 for rr in range(sectors_nr)]
+
+                for i, q_bnds in enumerate(ranges_to_save):
+                    start_idx = max(0, min(q_bnds[0], len(q) - 1))
+                    end_idx = max(1, min(q_bnds[1], len(q)))
+
+                    if start_idx >= end_idx:
+                        continue
+
+                    q_range = range(start_idx, end_idx)
+                    I_select = I[q_range, :]
+                    I_sum = np.nansum(I_select, axis=0)
+
+                    # Package the data for this specific range
+                    export_data = np.column_stack((range_angle_midpoints, I_sum))
+                    hdr_string = f"Chi_deg, I_Sum_q{q_bnds[0]}-{q_bnds[1]}"
+
+                    # Dynamically inject the specific q-range into the filename!
+                    # Example: azim_1D_profile_q10-40_0084240_00000...
+                    file_name_1d = file_name.replace('azim_integ', f'azim_integ_q{q_bnds[0]}-{q_bnds[1]}')
+
+                    np.savetxt(file_name_1d, export_data, delimiter=',', header=hdr_string, comments='# ')
 
             return data_save
 

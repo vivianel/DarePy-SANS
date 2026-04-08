@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import pyFAI
-
+from pyFAI.integrator.azimuthal import AzimuthalIntegrator
 
 from utils import create_analysis_folder, save_results, load_hdf
 
@@ -156,10 +156,11 @@ def setup_integration(config, result, det):
     result['integration']['int_mask'] = mask
 
     # Create pyFAI Integrator
-    ai = pyFAI.AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,
-                                   rot1=0, rot2=0, rot3=0,
-                                   pixel1=pixel1, pixel2=pixel2,
-                                   splineFile=None, detector=None, wavelength=wl)
+    ai = AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,
+                         rot1=0, rot2=0, rot3=0,
+                         pixel1=pixel1, pixel2=pixel2,
+                         splinefile=None, detector=None, wavelength=wl)
+
     ai.setChiDiscAtZero()
     result['integration']['ai'] = ai
 

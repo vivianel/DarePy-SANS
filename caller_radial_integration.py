@@ -100,9 +100,10 @@ configuration = {
     'instrument': INSTRUMENT_REGISTRY[selected_inst],
     'experiment': {
         'calibration': ext_cfg['calibration_samples'],
-        'wl_input': ext_cfg['instrument_setup']['wavelength']
+        # [CHANGED] Now pulls from 'physics_corrections'
+        'wl_input': ext_cfg['physics_corrections']['wavelength']
     },
-    'physics_corrections': ext_cfg.get('physics_corrections', {}), # <-- New Pluggable Physics
+    'physics_corrections': ext_cfg.get('physics_corrections', {}),
     'analysis': {
         'path_dir': str(path_dir),
         'path_hdf_raw': ext_cfg['analysis_paths']['raw_data'],
@@ -117,7 +118,8 @@ configuration = {
         'beam_center_guess': ext_cfg['detector_geometry']['beam_center_guess'],
         'beamstopper_coordinates': ext_cfg['detector_geometry']['beamstopper_coordinates'],
         'transmission_coordinates': ext_cfg['detector_geometry']['transmission_coordinates'],
-        'target_detector_distances': ext_cfg['instrument_setup']['target_detector_distances']
+        # [CHANGED] Now pulls from 'physics_corrections'
+        'target_detector_distances': ext_cfg['physics_corrections']['target_detector_distances']
     }
 }
 
@@ -126,7 +128,7 @@ result = {
     'transmission': {},
     'overview': {},
     'integration': {
-        'pixel_range_azim': range(*ext_cfg['analysis_flags']['pixel_range_azim']),
+        'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
         'integration_points': ext_cfg['analysis_flags']['integration_points'],
         'sectors_nr': ext_cfg['analysis_flags']['sectors_nr']
     }
@@ -149,27 +151,33 @@ while True:
     print(f"   STARTING DAREPY-SANS PIPELINE (Iteration {iteration})")
     print("="*50)
 
-    # 1. Load files
-    if ctrl.get('run_file_listing', True):
-        print("\n--- Step 1: Listing and Parsing HDF5 Files ---")
-        class_files = org.list_files(configuration, result)
-    else:
-        print("\nSkipping File Listing. (Warning: Subsequent steps may fail)")
-        class_files = {}
+    # 1. Load files (Always ON)
+    print("\n--- Step 1: Listing and Parsing HDF5 Files ---")
+    class_files = org.list_files(configuration, result)
+
+    if not class_files or not class_files.get('name_hdf'):
+        print("\n[FATAL ERROR] No valid HDF5 files found to process. Halting pipeline.")
+        sys.exit(1)
 
     # 2. Transmission
-    trans_dist_val = configuration['physics_corrections']['transmission_dist']
+    # Read the run_transmission flag from the pipeline_control YAML block
+    run_trans = ctrl.get('run_transmission', True)
 
-    # Check if it's a number and greater than 0
-    if isinstance(trans_dist_val, (int, float)) and trans_dist_val > 0:
-        print(f"\n--- Step 2: Calculating Transmissions (Distance: {trans_dist_val}m) ---")
-        result = trans_calc(configuration, class_files, result)
-    elif isinstance(trans_dist_val, (int, float)) and trans_dist_val < 0:
-        print(f"\n--- Step 2: SANS-LLB Mode (Transmission will be calculated on-the-fly) ---")
-        # For LLB, we still might need to prepare the EB references
-        result = trans_calc(configuration, class_files, result)
+    if str(run_trans).lower() == 'false' or run_trans is False:
+        print("\n--- Step 2: Transmission Calculation Skipped by User in YAML ---")
     else:
-        print("\n--- Step 2: Transmission Calculation Skipped ---")
+        trans_dist_val = configuration['physics_corrections'].get('transmission_dist', 0)
+
+        # Check if it's a number and greater than 0
+        if isinstance(trans_dist_val, (int, float)) and trans_dist_val > 0:
+            print(f"\n--- Step 2: Calculating Transmissions (Distance: {trans_dist_val}m) ---")
+            result = trans_calc(configuration, class_files, result)
+        elif isinstance(trans_dist_val, (int, float)) and trans_dist_val < 0:
+            print(f"\n--- Step 2: SANS-LLB Mode (Transmission will be calculated on-the-fly) ---")
+            # For LLB, we still might need to prepare the EB references
+            result = trans_calc(configuration, class_files, result)
+        else:
+            print("\n--- Step 2: Transmission Calculation Skipped (No valid distance provided) ---")
 
     # 3: Data reduction (organize and integrate)
     if ctrl.get('run_reduction', True):

@@ -65,7 +65,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'moni':        '/entry1/SANS/detector/preset',
             'temp':        '/entry1/sample/temperature',
             'counts':      'entry1/SANS/detector/counts',
-            'flux_monit':  registry_monitor_path  # <-- INJECTED DIRECTLY FROM REGISTRY!
+            'flux_monit':  registry_monitor_path  # read from instrument_registry
         },
         'SANS-LLB': {
             'beamstop_y':  'entry0/SANS-LLB/beam_stop/y',
@@ -84,7 +84,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'counts':      'entry0/central_data/data',
             'counts_left': 'entry0/left_data/data',
             'counts_bottom':'entry0/bottom_data/data',
-            'flux_monit':  registry_monitor_path  # <-- INJECTED DIRECTLY FROM REGISTRY!
+            'flux_monit':  registry_monitor_path  # read from instrument_registry
         }
     }
 

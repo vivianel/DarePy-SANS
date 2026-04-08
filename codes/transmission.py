@@ -16,13 +16,32 @@ from prepare_input import save_list_files
 import normalize_counts as norm
 
 def trans_calc(config, class_files, result):
+
+    # ==========================================
+    # 1. MASTER KILL SWITCH
+    # ==========================================
+    # Check the YAML flag. (We use str().lower() to catch 'false', 'False', or boolean False safely!)
+    run_flag = config.get('pipeline_control', {}).get('run_transmission', True)
+    if str(run_flag).lower() == 'false' or run_flag is False:
+        print("\n[INFO] Skipping transmission calculation (run_transmission set to False in YAML).")
+        return result
+
+    # Check if a valid transmission distance exists
+    trans_dist = config.get('physics_corrections', {}).get('transmission_dist', 0)
+    if not trans_dist or float(trans_dist) <= 0:
+        print("\n[INFO] Skipping transmission calculation (No valid transmission_dist provided).")
+        return result
+
+    # ==========================================
+    # 2. PROCEED WITH MATH
+    # ==========================================
     instrument = config['instrument']['name']
-    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['experiment']['trans_dist'] > 0):
+
+    if instrument == 'SANS-I' or instrument == 'SANS-LLB':
         result = select_transmission(config, class_files, result)
         result = trans_calc_reference(config, result, class_files)
         result = trans_calc_sample(config, result)
-    elif instrument == 'SANS-LLB' and config['experiment']['trans_dist'] < 0:
-        result = trans_calc_reference(config, result, class_files)
+
     return result
 
 def trans_calc_reference(config, result, class_files):
