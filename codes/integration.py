@@ -14,6 +14,8 @@ import plot_integration as plot_integ
 
 def _parse_pixel_ranges(raw_ranges):
     """Helper function to cleanly parse legacy single ranges or nested lists."""
+    if raw_ranges is None:
+        return []
     if isinstance(raw_ranges, range):
         return [[raw_ranges.start, raw_ranges.stop]]
     elif isinstance(raw_ranges, list) and len(raw_ranges) > 0:
@@ -21,7 +23,8 @@ def _parse_pixel_ranges(raw_ranges):
             return [raw_ranges]
         elif isinstance(raw_ranges[0], list):
             return raw_ranges
-    return [[0, 10]]
+    return [] # Default to empty if nothing provided
+
 
 def set_integration(config, result, det_str):
     """Orchestrates the integration process for a specific detector distance."""
@@ -82,7 +85,7 @@ def make_file_name(path, prefix, sufix, sample_name, det_str, scanNr, frame):
 def integrate(config, result, det_str, path_rad_int, path_det):
     """The Core Math Engine with Tabulated Logging and Modular Functions."""
     # Handle Plotting State
-    plotting_enabled = config['analysis'].get('plot_radial', 0) == 1 or config['analysis'].get('plot_azimuthal', 0) == 1
+    plotting_enabled = config['analysis'].get('save_plot_radial', 0) == 1 or config['analysis'].get('save_plot_azimuthal', 0) == 1
     if not plotting_enabled:
         plt.ioff()
         plotting_was_off = True
@@ -220,10 +223,10 @@ def integrate(config, result, det_str, path_rad_int, path_det):
                 np.savetxt(f_pat, img, delimiter=',')
                 np.savetxt(f_var, var, delimiter=',')
 
-            if config['analysis'].get('plot_radial', 0) == 1:
+            if config['analysis'].get('save_plot_radial', 0) == 1:
                 plot_integ.plot_integ_radial(config, result, scanNr, ff, img, data_azimuth)
 
-            if config['analysis'].get('plot_azimuthal', 0) == 1:
+            if config['analysis'].get('save_plot_azimuthal', 0) == 1:
                 plot_integ.plot_integ_azimuthal(config, result, scanNr, ff)
 
             reduction_log.append(current_log)
@@ -272,7 +275,7 @@ def radial_integ(config, result, img1, file_name, img1_variance=None):
         print(f"  [ERROR] Radial integration failed: {e}")
 
 def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
-    """Performs 2D azimuthal integration, applies dynamic masking, and saves 1D profiles."""
+    """Performs 2D azimuthal integration, applies dynamic masking, and optionally saves 1D profiles."""
     ai = result['integration'].get('ai')
     permanent_mask = result['integration'].get('int_mask')
     integration_points = result['integration'].get('integration_points')
@@ -293,18 +296,27 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
         )
 
         if q_all_sectors is not None:
-            # 1. SAVE THE MASTER 2D CAKE PLOT (Optional based on YAML)
             data_save = np.column_stack((q_all_sectors, I_all.transpose(), sigma_all.transpose()))
-            if config['analysis'].get('save_azimuthal', 0) == 1:
+
+            # Check the save flag (Handles 1, True, or 'true' from YAML safely)
+            save_flag = config['analysis'].get('save_data_azimuthal', 0)
+            if save_flag in [1, True, 'true', 'True']:
+
+                # 1. SAVE THE MASTER 2D CAKE PLOT
                 header_text = f'q (A-1), {sectors_nr} columns for absolute intensity\nAngles {angles_all}'
                 np.savetxt(file_name, data_save, delimiter=',', header=header_text, comments='# ')
 
-            # 2. EXTRACT AND SAVE INDIVIDUAL 1D AZIMUTHAL PROFILES
-            raw_ranges = result['integration'].get('pixel_range_azim')
-            if raw_ranges is not None:
+                # 2. EXTRACT AND SAVE INDIVIDUAL 1D AZIMUTHAL PROFILES
+                raw_ranges = result['integration'].get('pixel_range_azim')
                 ranges_to_save = _parse_pixel_ranges(raw_ranges)
+
                 q = q_all_sectors
                 I = I_all.transpose()
+
+                # If no ranges were explicitly provided, DEFAULT TO FULL AVAILABLE q-RANGE!
+                if not ranges_to_save:
+                    ranges_to_save = [[0, len(q)]]
+
                 npt_azim_plot = np.linspace(0, 360, sectors_nr + 1)
                 range_angle_midpoints = [(npt_azim_plot[rr] + npt_azim_plot[rr+1]) / 2 for rr in range(sectors_nr)]
 
@@ -324,7 +336,6 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
                     hdr_string = f"Chi_deg, I_Sum_q{q_bnds[0]}-{q_bnds[1]}"
 
                     # Dynamically inject the specific q-range into the filename!
-                    # Example: azim_1D_profile_q10-40_0084240_00000...
                     file_name_1d = file_name.replace('azim_integ', f'azim_integ_q{q_bnds[0]}-{q_bnds[1]}')
 
                     np.savetxt(file_name_1d, export_data, delimiter=',', header=hdr_string, comments='# ')
