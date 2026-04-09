@@ -56,14 +56,16 @@ print("="*60)
 skip_start = m_set.get('skip_start', {'0': 0, '1': 0, '2': 0})
 skip_end = m_set.get('skip_end', {'0': 0, '1': 0, '2': 0})
 
-if m_set.get('run_step_1_analysis', True):
-    print(f"\n[STEP 1] Generating plots with current YAML skip settings...")
-    # Pass the skip settings so they can be highlighted in RED on the plots
-    merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end)
+run_plotting = m_set.get('run_step_1_plotting', True)
+
+if run_plotting:
+    print(f"\n[STEP 1] Generating plots with current YAML skip settings (Overwriting old files)...")
+    # force_replot=True will draw and save the plots even if they already exist
+    merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end, force_replot=True)
 else:
-    print(f"\n[SKIP] Step 1: Noise analysis plots disabled.")
-    # We still need to call this to load the 'merged_files' object for Step 2
-    merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end)
+    print(f"\n[SKIP] Step 1: Noise analysis plots disabled (Loading data only).")
+    # force_replot=False skips matplotlib entirely for existing files, saving tons of time
+    merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False)
 
 # ==========================================
 # FUNCTION 2: SCALING & STITCHED MERGING (RAW)

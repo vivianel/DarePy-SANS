@@ -7,20 +7,13 @@ Created on Wed Jul 13 20:50:57 2022
 This function automatically marges the data collected in different detector distances
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-import pickle
-import integration as integ
-from scipy.interpolate import interp1d
-import scipy.optimize
-import os
-from utils import smooth
-from scipy.stats import linregress # To check for linearity/constancy
+
 
 # %% plot_all_data
-def plot_all_data(path_dir_an, skip_start, skip_end):
+def plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False):
     """
     Loads radial integration data and highlights the points defined in YAML skips.
+    Skips plotting if the file already exists and force_replot is False.
     """
     import numpy as np
     import matplotlib.pyplot as plt
@@ -28,26 +21,33 @@ def plot_all_data(path_dir_an, skip_start, skip_end):
     import pickle
     import integration as integ
 
+    print("\n[INFO] Starting YAML trim check and overlay plotting...")
+
     # 1. Setup Folder Structure
     path_merged = os.path.join(path_dir_an, 'merged/')
     path_merged_fig = os.path.join(path_merged, 'figures/')
     for p in [path_merged, path_merged_fig]:
         os.makedirs(p, exist_ok=True)
 
+    print(f" -> Output directory verified: {path_merged_fig}")
+
     # 2. Load Metadata
     file_results = os.path.join(path_dir_an, 'result.npy')
-    with open(file_results, 'rb') as handle:
-        result = pickle.load(handle)
-    list_class_files = result['overview']
+    try:
+        with open(file_results, 'rb') as handle:
+            result = pickle.load(handle)
+        list_class_files = result['overview']
+    except FileNotFoundError:
+        print(f"[ERROR] Could not find metadata file: {file_results}")
+        return {}
 
     merged_files = {}
 
     # 3. Aggregate Data
+    print(" -> Aggregating data across detectors...")
     for key in list_class_files:
         if 'det' in key:
             det_dist_str = key.replace('det_files_', '').replace('p', '.')
-            # Determine the index (0, 1, 2) based on the order detector distances are found
-            # This logic assumes unique_det ordering matches your skip keys
             total_samples = len(list_class_files[key]['scan'])
 
             for ii in range(total_samples):
@@ -62,7 +62,8 @@ def plot_all_data(path_dir_an, skip_start, skip_end):
                 try:
                     data = np.genfromtxt(file_name, delimiter=',', skip_header=1)
                     q, I, e = data[:, 0], data[:, 1], np.abs(data[:, 2])
-                except: continue
+                except:
+                    continue
 
                 if sample_name not in merged_files:
                     merged_files[sample_name] = {'I': [], 'q': [], 'error': [], 'det': []}
@@ -72,8 +73,23 @@ def plot_all_data(path_dir_an, skip_start, skip_end):
                 merged_files[sample_name]['error'].append(e)
                 merged_files[sample_name]['det'].append(det_dist_str)
 
+    print(f" -> Found {len(merged_files)} unique samples to plot.")
+
     # 4. Plot with YAML-defined Exclusions
+    print("\n[INFO] Generating and saving plots...")
     for name in merged_files:
+
+        # Define the file path FIRST so we can check if it exists
+        file_path = os.path.join(path_merged_fig, f'{name}_yaml_trim_check.jpeg')
+
+        # ==========================================
+        # NEW: Skip logic
+        # ==========================================
+        if not force_replot and os.path.exists(file_path):
+            print(f"  -> Skip: Plot for {name} already exists.")
+            continue  # Jump straight to the next sample in the loop
+
+        print(f"  -> Processing sample: {name}")
         plt.figure(figsize=(10, 7))
         plt.ioff()
 
@@ -82,10 +98,9 @@ def plot_all_data(path_dir_an, skip_start, skip_end):
             q_seg = merged_files[name]['q'][i]
             I_seg = merged_files[name]['I'][i]
             e_seg = merged_files[name]['error'][i]
-            d_label = merged_files[name]['det'][i] # This is the string '1.6', '6.0', etc.
+            d_label = merged_files[name]['det'][i]
 
             # --- IDENTIFY YAML SKIPS BY DISTANCE ---
-            # We now use the d_label (distance) as the key instead of str(i)
             s_start = skip_start.get(d_label, 0)
             s_end = skip_end.get(d_label, 0)
 
@@ -93,7 +108,7 @@ def plot_all_data(path_dir_an, skip_start, skip_end):
             if s_start > 0: exclude_mask[:s_start] = True
             if s_end > 0: exclude_mask[-s_end:] = True
 
-            # Plot "Good" points (Original Segment Color)
+            # Plot "Good" points
             plt.errorbar(q_seg[~exclude_mask], I_seg[~exclude_mask], yerr=e_seg[~exclude_mask],
                          fmt='o', ms=3, lw=0.6, label=f"Det {d_label}m")
 
@@ -108,10 +123,15 @@ def plot_all_data(path_dir_an, skip_start, skip_end):
         plt.title(f'Overlay Check: {name} (Current YAML Trimming)')
         plt.legend(fontsize='small', loc='best')
 
-        file_path = os.path.join(path_merged_fig, f'{name}_yaml_trim_check.jpeg')
-        plt.savefig(file_path, dpi=200, bbox_inches='tight')
+        try:
+            plt.savefig(file_path, dpi=200, bbox_inches='tight')
+            print(f"     Saved: {file_path}")
+        except Exception as err:
+            print(f"     [ERROR] Failed to save {file_path}: {err}")
+
         plt.close()
 
+    print("\n[SUCCESS] All overlay checks processed!")
     return merged_files
 
 # %% merging_data
@@ -128,7 +148,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
     # Setup directories
     path_merged = os.path.join(path_dir_an, 'merged/')
     path_merged_fig = os.path.join(path_merged, 'figures/')
-    path_merged_txt = os.path.join(path_merged, 'data_txt/')
+    path_merged_txt = os.path.join(path_merged, 'data_merged/')
     os.makedirs(path_merged_fig, exist_ok=True)
     os.makedirs(path_merged_txt, exist_ok=True)
 
@@ -233,7 +253,7 @@ def interpolate_data(path_dir_an, interp_type='log', interp_points=150, smooth_w
 
     # 1. Setup paths
     path_merged = os.path.join(path_dir_an, 'merged/')
-    path_merged_txt = os.path.join(path_merged, 'data_txt/')
+    path_merged_txt = os.path.join(path_merged, 'data_merged/')
     path_merged_fig = os.path.join(path_merged, 'figures/')
 
     # 2. Identify merged files to process
@@ -300,7 +320,7 @@ def interpolate_data(path_dir_an, interp_type='log', interp_points=150, smooth_w
         plt.savefig(os.path.join(path_merged_fig, f"{sample_name}_interp.jpeg"), dpi=150)
         plt.close()
 
-    print("Step 3 Complete. Check the 'data_txt' folder for '_interp.dat' files.")
+    print("Step 3 Complete. Check the 'data_merged' folder for '_interp.dat' files.")
     return True
 
 # %% subtract incoherent
@@ -313,12 +333,11 @@ def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_thres
     import os
     import numpy as np
     import matplotlib.pyplot as plt
-    import pickle
     import scipy.optimize
-    from scipy.stats import linregress
+
 
     path_merged = os.path.join(path_dir_an, 'merged')
-    path_merged_txt = os.path.join(path_merged, 'data_txt')
+    path_merged_txt = os.path.join(path_merged, 'data_merged')
     path_merged_fig = os.path.join(path_merged, 'figures')
 
     # 1. Decide which files to process (Prioritize _interp over _merged)
