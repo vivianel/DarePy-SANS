@@ -188,7 +188,7 @@ analysis_flags:
 # Settings for stitching different detector distances into a single 1D curve (caller_merging.py).
 # ==========================================
 merging_settings:
-  run_step_1_analysis: true
+  run_step_1_plotting: false
   run_step_2_merging: true
   run_step_3_interpolation: false
   run_step_4_incoherent: false
