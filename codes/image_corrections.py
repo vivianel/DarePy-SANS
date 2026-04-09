@@ -51,20 +51,44 @@ def load_standards(config, result, det):
             result['integration'][standard_key] = img
             result['integration'][standard_key + '_variance'] = img_variance
 
-            if standard_key == 'water':
-                water_hdf_name = hdf_name
+            # [NEW FIX] Save the HDF name so we can look up its specific transmission later
+            result['integration'][standard_key + '_hdf'] = hdf_name
+
         else:
             print(f"  [ERROR] '{standard_key}' ({identifier}) is required but not found in any scan!")
             sys.exit('Critical: Missing calibration data.')
 
+    # ==============================================================
+    # WATER CALIBRATION BUILDER
+    # ==============================================================
     if physics.get('perform_absolute_scaling', False):
-        img_h2o = correct_EC(result['integration']['water'], result['integration']['water_cell'])
-        img_h2o_var = result['integration']['water_variance'] + result['integration']['water_cell_variance']
+        img_w = result['integration']['water']
+        var_w = result['integration']['water_variance']
+        hdf_w = result['integration']['water_hdf']
 
-        img_h2o = norm.normalize_thickness(config, water_hdf_name, result, img_h2o)
-        img_h2o_var = np.square(norm.normalize_thickness(config, water_hdf_name, result, np.sqrt(img_h2o_var)))
+        img_wc = result['integration']['water_cell']
+        var_wc = result['integration']['water_cell_variance']
+        hdf_wc = result['integration']['water_cell_hdf']
 
+        # Apply Transmission to Water and its Empty Cell BEFORE subtraction
+        if physics.get('apply_transmission', False):
+            img_w = norm.normalize_transmission(config, hdf_w, result, img_w)
+            var_w = np.square(norm.normalize_transmission(config, hdf_w, result, np.sqrt(var_w)))
+
+            img_wc = norm.normalize_transmission(config, hdf_wc, result, img_wc)
+            var_wc = np.square(norm.normalize_transmission(config, hdf_wc, result, np.sqrt(var_wc)))
+
+        # 1. Subtract Empty Cell
+        img_h2o = correct_EC(img_w, img_wc)
+        img_h2o_var = var_w + var_wc
+
+        # 2. Normalize by Thickness
+        img_h2o = norm.normalize_thickness(config, hdf_w, result, img_h2o)
+        img_h2o_var = np.square(norm.normalize_thickness(config, hdf_w, result, np.sqrt(img_h2o_var)))
+
+        # 3. Safeguard against negative pixels before absolute scaling
         img_h2o[img_h2o <= 0] = 1e-6
+
         result['integration']['water'] = img_h2o
         result['integration']['water_variance'] = img_h2o_var
 

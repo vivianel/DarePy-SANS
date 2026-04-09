@@ -1,50 +1,97 @@
 # -*- coding: utf-8 -*-
 """
 DarePy-SANS: Calibration Module
-Handles absolute intensity scaling (cm^-1) using Water standards.
+Handles absolute intensity scaling (cm^-1) using 1D integration of Water standards.
 """
 import numpy as np
 
-def absolute_calibration_2D(config, result, scan_nr, I, I_water):
+def calculate_1D_absolute_scalar(config, result, det_str, water_img, water_var=None):
     """
-    Scales 2D detector data to absolute units (cm^-1).
+    Integrates the Water standard to 1D, finds the plateau mean,
+    and returns the absolute scaling factor.
     """
-    # 1. Handle Water Mean (The denominator for scaling)
-    # We use a masked mean to avoid beamstop/dead pixels
-    mask = result['integration'].get('int_mask')
-    masked_water = np.ma.MaskedArray(data=I_water, mask=mask)
-    water_mean = masked_water.mean()
+    ai = result['integration'].get('ai')
+    permanent_mask = result['integration'].get('int_mask')
+    integration_points = result['integration'].get('integration_points')
 
-    if water_mean <= 0:
-        print(f"[ERROR] Water mean is non-positive for Scan {scan_nr}. Absolute scaling failed.")
-        return I
+    if ai is None or permanent_mask is None:
+        print("  [ERROR] pyFAI geometry missing. Scaling set to 1.0.")
+        return 1.0
 
-    # 2. Lookup the Wavelength Calibration Constant g(lambda)
-    # This is usually provided by the instrument scientist
-    list_cs = config['instrument'].get('list_abs_calib', {})
+    # Defensively squeeze everything to 2D so pyFAI doesn't crash!
+    water_img = np.squeeze(water_img)
+    if water_var is not None:
+        water_var = np.squeeze(water_var)
+    mask = np.squeeze(permanent_mask).astype(bool)
 
-    # Get wavelength from the current scan's metadata
-    # We look for the wavelength in the all_files overview
+    error_model = "azimuthal" if water_var is None else None
+
     try:
-        # Find index of current scan
-        idx = result['overview']['all_files']['scan'].index(scan_nr)
-        wl_val = int(result['overview']['all_files']['wl_A'][idx])
-        wl_str = str(wl_val)
-    except:
+        # 1. Integrate the water standard to 1D
+        q, I, sigma = ai.integrate1d(
+            water_img, integration_points, correctSolidAngle=True, variance=water_var,
+            mask=mask, method='nosplit_csr', unit='q_A^-1', safe=True,
+            error_model=error_model, flat=None, dark=None
+        )
+
+        # 2. Find the flat plateau (e.g., q = 0.05 to 0.15 A^-1)
+        valid_idx = (q >= 0.05) & (q <= 0.15)
+        if not np.any(valid_idx):
+            valid_idx = (q >= np.min(q)) # fallback if data is outside range
+
+        mean_water_I = np.nanmean(I[valid_idx])
+
+        if mean_water_I <= 0 or np.isnan(mean_water_I):
+            print(f"  [ERROR] Water 1D mean is invalid ({mean_water_I}). Scaling failed.")
+            return 1.0
+
+        # 3. Lookup Wavelength and g(lambda) safely
+        list_cs = config['instrument'].get('list_abs_calib', {})
         wl_str = "Unknown"
+        try:
+            water_hdf = result['integration'].get('water_hdf')
+            if water_hdf:
+                # Force list cast so .index() works on numpy arrays
+                idx = list(result['overview']['all_files']['name_hdf']).index(water_hdf)
+                wl_str = str(int(result['overview']['all_files']['wl_A'][idx]))
+        except Exception as e:
+            pass
 
-    if wl_str in list_cs:
-        g_lambda = float(list_cs[wl_str])
+        g_lambda = float(list_cs.get(wl_str, 1.0))
+        if wl_str not in list_cs:
+            print(f"  [WARNING] Wavelength {wl_str}A not found in calibration table. Using 1.0.")
+
+        # 4. Calculate Final Scalar
+        scaling_factor = g_lambda / mean_water_I
+        total_scaling = scaling_factor / result['integration'].get('scaling_factor', 1.0)
+
+        print(f"  [CALIBRATION] 1D Water Mean (q=0.05-0.15): {mean_water_I:.4f} cm^-1")
+        print(f"  [CALIBRATION] Final Absolute Scalar calculated: {total_scaling:.4f}")
+
+        return total_scaling
+
+    except Exception as e:
+        print(f"  [ERROR] 1D Calibration failed: {e}")
+        return 1.0
+
+
+def apply_absolute_scaling(config, result, scan_nr, img, var):
+    """
+    Applies the pre-calculated 1D scalar to the 2D sample image and variance.
+    Returns the 2D corrected pattern and variance for pyFAI integration.
+    """
+    scalar = result['integration'].get('absolute_scalar', 1.0)
+
+    if scalar <= 0:
+        print(f"  [WARNING] Invalid absolute scalar ({scalar}) for Scan {scan_nr}. Returning unscaled data.")
+        return img, var
+
+    img_scaled = img * scalar
+
+    # Rigorous Error Propagation: Variance scales by the square of the multiplier
+    if var is not None:
+        var_scaled = var * (scalar ** 2)
     else:
-        g_lambda = 1.0
-        print(f"[WARNING] Wavelength {wl_str}A not found in calibration table. Using 1.0.")
+        var_scaled = None
 
-    # 3. Apply the Scaling Factor
-    # Scaling = g(lambda) / <I_water>
-    scaling_factor = g_lambda / water_mean
-
-    # Handle the 18m specific geometry scaling if present
-    # (Optional: only if your specific instrument requires it)
-    total_scaling = scaling_factor / result['integration'].get('scaling_factor', 1.0)
-
-    return I * total_scaling
+    return img_scaled, var_scaled

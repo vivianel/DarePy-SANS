@@ -8,7 +8,7 @@ from utils import load_hdf, create_analysis_folder, get_flexible_value, find_hdf
 from image_corrections import (load_standards, load_and_normalize,
                         correct_EC, correct_flat_field)
 from setup_integrator import(generate_beamstop_mask, setup_integration)
-from absolute_scaling import absolute_calibration_2D
+from absolute_scaling import calculate_1D_absolute_scalar, apply_absolute_scaling
 import normalize_counts as norm
 import plot_integration as plot_integ
 
@@ -50,6 +50,27 @@ def set_integration(config, result, det_str):
     generate_beamstop_mask(config, result, det_str)
     setup_integration(config, result, det_str)
     result = load_standards(config, result, det_str)
+
+    # ==============================================================
+    # 1D ABSOLUTE CALIBRATION
+    # Calculates the scaling factor once per detector distance
+    # ==============================================================
+    if config.get('physics_corrections', {}).get('perform_absolute_scaling', False):
+        water_img = result['integration'].get('water')
+        water_var = result['integration'].get('water_variance')
+        permanent_mask = result['integration'].get('int_mask')
+
+        if water_img is not None and permanent_mask is not None:
+            # Force squeeze the arrays before processing to prevent pyFAI crashes
+            water_img_sq = np.squeeze(water_img)
+            water_var_sq = np.squeeze(water_var) if water_var is not None else None
+
+            # Extract the absolute scaling factor using the pristine 1D water curve
+            scalar = calculate_1D_absolute_scalar(config, result, det_str, water_img_sq, water_var_sq)
+            result['integration']['absolute_scalar'] = scalar
+        else:
+            print("  [ERROR] Missing water standard or mask. Scaling disabled.")
+            result['integration']['absolute_scalar'] = 1.0
 
     result = integrate(config, result, det_str, path_rad_int, path_det)
     return result
@@ -177,15 +198,12 @@ def integrate(config, result, det_str, path_rad_int, path_det):
                 img = correct_flat_field(config, img)
                 var = np.square(correct_flat_field(config, np.sqrt(var)))
 
-            # 7: Absolute Scaling
+            # ==========================================================
+            # 7: Absolute Scaling (Applies the 1D Scalar to the 2D Image)
+            # ==========================================================
             if physics.get('perform_absolute_scaling', False):
-                water_std = result['integration'].get('water')
-                if water_std is not None:
-                    img = absolute_calibration_2D(config, result, scanNr, img, water_std)
-                    var = np.square(absolute_calibration_2D(config, result, scanNr, np.sqrt(var), water_std))
-                    current_log.append("YES")
-                else:
-                    current_log.append("FAIL")
+                img, var = apply_absolute_scaling(config, result, scanNr, img, var)
+                current_log.append(f"{result['integration'].get('absolute_scalar', 1.0):.3e}")
             else:
                 current_log.append("OFF")
 
