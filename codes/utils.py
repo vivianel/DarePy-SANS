@@ -390,3 +390,26 @@ def load_instrument_registry(filepath=DEFAULT_REGISTRY_PATH):
         print(f"\n[ERROR] instrument_registry.yaml not found at:\n{filepath}")
         print("Please ensure the YAML file is in the same directory as utils.py")
         sys.exit(1)
+
+
+def parse_scan_list(input_str):
+    """
+    Converts shorthand '55157:55160, 55181' into [55157, 55158, 55159, 55160, 55181]
+    """
+    if not input_str or not isinstance(input_str, str):
+        return input_str if isinstance(input_str, list) else []
+
+    scans = []
+    # Split by comma first
+    parts = input_str.replace(" ", "").split(",")
+
+    for part in parts:
+        if ":" in part:
+            # Handle ranges (start:end)
+            start, end = map(int, part.split(":"))
+            # +1 to include the end number, similar to your range() logic
+            scans.extend(range(start, end + 1))
+        else:
+            # Handle single numbers
+            scans.append(int(part))
+    return scans

@@ -4,11 +4,11 @@
 # ==========================================
 analysis_paths:
   project_base:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_1mm_rest/                       # where the results should be saved
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/2024_1598_Paula/                        # where the results should be saved
   raw_data:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_1mm_rest/raw_data/              # where the raw data is located
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/2024_1598_Paula/DarePy-SANS_old/raw_data/              # where the raw data is located
   scripts_dir:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_1mm_rest/DarePy-SANS/            # where the scripts are saved
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/2024_1598_Paula/DarePy-SANS/            # where the scripts are saved
 
 # ==========================================
 # 2. RENAME SAMPLES
@@ -35,7 +35,8 @@ plot_2d:
 # 4. BEAM CENTER MASK
 # ==========================================
 beam_center_mask:
-  scan_nr: 84435           # The specific scan (e.g., AgBE or direct beam) to use for interactive masking.
+  scan_nr: 55170
+            # The specific scan (e.g., AgBE or direct beam) to use for interactive masking.
 
 # ==========================================
 # 5. INSTRUMENT SETUP
@@ -84,18 +85,17 @@ calibration_samples:
   water: H2O                        # water measurement used for absolute calibration
   water_cell: EC                    # empty cell of the water measurement used for absolute calibration
   empty_cell:                      # Maps real sample names to their specific empty cell runs.
-    CTAB: EC
-    S_C_1mm: EC
-    C_C_1mm: EC
-    Slit_CTAB_8mm: EC
-    Cont_CTAB_8mm: EC
     default: EC                    # Fallback if a sample isn't explicitly listed above.
   thickness:                       # Maps samples to their cell thickness in cm.
-    CTAB: 0.1
-    Cd: 0.1
-    EC: 0.1
-    H20: 0.1
-    default: 0.3                   # Fallback if a sample isn't explicitly listed above.
+    A2: 0.2
+    C9: 0.2
+    C10: 0.2
+    D9: 0.2
+    D10: 0.2
+    E3: 0.2
+    LH3_1: 0.2
+    LH3_2: 0.2
+    default: 0.1                   # Fallback if a sample isn't explicitly listed above.
 
 # ==========================================
 # 9. DETECTOR GEOMETRY
@@ -106,53 +106,52 @@ calibration_samples:
 detector_geometry:
   beam_center_guess:
     6.0:
-    - 61.32
-    - 64.34
+    - 61.53
+    - 65.23
     18.0:
-    - 58.68
-    - 63.2
+    - 59.68
+    - 63.97
     1.6:
-    - 59.7
-    - 64.28
+    - 59.28
+    - 64.62
+    4.5:
+    - 59.55
+    - 64.11
   beamstopper_coordinates:
     6.0:
       bs0:
       - 57
-      - 70
-      - 53
+      - 72
+      - 52
       - 67
-    18.0:
-      bs0:
-      - 57
-      - 70
-      - 53
-      - 65
       bs1:
-      - 0
-      - 128
-      - 118
-      - 127
-      bs2:
       - 0
       - 128
       - 122
       - 128
-    1.6:
+    18.0:
       bs0:
-      - 56
+      - 57
       - 71
       - 51
       - 67
       bs1:
-      - 56
-      - 72
+      - 0
+      - 128
+      - 120
+      - 128
+    1.6:
+      bs0:
+      - 55
+      - 73
       - 50
-      - 67
-      bs2:
-      - 56
+      - 69
+    4.5:
+      bs0:
+      - 57
       - 72
-      - 54
-      - 68
+      - 52
+      - 67
   transmission_coordinates:
     1.65:
     - 59
@@ -171,25 +170,27 @@ detector_geometry:
 # Fine-tuning for the integration process.
 # ==========================================
 analysis_flags:
-  exclude_files: []          # List of scan numbers to completely ignore (e.g., [83901, 83902]).
+  exclude_files: '55157:55165, 55181'          # As a string of scan numbers to completely ignore (e.g., '55157:55165, 55181').
   force_reintegrate: false   # If true, overwrites previously processed data. If false, skips to save time.
   save_plot_radial: false
+  integration_points: 120    # Number of q-bins for 1D radial integration.
+  sectors_nr: 18             # Number of "pizza slices" for azimuthal integration.
   save_plot_azimuthal: false
   save_data_azimuthal: true
   save_2d_patterns: false
   pixel_range_azim:          # The radial ranges [min, max] for azimuthal integrations.
  # - [10, 40]                 # Range 1 (Low q)
  # - [50, 100]                # Range 2 (High q)
-  integration_points: 120    # Number of q-bins for 1D radial integration.
-  sectors_nr: 18             # Number of "pizza slices" for azimuthal integration.
+
+
 
 # ==========================================
 # 11. MERGING SETTINGS
 # Settings for stitching different detector distances into a single 1D curve (caller_merging.py).
 # ==========================================
 merging_settings:
-  run_step_1_plotting: false
-  run_step_2_merging: true
+  run_step_1_plotting: true
+  run_step_2_merging: false
   run_step_3_interpolation: false
   run_step_4_incoherent: false
   skip_start:                # Points to trim off the START of a curve before stitching to reduce noise.

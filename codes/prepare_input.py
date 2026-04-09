@@ -9,7 +9,7 @@ import re
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
-from utils import find_hdf_by_identifier
+from utils import find_hdf_by_identifier, parse_scan_list
 import pickle
 
 # Note: Assuming these are in your utils.py file
@@ -28,6 +28,8 @@ def list_files(config, result):
 
     path_hdf_raw = config['analysis']['path_hdf_raw']
     exclude_files = config['analysis'].get('exclude_files', [])
+    raw_exclude = config['analysis'].get('exclude_files', [])
+    exclude_files = parse_scan_list(raw_exclude)
 
     # 1. Find all hdf files & Apply the "_mod" Logic Gate
     files_dict = {}
