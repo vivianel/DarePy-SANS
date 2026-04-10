@@ -391,26 +391,36 @@ def load_instrument_registry(filepath=DEFAULT_REGISTRY_PATH):
         sys.exit(1)
 
 
-def parse_scan_list(input_str):
+def parse_scan_list(input_data):
     """
-    Converts shorthand '55157:55160, 55181' into [55157, 55158, 55159, 55160, 55181]
+    Converts shorthand '55157:55160, 55181' into [55157, 55158, 55159, 55160, 55181].
+    Handles strings, lists of integers, or lists containing shorthand strings.
     """
-    if not input_str or not isinstance(input_str, str):
-        return input_str if isinstance(input_str, list) else []
+    if not input_data or str(input_data).strip().lower() in ['none', '[none]', '[]']:
+        return []
+
+    # If it's a list, we convert it to a comma-separated string first
+    # This allows it to be processed by the main range-parsing logic below
+    if isinstance(input_data, list):
+        input_data = ",".join([str(x) for x in input_data])
 
     scans = []
-    # Split by comma first
-    parts = input_str.replace(" ", "").split(",")
-
+    # Clean string and split by comma
+    parts = str(input_data).replace(" ", "").split(",")
     for part in parts:
+        if not part or part.lower() == 'none':
+            continue
         if ":" in part:
-            # Handle ranges (start:end)
-            start, end = map(int, part.split(":"))
-            # +1 to include the end number, similar to your range() logic
-            scans.extend(range(start, end + 1))
+            try:
+                start, end = map(int, part.split(":"))
+                scans.extend(range(start, end + 1))
+            except ValueError:
+                continue
         else:
-            # Handle single numbers
-            scans.append(int(part))
+            try:
+                scans.append(int(part))
+            except ValueError:
+                continue
     return scans
 
 

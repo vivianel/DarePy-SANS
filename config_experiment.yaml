@@ -1,200 +1,145 @@
 # ==========================================
-# 1. ANALYSIS PATHS
-# Tells the pipeline where to find and save data. ALWAYS use absolute paths with forward slashes (/).
+# DAREPY-SANS CONFIGURATION
 # ==========================================
+
 analysis_paths:
-  project_base:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/                        # where the results should be saved
-  raw_data:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/raw_data/              # where the raw data is located
-  scripts_dir:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/DarePy-SANS/            # where the scripts are saved
+  _desc: |
+    1. ANALYSIS PATHS
+    Tells the pipeline where to find and save data.
+    ALWAYS use absolute paths with forward slashes (/).
+  project_base: 
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/             # Root directory for results
+  raw_data: 
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/raw_data/         # Source of HDF5/Nexus files
+  scripts_dir: 
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/DarePy-SANS/            # Location of source code
 
-# ==========================================
-# 2. RENAME SAMPLES
-# Fix typos in sample names before processing to ensure correct matching.
-# ==========================================
-rename_samples:
-  files_change: [None]      # List of scan numbers to modify.
-  subscript: ''              # Text to append (use 'temp' to auto-append recorded temperature).
-  replace_with: 'test_name'  # The brand-new sample name you want to use.
-
-# ==========================================
-# 3. PLOT 2D PATTERNS
-# Settings for the plot_2Dpattern.py quick-visualization script.
-# ==========================================
-plot_2d:
-  list_scan: [84489, 84240, 84239] # e.g., range(83907, 83911)
-  clim: [0, 5]               # Color bar limits [min, max]
-  plot_scale: 'log'          # Options: 'log' or 'lin'
-  enable_bg_subtraction: false # Set true to preview data with background subtracted.
-  background_scan_nr: 23088
-  output_mode: 'frames'      # Options: 'gif' (animation) or 'frames' (individual images).
-
-# ==========================================
-# 4. BEAM CENTER MASK
-# ==========================================
-beam_center_mask:
-  scan_nr: 55170
-            # The specific scan (e.g., AgBE or direct beam) to use for interactive masking.
-
-# ==========================================
-# 5. INSTRUMENT SETUP
-# Defines the physical conditions of your neutron scattering experiment.
-# ==========================================
 instrument_setup:
-  which_instrument: SANS-I         # MUST match the exact spelling in 'instrument_registry.yaml': Either SANS-I or SANS-LLB.
+  _desc: |
+    2. INSTRUMENT SETUP
+    Defines the physical conditions of your neutron scattering experiment.
+  which_instrument: SANS-I # Backend selector: SANS-I or SANS-LLB
 
-# ==========================================
-# 6. PIPELINE CONTROL
-# Orchestration settings for the Master Script (DarePy-SANS.py).
-# in Yaml, the standard way to write booleans is entirely lowercase
-# ==========================================
+rename_samples:
+  _desc: |
+    3. RENAME SAMPLES
+    Standardize sample names in metadata for correct downstream matching.
+  files_change: 89582   # Scan numbers to fix (e.g., '85776:89530, 89650')
+  subscript: ''         # Append text (use 'temp' for auto-recorded temperature)
+  replace_with: 'test_name' # New label to overwrite the metadata name
+
+plot_2d:
+  _desc: |
+    4. PLOT 2D PATTERNS
+    Quick visualization of detector counts in 2D.
+  list_scan: '89617:89622' # Scans to visualize (supports range shorthand)
+  clim: 0, 5               # Intensity limits for colorbar [min, max]
+  plot_scale: 'log'        # Color mapping: 'log' or 'lin'
+  enable_bg_subtraction: false # Preview data minus a specific background scan
+  background_scan_nr: 23088    # Scan number to subtract for 2D preview
+  output_mode: 'frames'    # Export as animated 'gif' or individual 'frames'
+
+beam_center_mask:
+  _desc: |
+    5. BEAM CENTER MASK
+    Interactive tool for finding (0,0,0) and masking the beam stop.
+  scan_nr: 89583 # High-intensity scan (e.g., AgBE or Direct Beam) for calibration
+
 pipeline_control:
-  dry_run: false             # Set true to verify paths/files without running heavy math.
-  run_transmission: true
-  run_reduction: true
-  live_monitoring: false     # Set true at the beamline to auto-process new files.
-  monitor_interval: 10       # Seconds to wait between checking for new files in live mode.
+  _desc: |
+    6. PIPELINE CONTROL
+    Master execution toggles for the DarePy-SANS.py script.
+  dry_run: false         # True: Check file availability without calculating
+  run_transmission: true # Calculate T for all samples
+  run_reduction: true    # Perform the full I(q) reduction
+  live_monitoring: false # Auto-process new files as they appear at the beamline
+  monitor_interval: 10   # Delay (sec) between checks for new raw data
 
-# ==========================================
-# 7. PHYSICS CORRECTIONS FOR REDUCTION
-# Data reduction toggles. Set to true to apply the correction, false to skip.
-# in Yaml, the standard way to write booleans is entirely lowercase
-# ==========================================
 physics_corrections:
-  wavelength: auto                 # Neutron wavelength in Å. 'auto' reads from HDF5, or type a number (e.g., 6.0).
-  target_detector_distances: all   # Distances to process. Type 'all' or a list like [1.6, 6.0, 18.0].
-  transmission_dist: 18            # Detector distance (in meters) used for transmission measurements.
-  normalize_to_monitor: true
-  subtract_dark_current: true
-  subtract_empty_cell: true
-  apply_flat_field: true
-  apply_transmission: true
-  normalize_to_thickness: true
-  perform_absolute_scaling: true
+  _desc: |
+    7. PHYSICS CORRECTIONS FOR REDUCTION
+    Toggles for standard SANS mathematical corrections.
+  wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF5 metadata
+  target_detector_distances: all # Filter by distance (m): 'all' or list [1.6, 6.0]
+  transmission_dist: 18          # Distance used specifically for T measurements
+  normalize_to_monitor: true     # Account for primary beam flux fluctuations
+  subtract_dark_current: true    # Subtract ambient noise (Cadmium measurement)
+  subtract_empty_cell: true      # Remove container scattering
+  apply_flat_field: true         # Correct for detector pixel sensitivity (Plexi/H2O)
+  apply_transmission: true       # Correct for sample attenuation
+  normalize_to_thickness: true   # Normalize by sample path length (cm)
+  perform_absolute_scaling: true # Convert counts to absolute cross-section (cm-1)
 
-
-# ==========================================
-# 8. CALIBRATION SAMPLES
-# Exact strings used in your raw data files to denote standard measurements.
-# ==========================================
 calibration_samples:
-  empty_beam: EB                    # measurement used for empty beam (used for calculating the transmission)
-  dark_current: Cd                  # corrcetion for the dark current (Cadmium)
-  water: H2O                        # water measurement used for absolute calibration
-  water_cell: EC                    # empty cell of the water measurement used for absolute calibration
-  empty_cell:                      # Maps real sample names to their specific empty cell runs.
-    default: EC                    # Fallback if a sample isn't explicitly listed above.
-  thickness:                       # Maps samples to their cell thickness in cm.
+  _desc: |
+    8. CALIBRATION SAMPLES
+    Keywords in raw data used to identify standard measurements.
+  empty_beam: EB   # Direct beam run for Transmission calculation
+  dark_current: Cd # Background noise run (B4C or Cadmium)
+  water: H2O       # Standard used for absolute calibration
+  water_cell: EC   # Empty container for the water standard
+  empty_cell:
+    default: EC    # Default container background for all samples
+  thickness:       # Sample thickness (cm) per sample name
     KG_D2OdMCT_25wt: 0.1
     LG_D2OdMCT_50wt: 0.2
-    default: 0.1                   # Fallback if a sample isn't explicitly listed above.
+    default: 0.1   # Default value if sample name is not listed
 
-# ==========================================
-# 9. DETECTOR GEOMETRY
-# PRO-TIP: You usually do NOT need to fill this out manually!
-# Running 'mask_beamstop_center.py' automatically calculates and updates this section for you.
-# Format: Boxes = [Ymin, Ymax, Xmin, Xmax] in pixels. Centers = [X, Y].
-# ==========================================
 detector_geometry:
+  _desc: |
+    9. DETECTOR GEOMETRY
+    Beam center (pixels) and beamstopper coordinates per detector distance.
+    Refresh the gui after the calculation with the iterative tool.
   beam_center_guess:
-    6.0:
-    - 61.53
-    - 65.23
-    18.0:
-    - 59.68
-    - 63.97
-    1.6:
-    - 59.28
-    - 64.62
-    4.5:
-    - 59.55
-    - 64.11
+    6.0: 61.53, 65.23
+    18.0: 59.68, 63.97
+    1.6: 59.28, 64.62
+    4.5: 69.23, 83.41
   beamstopper_coordinates:
     6.0:
-      bs0:
-      - 57
-      - 72
-      - 52
-      - 67
-      bs1:
-      - 0
-      - 128
-      - 122
-      - 128
+      bs0: 57, 72, 52, 67    # [x_min, x_max, y_min, y_max]
+      bs1: 0, 128, 122, 128
     18.0:
-      bs0:
-      - 57
-      - 71
-      - 51
-      - 67
-      bs1:
-      - 0
-      - 128
-      - 120
-      - 128
+      bs0: 57, 71, 51, 67
+      bs1: 0, 128, 120, 128
     1.6:
-      bs0:
-      - 55
-      - 73
-      - 50
-      - 69
+      bs0: 55, 73, 50, 69
     4.5:
-      bs0:
-      - 57
-      - 72
-      - 52
-      - 67
-  transmission_coordinates:
-    1.65:
-    - 59
-    - 68
-    - 56
-    - 70
-    8.0:
-    - 59
-    - 67
-    - 56
-    - 69
+      bs0: 57, 71, 51, 64
+  transmission_coordinates: # ROI for calculating transmission counts
+    1.65: 59, 68, 56, 70
+    8.0: 59, 67, 56, 69
 
-
-# ==========================================
-# 10. ANALYSIS FLAGS
-# Fine-tuning for the integration process.
-# ==========================================
 analysis_flags:
-  exclude_files: []          # Empty: [], or a tring of scan numbers to completely ignore (e.g., '85776:89530, 89650, 89585, 89586, 89625:89648'). All the numbers in the range mentioned here would be excluded.
-  force_reintegrate: false   # If true, overwrites previously processed data. If false, skips to save time.
-  save_plot_radial: false
-  integration_points: 120    # Number of q-bins for 1D radial integration.
-  sectors_nr: 18             # Number of "pizza slices" for azimuthal integration.
-  save_plot_azimuthal: false
-  save_data_azimuthal: false
-  save_2d_patterns: false
-  pixel_range_azim:          # The radial ranges [min, max] for azimuthal integrations.
- # - [10, 40]                 # Range 1 (Low q)
- # - [50, 100]                # Range 2 (High q)
+  _desc: |
+    10. ANALYSIS FLAGS
+    Detailed integration settings.
+  exclude_files: '85776:89530' # Scans to skip (e.g., bad data or setup runs)
+  force_reintegrate: false    # True: Overwrite existing .dat files
+  save_plot_radial: false     # Export I(q) plots as PNG
+  integration_points: 120     # Number of bins in q-space
+  sectors_nr: 18              # Number of 'pizza slices' for azimuthal integration
+  save_plot_azimuthal: false  # Export I(phi) plots
+  save_data_azimuthal: false  # Export I(phi) as text
+  save_2d_patterns: false     # Save corrected 2D detector images
+  pixel_range_azim: ''        # Radial range [min, max] for azimuthal integration
 
-
-
-# ==========================================
-# 11. MERGING SETTINGS
-# Settings for stitching different detector distances into a single 1D curve (caller_merging.py).
-# ==========================================
 merging_settings:
-  run_step_1_plotting: true
-  run_step_2_merging: false
-  run_step_3_interpolation: false
-  run_step_4_incoherent: false
-  skip_start:                # Points to trim off the START of a curve before stitching to reduce noise.
+  _desc: |
+    11. MERGING SETTINGS
+    Parameters for stitching multiple detector distances into one I(q) curve.
+  run_step_1_plotting: true      # Preview individual curves before stitching
+  run_step_2_merging: false       # Merge overlapping regions
+  run_step_3_interpolation: false # Interpolate to common q-grid
+  run_step_4_incoherent: false    # Fit and subtract flat incoherent background
+  skip_start: # Points to trim from low-q end per distance
     '18.0': 5
     '6.0': 10
     '1.6': 15
-  skip_end:                  # Points to trim off the END of a curve before stitching to reduce noise.
+  skip_end:   # Points to trim from high-q end (noisy regions) per distance
     '18.0': 25
     '6.0': 25
     '1.6': 5
-  interp_type: log           # Smoothing type for the stitched q-axis.
-  interp_points: 150
-  last_points_to_fit: 50     # How many high-q points to use for fitting the flat incoherent background (Porod).
+  interp_type: log    # Resampling spacing: 'log' or 'lin'
+  interp_points: 150  # Total points in final merged curve
+  last_points_to_fit: 50 # Points used for Porod/Background estimation

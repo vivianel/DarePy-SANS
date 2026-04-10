@@ -61,7 +61,7 @@ if name_hdf:
     print(f"Automatically found: {name_hdf}")
 else:
     print(f"[ERROR] Could not find any HDF file ending in {scanNr}.hdf in the raw_data folder.")
-    # Optional: import sys; sys.exit(1) to stop the script if the file is missing
+    import sys; sys.exit(1) #to stop the script if the file is missing
 
 # Load the central instrument registry
 with open("instrument_registry.yaml", 'r') as f:

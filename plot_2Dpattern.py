@@ -18,13 +18,13 @@ import matplotlib.pyplot as plt # Matplotlib imported for interactive use
 import os
 from matplotlib.animation import FuncAnimation
 from PIL import Image # For saving GIFs from individual frames (fallback method)
-from utils import load_hdf, find_hdf_filename, load_config
+from utils import load_hdf, find_hdf_filename, load_config, parse_scan_list
 
 # Automatically loads config_experiment.yaml using your utils file
 config = load_config()
 cfg_2d = config['plot_2d']
 
-LIST_SCAN = cfg_2d['list_scan']
+LIST_SCAN = parse_scan_list(config['plot_2d']['list_scan'])
 clim = cfg_2d['clim']
 plot_scale = cfg_2d['plot_scale']
 ENABLE_BACKGROUND_SUBTRACTION = cfg_2d['enable_bg_subtraction']

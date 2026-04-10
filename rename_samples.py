@@ -14,7 +14,7 @@ import os
 import sys
 import math
 import shutil
-from utils import load_config
+from utils import load_config, parse_scan_list
 
 # %% USER INPUT PARAMETERS
 
@@ -22,7 +22,7 @@ config = load_config()
 path_hdf_raw = config['analysis_paths']['raw_data']
 cfg_rename = config['rename_samples']
 
-files_change = cfg_rename['files_change']
+files_change = parse_scan_list(cfg_rename['files_change'])
 subscript = cfg_rename['subscript']
 replace_with = cfg_rename['replace_with']
 #copy_suffix = cfg_rename['copy_suffix']
