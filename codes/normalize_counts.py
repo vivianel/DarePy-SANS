@@ -5,21 +5,15 @@ Handles scalar and array-based normalizations for SANS data.
 """
 
 import numpy as np
-import os
-import sys
-from utils import load_hdf, create_analysis_folder
-from prepare_input import save_list_files
-from pathlib import Path
+from utils import load_hdf
 
 
 def normalize_time(config, hdf_name, counts):
     """Normalizes detector counts by measurement time."""
     path_hdf_raw = config['analysis']['path_hdf_raw']
     meas_time = load_hdf(path_hdf_raw, hdf_name, 'time')
-
     if meas_time is None or meas_time <= 0:
         return counts
-
     return counts / meas_time
 
 def normalize_deadtime(config, hdf_name, counts):
@@ -32,13 +26,15 @@ def normalize_deadtime(config, hdf_name, counts):
         return counts
 
     total_counts = np.sum(counts)
-    deadtime_factor = (detector_deadtime / meas_time) * total_counts
+    count_rate = total_counts / meas_time
+    deadtime_factor = count_rate * detector_deadtime
 
     if deadtime_factor >= 1.0:
         print(f"[WARNING] Deadtime saturation for {hdf_name}. Correction skipped.")
         return counts
 
-    return counts / (1 - deadtime_factor)
+    counts_corrected = counts / (1 - deadtime_factor)
+    return counts_corrected
 
 def normalize_flux(config, hdf_name, counts):
     """Normalizes counts by incident monitor flux."""

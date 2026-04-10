@@ -7,17 +7,21 @@ Modernized for Virtual Referencing (no file copying) and Pluggable Physics.
 import numpy as np
 from pathlib import Path
 import sys
-from utils import create_analysis_folder, save_results, load_hdf, find_hdf_by_identifier
+from utils import create_analysis_folder, save_results, load_hdf
 import normalize_counts as norm
 
 
 def load_standards(config, result, det):
     path_dir_an = create_analysis_folder(config)
-    calibration_names = config['experiment']['calibration']
-
     class_det_files = result['overview']['det_files_' + det]
-    class_all_files = result['overview']['all_files']
     physics = config.get('physics_corrections', {})
+
+    # --- THE SINGLE SOURCE OF TRUTH ---
+    calib_map = result['overview'].get(f'calibration_map_{det}')
+
+    if not calib_map:
+        print(f"\n  [FATAL ERROR] Calibration map for {det}m is missing! Run prepare_input first.")
+        sys.exit(1)
 
     standard_requirements = {
         'dark_current': physics.get('subtract_dark_current', False),
@@ -30,72 +34,40 @@ def load_standards(config, result, det):
         if not is_required:
             continue
 
-        raw_id = calibration_names.get(standard_key)
+        # --- LOAD DIRECTLY FROM THE MAP ---
+        mapped_data = calib_map.get(standard_key)
 
-        if isinstance(raw_id, dict):
-            identifier = raw_id.get('default')
-            if identifier is None:
-                print(f"  [INFO] No default {standard_key} defined. Will look up per sample.")
-                continue
+        # Handle dictionaries (e.g., if you have multiple Empty Cells mapped)
+        if isinstance(mapped_data, dict):
+            identifier = config['experiment']['calibration'].get(standard_key)
+            default_id = identifier.get('default') if isinstance(identifier, dict) else identifier
+            hdf_name = mapped_data.get(default_id)
         else:
-            identifier = raw_id
-
-        hdf_name = find_hdf_by_identifier(identifier, class_det_files)
-        if hdf_name is None:
-            hdf_name = find_hdf_by_identifier(identifier, class_all_files)
+            hdf_name = mapped_data
 
         if hdf_name:
-            print(f"  -> Loading Standard: {identifier} ({standard_key})")
-            img, img_variance = load_and_normalize(config, result, hdf_name, return_variance=True)
+            idx = class_det_files['name_hdf'].index(hdf_name)
+            scan_nr = class_det_files['scan'][idx]
+
+            print(f"  -> Loading Standard: {standard_key} | Scan: {scan_nr} | Det: {det}m")
+
+            is_dark_flag = (standard_key == 'dark_current')
+            img, img_variance = load_and_normalize(config, result, hdf_name, is_dark=is_dark_flag, return_variance=True)
 
             result['integration'][standard_key] = img
             result['integration'][standard_key + '_variance'] = img_variance
 
-            # [NEW FIX] Save the HDF name so we can look up its specific transmission later
             result['integration'][standard_key + '_hdf'] = hdf_name
+            result['integration'][standard_key + '_scan'] = scan_nr
 
         else:
-            print(f"  [ERROR] '{standard_key}' ({identifier}) is required but not found in any scan!")
-            sys.exit('Critical: Missing calibration data.')
-
-    # ==============================================================
-    # WATER CALIBRATION BUILDER
-    # ==============================================================
-    if physics.get('perform_absolute_scaling', False):
-        img_w = result['integration']['water']
-        var_w = result['integration']['water_variance']
-        hdf_w = result['integration']['water_hdf']
-
-        img_wc = result['integration']['water_cell']
-        var_wc = result['integration']['water_cell_variance']
-        hdf_wc = result['integration']['water_cell_hdf']
-
-        # Apply Transmission to Water and its Empty Cell BEFORE subtraction
-        if physics.get('apply_transmission', False):
-            img_w = norm.normalize_transmission(config, hdf_w, result, img_w)
-            var_w = np.square(norm.normalize_transmission(config, hdf_w, result, np.sqrt(var_w)))
-
-            img_wc = norm.normalize_transmission(config, hdf_wc, result, img_wc)
-            var_wc = np.square(norm.normalize_transmission(config, hdf_wc, result, np.sqrt(var_wc)))
-
-        # 1. Subtract Empty Cell
-        img_h2o = correct_EC(img_w, img_wc)
-        img_h2o_var = var_w + var_wc
-
-        # 2. Normalize by Thickness
-        img_h2o = norm.normalize_thickness(config, hdf_w, result, img_h2o)
-        img_h2o_var = np.square(norm.normalize_thickness(config, hdf_w, result, np.sqrt(img_h2o_var)))
-
-        # 3. Safeguard against negative pixels before absolute scaling
-        img_h2o[img_h2o <= 0] = 1e-6
-
-        result['integration']['water'] = img_h2o
-        result['integration']['water_variance'] = img_h2o_var
+            print(f"\n  [FATAL ERROR] '{standard_key}' is required but NOT MAPPED at the {det}m distance!")
+            sys.exit(1)
 
     save_results(path_dir_an, result)
     return result
 
-def load_and_normalize(config, result, hdf_name, return_variance=False):
+def load_and_normalize(config, result, hdf_name, is_dark=False, return_variance=False):
     path_hdf_raw = config['analysis']['path_hdf_raw']
     counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
 
@@ -104,35 +76,23 @@ def load_and_normalize(config, result, hdf_name, return_variance=False):
 
     counts_var = counts.copy()
 
+    # 1. Deadtime applies to everything (electronics recovery)
     counts = norm.normalize_deadtime(config, hdf_name, counts)
     counts_var = norm.normalize_deadtime(config, hdf_name, counts_var)
 
-    dark_id = config.get('calibration_samples', {}).get('dark_current')
-    dark_hdf = find_hdf_by_identifier(dark_id, result['overview']['all_files'])
-    is_dark_file = (hdf_name == dark_hdf)
-
-    if not is_dark_file and config.get('physics_corrections', {}).get('subtract_dark_current', False):
-        dark_rate_img = result['integration'].get('dark_current')
-        dark_rate_var = result['integration'].get('dark_current_variance')
-
-        if dark_rate_img is not None:
-            time_s = load_hdf(path_hdf_raw, hdf_name, 'time')
-            scaled_dark = dark_rate_img * time_s
-            scaled_dark_var = dark_rate_var * (time_s**2)
-
-            counts = correct_dark(counts, scaled_dark)
-            counts_var = counts_var + scaled_dark_var
-
-    if is_dark_file:
+    if is_dark:
+        # DARK FILES: Electronic noise scales strictly with time.
+        # This converts the dark image into a "Dark Rate" (counts per second).
         counts = norm.normalize_time(config, hdf_name, counts)
         counts_var = np.square(norm.normalize_time(config, hdf_name, np.sqrt(counts_var)))
     else:
+        # NORMAL SAMPLES: Normalize by physical beam conditions
+        counts = norm.normalize_attenuator(config, hdf_name, counts)
+        counts_var = np.square(norm.normalize_attenuator(config, hdf_name, np.sqrt(counts_var)))
+
         if config.get('physics_corrections', {}).get('normalize_to_monitor', True):
             counts = norm.normalize_flux(config, hdf_name, counts)
             counts_var = np.square(norm.normalize_flux(config, hdf_name, np.sqrt(counts_var)))
-
-        counts = norm.normalize_attenuator(config, hdf_name, counts)
-        counts_var = np.square(norm.normalize_attenuator(config, hdf_name, np.sqrt(counts_var)))
 
     if return_variance:
         return counts, counts_var

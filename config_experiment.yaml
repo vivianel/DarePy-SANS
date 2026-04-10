@@ -170,7 +170,7 @@ detector_geometry:
 # Fine-tuning for the integration process.
 # ==========================================
 analysis_flags:
-  exclude_files: '55157:55165, 55181'          # As a string of scan numbers to completely ignore (e.g., '55157:55165, 55181').
+  exclude_files: '55157:55164, 55181'          # As a string of scan numbers to completely ignore (e.g., '55157:55165, 55181').
   force_reintegrate: false   # If true, overwrites previously processed data. If false, skips to save time.
   save_plot_radial: false
   integration_points: 120    # Number of q-bins for 1D radial integration.

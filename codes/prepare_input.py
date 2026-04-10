@@ -6,6 +6,7 @@ Modernized for Pluggable Physics Pipeline and Live-Mode efficiency.
 """
 import os
 import re
+import sys
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
@@ -162,51 +163,69 @@ def select_detector_distances(config, class_files, result):
         print(f'   For sample-detector distance: {string}m')
         print('%' * 50)
 
-        # Validate calibration files against required physics steps
+        # --- NEW: Build the Calibration Map for this distance ---
+        calib_map = {}
+
+        print('\n  --- Checking Calibration Dependencies ---')
         for calib_key, sample_id in calibration.items():
-            check_calibration_dependency(calib_key, sample_id, class_det, config, result)
+            # The checker will now return the exact HDF filename it found
+            mapped_hdf = check_calibration_dependency(calib_key, sample_id, class_det, config, string)
+
+            # If a file was successfully mapped, store it!
+            if mapped_hdf is not None:
+                calib_map[calib_key] = mapped_hdf
+
+        # Save this definitive map directly into the results dictionary
+        result['overview'][f'calibration_map_{string}'] = calib_map
 
         # This CSV file and the 'result' dictionary now act as our Single Source of Truth
         save_list_files(path_det, path_dir_an, class_det, f'det_files_{string}', result)
 
     return result
 
-def check_calibration_dependency(calib_key, file_id, class_det, config, result):
+def check_calibration_dependency(calib_key, file_id, class_det, config, det_string):
     """
     Upgraded Pre-flight check:
-    1. Uses Global Search (searches all distances).
-    2. Handles case-insensitive dictionary lookups.
+    1. Searches STRICTLY within the current detector distance.
+    2. Triggers an immediate fatal error if a required 2D standard is missing.
+    3. RETURNS the exact HDF filename to build the Calibration Map.
     """
     physics = config.get('physics_corrections', {})
+
     dependency_map = {
-        'dark_current': physics.get('subtract_dark_current', True),
-        'empty_beam': physics.get('apply_transmission', True),
-        'empty_cell': physics.get('subtract_empty_cell', True),
-        'water': physics.get('perform_absolute_scaling', True),
-        'water_cell': physics.get('perform_absolute_scaling', True),
-        'thickness': physics.get('normalize_to_thickness', True)
+        'dark_current': physics.get('subtract_dark_current', False),
+        'empty_cell': physics.get('subtract_empty_cell', False),
+        'water': physics.get('perform_absolute_scaling', False),
+        'water_cell': physics.get('perform_absolute_scaling', False)
     }
 
-    if not dependency_map.get(calib_key, True):
-        return # Skip if turned off
+    if not dependency_map.get(calib_key, False):
+        if calib_key == 'thickness':
+             print(f"  [OK] Calibration '{calib_key}' (Mathematical Scalars) loaded.")
+        return None
 
-    if calib_key == 'thickness':
-        print(f"  [OK] Calibration '{calib_key}' (Mathematical Scalars) loaded.")
-        return
-
-    # Use the entire experiment file list for searching
-    all_files = result['overview']['all_files']
-
-    # Unpack targets (if dictionary, check all unique values)
+    # Handle both simple strings ('Cd') and nested dictionaries (for multiple empty cells)
     targets = list(set(file_id.values())) if isinstance(file_id, dict) else [file_id]
+
+    # We will store the exact files we find
+    found_files = {}
 
     for target in targets:
         if target is None: continue
 
-        # find_hdf_by_identifier already handles names vs scan numbers
-        found_hdf = find_hdf_by_identifier(target, all_files)
+        # --- STRICT LOCAL SEARCH ---
+        found_hdf = find_hdf_by_identifier(target, class_det)
 
         if found_hdf:
-            print(f"  [OK] Calibration '{calib_key}' -> '{target}' found globally.")
+            print(f"  [OK] '{calib_key}' mapped to '{found_hdf}' at {det_string.replace('p', '.')}m.")
+            found_files[target] = found_hdf
         else:
-            print(f"  [ERROR] Calibration '{calib_key}' -> '{target}' NOT FOUND in any scan!")
+            print(f"\n  [FATAL ERROR] Calibration '{calib_key}' -> '{target}' NOT FOUND at {det_string.replace('p', '.')}m!")
+            print(f"  The pipeline cannot continue. Please measure this standard, turn off the correction in your YAML, or fix the file name.")
+            sys.exit(1)
+
+    # Return the mapped file (or a dictionary if there were multiple targets like advanced ECs)
+    if isinstance(file_id, str):
+        return found_files.get(file_id)
+    else:
+        return found_files

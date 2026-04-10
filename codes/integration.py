@@ -4,11 +4,11 @@ import sys
 import csv
 from tabulate import tabulate
 import matplotlib.pyplot as plt
-from utils import load_hdf, create_analysis_folder, get_flexible_value, find_hdf_by_identifier
+from utils import load_hdf, create_analysis_folder, get_flexible_value
 from image_corrections import (load_standards, load_and_normalize,
-                        correct_EC, correct_flat_field)
+                        correct_EC, correct_flat_field, correct_dark)
 from setup_integrator import(generate_beamstop_mask, setup_integration)
-from absolute_scaling import calculate_1D_absolute_scalar, apply_absolute_scaling
+from absolute_scaling import calculate_1D_absolute_scalar, apply_absolute_scaling, process_water_standard
 import normalize_counts as norm
 import plot_integration as plot_integ
 
@@ -56,26 +56,28 @@ def set_integration(config, result, det_str):
 
     # ==============================================================
     # 1D ABSOLUTE CALIBRATION
-    # Calculates the scaling factor once per detector distance
+    # Calculates the scaling factor independently per detector distance
     # ==============================================================
     if config.get('physics_corrections', {}).get('perform_absolute_scaling', False):
-        water_img = result['integration'].get('water')
-        water_var = result['integration'].get('water_variance')
+
+        water_img, water_var = process_water_standard(config, result)
         permanent_mask = result['integration'].get('int_mask')
 
         if water_img is not None and permanent_mask is not None:
-            # Force squeeze the arrays before processing to prevent pyFAI crashes
             water_img_sq = np.squeeze(water_img)
             water_var_sq = np.squeeze(water_var) if water_var is not None else None
 
-            # Extract the absolute scaling factor using the pristine 1D water curve
+            print(f"  [CALIBRATION] Deriving Absolute Scalar for {det_str}m...")
             scalar = calculate_1D_absolute_scalar(config, result, det_str, water_img_sq, water_var_sq)
             result['integration']['absolute_scalar'] = scalar
         else:
-            print("  [ERROR] Missing water standard or mask. Scaling disabled.")
+            print(f"  [WARNING] Missing water standard for {det_str}m. Scaling set to 1.0.")
             result['integration']['absolute_scalar'] = 1.0
 
+    # Execute the core integration loop
     result = integrate(config, result, det_str, path_rad_int, path_det)
+
+    # Ensure the dictionary is returned! ---
     return result
 
 def make_file_name(path, prefix, sufix, sample_name, det_str, scanNr, frame):
@@ -96,6 +98,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
     class_file = result['overview']['det_files_' + det_str]
     force_reintegrate = config['analysis'].get('force_reintegrate', False)
     physics = config.get('physics_corrections', {})
+    calib_map = result['overview'].get(f'calibration_map_{det_str}', {})
 
     # Log Book Setup
     reduction_log = []
@@ -144,7 +147,25 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             if physics.get('subtract_dark_current', False):
                 dark_block = config['experiment']['calibration']['dark_current']
                 dark_id = get_flexible_value(dark_block, clean_name, default_fallback='MISSING')
-                current_log.append(str(dark_id))
+
+                # --- PULL DIRECTLY FROM MAP ---
+                mapped_dark = calib_map.get('dark_current')
+                dark_hdf = mapped_dark.get(dark_id) if isinstance(mapped_dark, dict) else mapped_dark
+
+                if dark_hdf:
+                    dark_img, dark_var = load_and_normalize(config, result, dark_hdf, return_variance=True)
+                    dark_img = np.squeeze(dark_img)
+                    dark_var = np.squeeze(dark_var)
+
+                    img = correct_dark(img, dark_img)
+                    var = var + dark_var
+
+                    # Log the exact scan number using the index!
+                    idx = class_file['name_hdf'].index(dark_hdf)
+                    current_log.append(str(class_file['scan'][idx]))
+                else:
+                    print(f"  [WARNING] Dark Current '{dark_id}' NOT MAPPED for {det_str}m!")
+                    current_log.append("MISSING")
             else:
                 current_log.append("OFF")
 
@@ -167,7 +188,11 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             ec_id = get_flexible_value(ec_block, clean_name, default_fallback='EC')
 
             if physics.get('subtract_empty_cell', False):
-                ec_hdf = find_hdf_by_identifier(ec_id, result['overview']['all_files'])
+
+                # --- PULL DIRECTLY FROM MAP ---
+                mapped_ec = calib_map.get('empty_cell')
+                ec_hdf = mapped_ec.get(ec_id) if isinstance(mapped_ec, dict) else mapped_ec
+
                 if ec_hdf:
                     img_ec, var_ec = load_and_normalize(config, result, ec_hdf, return_variance=True)
                     img_ec = np.squeeze(img_ec)
@@ -179,8 +204,12 @@ def integrate(config, result, det_str, path_rad_int, path_det):
 
                     img = correct_EC(img, img_ec)
                     var = var + var_ec
-                    current_log.append(str(ec_id))
+
+                    # Log the exact scan number using the index!
+                    idx = class_file['name_hdf'].index(ec_hdf)
+                    current_log.append(str(class_file['scan'][idx]))
                 else:
+                    print(f"  [WARNING] Empty Cell '{ec_id}' NOT MAPPED for {det_str}m! Subtraction skipped.")
                     current_log.append("MISSING")
             else:
                 current_log.append("OFF")

@@ -121,11 +121,12 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 prop = prop / 1000.0
             elif which_property in ['detx', 'dety']:
                 prop = round(prop / 1000.0, 2)
+                if prop == 4.5 :
+                    prop = 6.0
             elif which_property == 'wl':
                 prop = prop * 10.0
             elif which_property == 'moni':
                 prop = prop / 1e4
-
             return prop
 
     except FileNotFoundError:
@@ -413,3 +414,28 @@ def parse_scan_list(input_str):
             # Handle single numbers
             scans.append(int(part))
     return scans
+
+
+def find_strict_calibration_file(target_id, sample_index, class_file):
+    """
+    Finds a calibration standard that matches the name AND exact physical geometry
+    of the sample being processed.
+    """
+    target_names = [target_id] if isinstance(target_id, str) else list(target_id)
+
+    # Extract the physical state of the sample we are trying to correct
+    sample_detx = class_file['detx_m'][sample_index]
+    sample_wl = class_file['wl_A'][sample_index]
+    sample_coll = class_file['coll_m'][sample_index]
+
+    for ii, name in enumerate(class_file['sample_name']):
+        if name in target_names:
+            # Check if the physical metadata perfectly matches the sample
+            match_detx = (class_file['detx_m'][ii] == sample_detx)
+            match_wl = (class_file['wl_A'][ii] == sample_wl)
+            match_coll = (class_file['coll_m'][ii] == sample_coll)
+
+            if match_detx and match_wl and match_coll:
+                return class_file['name_hdf'][ii]
+
+    return None # Return None if no strictly matching standard exists
