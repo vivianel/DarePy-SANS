@@ -7,7 +7,7 @@ Modernized for Virtual Referencing (no file copying) and Pluggable Physics.
 import numpy as np
 from pathlib import Path
 import sys
-from utils import create_analysis_folder, save_results, load_hdf
+from utils import create_analysis_folder, save_results, load_hdf, get_flexible_value
 import normalize_counts as norm
 
 
@@ -132,3 +132,51 @@ def correct_flat_field(config, I):
     except Exception as e:
         print(f"[ERROR] Flat field application failed: {e}")
         return I
+
+def process_empty_cell(config, result, calib_map, class_file, clean_name):
+    """
+    Builder function that loads, dark-corrects, and transmission-corrects
+    the Empty Cell before returning it to the main loop for subtraction.
+    """
+    physics = config.get('physics_corrections', {})
+
+    # 1. Look up the mapped Empty Cell
+    ec_block = config['experiment']['calibration']['empty_cell']
+    ec_id = get_flexible_value(ec_block, clean_name, default_fallback='EC')
+
+    mapped_ec = calib_map.get('empty_cell')
+    ec_hdf = mapped_ec.get(ec_id) if isinstance(mapped_ec, dict) else mapped_ec
+
+    if not ec_hdf:
+        return None, None, None
+
+    # 2. Base Loading
+    img_ec, var_ec = load_and_normalize(config, result, ec_hdf, return_variance=True)
+    img_ec = np.squeeze(img_ec)
+    var_ec = np.squeeze(var_ec)
+
+    # 3. Dark Current Correction for Empty Cell
+    if physics.get('subtract_dark_current', False):
+        dark_block = config['experiment']['calibration']['dark_current']
+        dark_id_for_ec = get_flexible_value(dark_block, clean_name, default_fallback='MISSING')
+        mapped_dark = calib_map.get('dark_current')
+        dark_hdf = mapped_dark.get(dark_id_for_ec) if isinstance(mapped_dark, dict) else mapped_dark
+
+        if dark_hdf:
+            dark_img, dark_var = load_and_normalize(config, result, dark_hdf, return_variance=True)
+            dark_img = np.squeeze(dark_img)
+            dark_var = np.squeeze(dark_var)
+
+            img_ec = correct_dark(img_ec, dark_img)
+            var_ec = var_ec + dark_var
+
+    # 4. Apply Transmission
+    if physics.get('apply_transmission', False):
+        img_ec = norm.normalize_transmission(config, ec_hdf, result, img_ec)
+        var_ec = np.square(norm.normalize_transmission(config, ec_hdf, result, np.sqrt(var_ec)))
+
+    # 5. Extract Scan Number for the Log Book
+    idx = class_file['name_hdf'].index(ec_hdf)
+    ec_scan = class_file['scan'][idx]
+
+    return img_ec, var_ec, ec_scan

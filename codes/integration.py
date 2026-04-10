@@ -6,7 +6,7 @@ from tabulate import tabulate
 import matplotlib.pyplot as plt
 from utils import load_hdf, create_analysis_folder, get_flexible_value
 from image_corrections import (load_standards, load_and_normalize,
-                        correct_EC, correct_flat_field, correct_dark)
+                        correct_EC, correct_flat_field, correct_dark, process_empty_cell)
 from setup_integrator import(generate_beamstop_mask, setup_integration)
 from absolute_scaling import calculate_1D_absolute_scalar, apply_absolute_scaling, process_water_standard
 import normalize_counts as norm
@@ -184,32 +184,19 @@ def integrate(config, result, det_str, path_rad_int, path_det):
                 current_log.append("1.000")
 
             # 4: Empty Cell
-            ec_block = config['experiment']['calibration']['empty_cell']
-            ec_id = get_flexible_value(ec_block, clean_name, default_fallback='EC')
-
             if physics.get('subtract_empty_cell', False):
 
-                # --- PULL DIRECTLY FROM MAP ---
-                mapped_ec = calib_map.get('empty_cell')
-                ec_hdf = mapped_ec.get(ec_id) if isinstance(mapped_ec, dict) else mapped_ec
+                # Let the Builder handle all the messy prep!
+                img_ec, var_ec, ec_scan = process_empty_cell(config, result, calib_map, class_file, clean_name)
 
-                if ec_hdf:
-                    img_ec, var_ec = load_and_normalize(config, result, ec_hdf, return_variance=True)
-                    img_ec = np.squeeze(img_ec)
-                    var_ec = np.squeeze(var_ec)
-
-                    if physics.get('apply_transmission', False):
-                        img_ec = norm.normalize_transmission(config, ec_hdf, result, img_ec)
-                        var_ec = np.square(norm.normalize_transmission(config, ec_hdf, result, np.sqrt(var_ec)))
-
+                if img_ec is not None:
+                    # Pure mathematical subtraction
                     img = correct_EC(img, img_ec)
                     var = var + var_ec
 
-                    # Log the exact scan number using the index!
-                    idx = class_file['name_hdf'].index(ec_hdf)
-                    current_log.append(str(class_file['scan'][idx]))
+                    current_log.append(str(ec_scan))
                 else:
-                    print(f"  [WARNING] Empty Cell '{ec_id}' NOT MAPPED for {det_str}m! Subtraction skipped.")
+                    print(f"  [WARNING] Empty Cell NOT MAPPED for {det_str}m! Subtraction skipped.")
                     current_log.append("MISSING")
             else:
                 current_log.append("OFF")
