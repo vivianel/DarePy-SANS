@@ -147,15 +147,51 @@ class DarePyGUI:
             return v
 
     def refresh_ui(self):
-        """Wipes tabs and rebuilds from file."""
+        """Reloads YAML and restores Main-Tab and Sub-Tab positions."""
+        # 1. Capture Main Tab Index
+        try:
+            main_idx = self.notebook.index("current")
+        except:
+            main_idx = 0
+
+        # 2. Capture Sub-Tab Index (if it exists)
+        sub_idx = 0
+        if hasattr(self, 'sub_nb'):
+            try:
+                sub_idx = self.sub_nb.index("current")
+            except:
+                sub_idx = 0
+
         self.log_to_console("------------------------------------------")
-        self.log_to_console("🔄 ACTION: Reloading from YAML file...")
+        self.log_to_console("🔄 ACTION: Refreshing GUI and restoring position...")
+
         if self.load_data():
+            # Clear everything
             self.entries = {}
             for child in self.notebook.winfo_children():
                 child.destroy()
+
+            # Rebuild the entire UI
             self.fill_notebook()
-            self.log_to_console("✅ SUCCESS: GUI updated.")
+
+            # IMPORTANT: Force the UI to calculate all new widget positions
+            self.root.update_idletasks()
+
+            # 3. Step One: Restore the Main Tab
+            try:
+                self.notebook.select(main_idx)
+                # Force another update so the Sub-Notebook becomes 'visible' to the OS
+                self.root.update_idletasks()
+
+                # 4. Step Two: Restore the Sub-Tab
+                # We check main_idx == 4 because Tab 5 is the 5th tab (index 4)
+                if main_idx == 4 and hasattr(self, 'sub_nb'):
+                    self.sub_nb.select(sub_idx)
+
+            except Exception as e:
+                self.log_to_console(f"⚠️ Navigation restore failed: {e}")
+
+            self.log_to_console("✅ SUCCESS: GUI refreshed at previous position.")
             self.log_to_console("------------------------------------------")
 
     def create_scrollable_tab(self, notebook, text):
@@ -227,43 +263,136 @@ class DarePyGUI:
                   pady=8, command=lambda: self.run_script("plot_2Dpattern.py")).pack(fill="x")
         self.build_config_area(scroll_f3, "Plot 2D Settings", "plot_2d")
 
+
         # --- TAB 4: MASK & CENTER ---
         scroll_f4, footer_f4 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
 
-        tk.Button(footer_f4, text="Open Masking Tool", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
-                  pady=8, command=lambda: self.run_script("mask_beamstop_center.py")).pack(side="left", fill="x", expand=True, padx=(0,5))
+        # 1. CLEAN MASKING SETUP (Manually built to avoid redundant 'scans' boxes)
+        setup_group = tk.LabelFrame(scroll_f4, text="Masking Setup", padx=10, pady=10, bg=bg_color)
+        setup_group.pack(fill="x", padx=10, pady=5, anchor="nw")
 
-        tk.Button(footer_f4, text="REFRESH FROM YAML", bg="#FF9800", fg="white", font=("Arial", 10, "bold"),
-                  pady=8, command=self.refresh_ui).pack(side="left", fill="x", expand=True, padx=(5,0))
+        # Add the description/help text from YAML if it exists
+        desc = self.config_dict.get('beam_center_mask', {}).get('_desc', '').strip()
+        if desc:
+            tk.Label(setup_group, text=desc, font=("Arial", 9, "italic"), fg="#555",
+                     bg="#f8f9fa", justify="left", wraplength=650, padx=10, pady=10).pack(fill="x", pady=(0, 10))
 
-        self.build_config_area(scroll_f4, "Beam Center Masking", "beam_center_mask")
-        self.build_config_area(scroll_f4, "Detector Geometry", "detector_geometry")
+        # Only show the Sample Name field here
+        tk.Label(setup_group, text="sample_name", font=("Arial", 9, "bold"), bg=bg_color).pack(anchor="w")
+        s_name_val = self.config_dict.get('beam_center_mask', {}).get('sample_name', 'AgBE')
+        s_ent = tk.Entry(setup_group)
+        s_ent.insert(0, str(s_name_val))
+        s_ent.pack(fill="x", expand=True, ipady=3)
+
+        # Register for saving: Path is ('sample_name',)
+        if 'beam_center_mask' not in self.entries: self.entries['beam_center_mask'] = {}
+        self.entries['beam_center_mask'][('sample_name',)] = s_ent
+
+        # 2. THE ACTION AREA (The rows with blue buttons)
+        action_group = tk.LabelFrame(scroll_f4, text="Distance-Specific Masking", padx=10, pady=10,
+                                    bg=bg_color, fg="#2196F3", font=("Arial", 10, "bold"))
+        action_group.pack(fill="x", padx=10, pady=5, anchor="nw")
+
+        scans_dict = self.config_dict.get('beam_center_mask', {}).get('scans', {})
+
+        # ADD NEW DISTANCE ROW (The "Management Row")
+        add_row = tk.Frame(action_group, bg=bg_color)
+        add_row.pack(fill="x", pady=(0, 15))
+
+        tk.Label(add_row, text="Add Distance:", font=("Arial", 9, "italic"), bg=bg_color).pack(side="left")
+        self.new_dist_entry = tk.Entry(add_row, width=10)
+        self.new_dist_entry.pack(side="left", padx=5)
+
+        tk.Button(add_row, text=" + ", bg="#4CAF50", fg="white", font=("Arial", 9, "bold"),
+                  command=self.add_new_distance).pack(side="left")
+
+        # Horizontal line separator
+        ttk.Separator(action_group, orient='horizontal').pack(fill='x', pady=5)
+
+        if isinstance(scans_dict, dict):
+            sorted_distances = sorted(scans_dict.keys(), key=float)
+            for dist in sorted_distances:
+                row = tk.Frame(action_group, bg=bg_color)
+                row.pack(fill="x", pady=5)
+
+                tk.Label(row, text=f"{dist} m:", width=10, font=("Arial", 9, "bold"),
+                         anchor="w", bg=bg_color).pack(side="left")
+
+                scan_val = scans_dict.get(dist, "")
+                ent = tk.Entry(row, width=15)
+                ent.insert(0, str(scan_val))
+                ent.pack(side="left", padx=5)
+
+                # Register for saving: Path is ('scans', dist)
+                self.entries['beam_center_mask'][('scans', dist)] = ent
+
+                tk.Button(row, text=f"RUN MASKING TOOL", bg="#2196F3", fg="white",
+                          font=("Arial", 8, "bold"), padx=10,
+                          command=lambda d=dist: self.run_mask_for_dist(d)).pack(side="right", fill="x", expand=True)
+
+        # 3. Detector Geometry Display (Automatic builder is fine here)
+        self.build_config_area(scroll_f4, "Current Detector Geometry", "detector_geometry")
+
+        # 4. FOOTER
+        btn_f4 = tk.Frame(footer_f4, bg=bg_color)
+        btn_f4.pack(fill="x")
+        tk.Button(btn_f4, text="REFRESH FROM YAML", bg="#FF9800", fg="white",
+                  font=("Arial", 10, "bold"), pady=8, command=self.refresh_ui).pack(fill="x")
 
         # --- TAB 5: RADIAL INTEGRATION ---
-        # (This one is special because it has sub-tabs, but we follow the footer rule)
         t5_main = ttk.Frame(self.notebook)
         self.notebook.add(t5_main, text="5. Radial Integration")
 
-        # Pinned Footer for Tab 5
-        footer_f5 = tk.Frame(t5_main, bg=bg_color)
+        # Pinned Footer
+        footer_f5 = tk.Frame(t5_main, bg=self.root.cget('bg'))
         footer_f5.pack(side="bottom", fill="x", padx=20, pady=15)
-        tk.Button(footer_f5, text="Run Radial Integration Pipeline", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
-                  pady=8, command=lambda: self.run_script("caller_radial_integration.py")).pack(fill="x")
+        tk.Button(footer_f5, text="Run Radial Integration Pipeline", bg="#2196F3", fg="white",
+                  font=("Arial", 10, "bold"), pady=8,
+                  command=lambda: self.run_script("caller_radial_integration.py")).pack(fill="x")
 
-        # Sub-notebook fills the space above footer
-        sub_nb = ttk.Notebook(t5_main)
-        sub_nb.pack(expand=True, fill="both", padx=10, pady=5)
+        self.sub_nb = ttk.Notebook(t5_main)
+        self.sub_nb.pack(expand=True, fill="both", padx=10, pady=5)
 
-        s1, _ = self.create_scrollable_tab(sub_nb, "Pipeline Control"); self.build_config_area(s1, "Control", "pipeline_control")
-        s2, _ = self.create_scrollable_tab(sub_nb, "Physics Corrections"); self.build_config_area(s2, "Physics", "physics_corrections")
-        s3, _ = self.create_scrollable_tab(sub_nb, "Calibration Samples"); self.build_config_area(s3, "Calibration", "calibration_samples")
-        s4, _ = self.create_scrollable_tab(sub_nb, "Analysis Flags"); self.build_config_area(s4, "Flags", "analysis_flags")
+        # Sub-tabs 1, 2, 4 use the standard builder
+        s1, _ = self.create_scrollable_tab(self.sub_nb, "Pipeline Control"); self.build_config_area(s1, "Control", "pipeline_control")
+        s2, _ = self.create_scrollable_tab(self.sub_nb, "Physics Corrections"); self.build_config_area(s2, "Physics", "physics_corrections")
+
+        # --- CUSTOM SUB-TAB 3: CALIBRATION SAMPLES ---
+        s3_scroll, _ = self.create_scrollable_tab(self.sub_nb, "Calibration Samples")
+
+        # !! THE FIX: Initialize the dictionary key for this tab !!
+        if 'calibration_samples' not in self.entries:
+            self.entries['calibration_samples'] = {}
+
+        # A. Basic Calibration (Standard entries)
+        basic_cal = tk.LabelFrame(s3_scroll, text="Primary Standards", padx=10, pady=10, bg=self.root.cget('bg'))
+        basic_cal.pack(fill="x", padx=10, pady=5)
+
+        for field in ['dark_current', 'water', 'water_cell']:
+            tk.Label(basic_cal, text=field, font=("Arial", 9, "bold"), bg=self.root.cget('bg')).pack(anchor="w")
+            # Safety get to avoid crashes if YAML is missing a field
+            val = self.config_dict.get('calibration_samples', {}).get(field, "")
+            ent = tk.Entry(basic_cal)
+            ent.insert(0, str(val))
+            ent.pack(fill="x", pady=(0, 5))
+
+            # This is where it crashed; now it has a place to live
+            self.entries['calibration_samples'][(field,)] = ent
+
+        # B. Two-Column Dictionary Editors
+        self._build_dict_editor(s3_scroll, "Empty Cell Mapping (Backgrounds)", "calibration_samples", "empty_cell")
+        self._build_dict_editor(s3_scroll, "Sample Thickness (cm)", "calibration_samples", "thickness")
+
+        # Sub-tab 4
+        s4, _ = self.create_scrollable_tab(self.sub_nb, "Analysis Flags"); self.build_config_area(s4, "Flags", "analysis_flags")
 
         # --- TAB 6: MERGING ---
         scroll_f6, footer_f6 = self.create_scrollable_tab(self.notebook, "6. Merging Curves")
         tk.Button(footer_f6, text="Run Data Merging", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   pady=8, command=lambda: self.run_script("caller_merging.py")).pack(fill="x")
         self.build_config_area(scroll_f6, "Merging Settings", "merging_settings")
+
+
 
     def build_config_area(self, parent, title, config_key):
         """Packs LabelFrames so they look like a clean, continuous column."""
@@ -280,6 +409,22 @@ class DarePyGUI:
 
         self._build_nested_ui(group, section, config_key, path=())
 
+    def run_mask_for_dist(self, dist):
+        """Saves the specific scan number to the main 'scan_nr' field and runs the script."""
+        # Save all current UI entries to the dictionary/YAML first
+        if self.save_data():
+            # Extract the scan number specifically for this distance
+            target_scan = self.entries['beam_center_mask'][('scans', dist)].get()
+
+            # Inject this into the main 'scan_nr' field the script expects
+            self.config_dict['beam_center_mask']['scan_nr'] = int(target_scan)
+
+            # Final silent save to ensure the script sees this scan_nr
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                yaml.dump(self.config_dict, f)
+
+            self.log_to_console(f"🎯 Reduction Target: Distance {dist}m | Scan {target_scan}")
+            self.run_script("mask_beamstop_center.py")
 
     def _build_nested_ui(self, parent, data, config_key, path):
         if not isinstance(data, dict): return
@@ -301,23 +446,32 @@ class DarePyGUI:
                 self._create_field(parent, str(k), v, config_key, path + (k,), help_t)
 
     def _create_field(self, parent, label, value, config_key, path, help_t=""):
+        """Creates the appropriate UI widget for a setting and links it to the root master."""
+        bg_color = parent.cget('bg') # Keep the clean look
+
         if label == "which_instrument":
-            tk.Label(parent, text=label, font=("Arial", 9, "bold")).pack(anchor="w")
+            tk.Label(parent, text=label, font=("Arial", 9, "bold"), bg=bg_color).pack(anchor="w")
             w = ttk.Combobox(parent, values=["SANS-I", "SANS-LLB"], state="readonly")
             w.set(value); w.pack(fill="x", expand=True, ipady=3)
             self.entries[config_key][path] = w
+
         elif isinstance(value, bool):
-            var = tk.BooleanVar(value=value)
-            tk.Checkbutton(parent, text=label, variable=var, font=("Arial", 9, "bold"), anchor="w").pack(fill="x")
+            # THE FIX: We explicitly pass master=self.root so Tkinter doesn't panic
+            var = tk.BooleanVar(master=self.root, value=value)
+            tk.Checkbutton(parent, text=label, variable=var, font=("Arial", 9, "bold"),
+                           anchor="w", bg=bg_color, activebackground=bg_color).pack(fill="x")
             self.entries[config_key][path] = var
+
         else:
-            tk.Label(parent, text=label, font=("Arial", 9, "bold")).pack(anchor="w")
+            tk.Label(parent, text=label, font=("Arial", 9, "bold"), bg=bg_color).pack(anchor="w")
             w = tk.Entry(parent)
             disp = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
             w.insert(0, disp); w.pack(fill="x", expand=True, ipady=3)
             self.entries[config_key][path] = w
+
         if help_t:
-            tk.Label(parent, text=f"  ? {help_t}", font=("Arial", 8, "italic"), fg="#7f8c8d").pack(anchor="w", pady=(0,5))
+            tk.Label(parent, text=f"  ? {help_t}", font=("Arial", 8, "italic"),
+                     fg="#7f8c8d", bg=bg_color).pack(anchor="w", pady=(0,5))
 
     def log_to_console(self, msg):
         self.console.insert(tk.END, f"{msg}\n"); self.console.see(tk.END); self.root.update()
@@ -332,6 +486,97 @@ class DarePyGUI:
             self.log_to_console("4. ⚠️  ACTION: Press 'F5' to execute.")
             self.log_to_console("------------------------------------------")
             os.startfile(os.path.join(os.path.dirname(__file__), name))
+
+    def add_new_distance(self):
+        """Adds a new distance key to the dictionary and refreshes the UI."""
+        new_val = self.new_dist_entry.get().strip()
+
+        if not new_val:
+            return
+
+        try:
+            # Ensure it's a valid number (integer or float)
+            dist_key = float(new_val)
+            if dist_key.is_integer():
+                dist_key = int(dist_key)
+
+            # Access the dictionary
+            scans = self.config_dict.get('beam_center_mask', {}).get('scans', {})
+
+            # Add the new key with a placeholder scan number (or 0)
+            if dist_key not in scans:
+                scans[dist_key] = 0
+                self.config_dict['beam_center_mask']['scans'] = scans
+
+                # Save and Refresh to show the new row
+                self.save_data()
+                self.refresh_ui()
+                self.log_to_console(f"➕ Added new detector distance: {dist_key}m")
+            else:
+                messagebox.showinfo("Exists", f"Distance {dist_key}m is already in the list.")
+
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid number for the distance.")
+
+    def _build_dict_editor(self, parent, title, main_key, sub_key):
+        """Builds a two-column editor for dictionaries with a Quick-Add row."""
+        bg_color = self.root.cget('bg')
+        group = tk.LabelFrame(parent, text=title, padx=10, pady=10, bg=bg_color, fg="#e67e22", font=("Arial", 10, "bold"))
+        group.pack(fill="x", padx=10, pady=5)
+
+        # 1. THE QUICK-ADD ROW
+        add_f = tk.Frame(group, bg=bg_color)
+        add_f.pack(fill="x", pady=(0, 10))
+
+        new_name = tk.Entry(add_f, width=25); new_name.insert(0, "New Sample Name...")
+        new_name.pack(side="left", padx=2)
+        new_val = tk.Entry(add_f, width=15); new_val.insert(0, "Value")
+        new_val.pack(side="left", padx=2)
+
+        tk.Button(add_f, text="+", bg="#4CAF50", fg="white", font=("Arial", 9, "bold"),
+                  command=lambda n=new_name, v=new_val, mk=main_key, sk=sub_key:
+                  self.add_dict_item(mk, sk, n, v)).pack(side="left", padx=5)
+
+        # 2. THE COLUMN HEADERS
+        header_f = tk.Frame(group, bg=bg_color)
+        header_f.pack(fill="x")
+        tk.Label(header_f, text="Sample Name", width=28, font=("Arial", 8, "bold"), bg=bg_color, anchor="w").pack(side="left")
+        tk.Label(header_f, text="Value", font=("Arial", 8, "bold"), bg=bg_color, anchor="w").pack(side="left")
+
+        # 3. THE DATA ROWS (Side-by-Side)
+        data_dict = self.config_dict.get(main_key, {}).get(sub_key, {})
+        for name, value in data_dict.items():
+            row = tk.Frame(group, bg=bg_color)
+            row.pack(fill="x", pady=2)
+
+            # Label (Sample Name)
+            tk.Label(row, text=name, width=30, anchor="w", bg=bg_color, font=("Arial", 9)).pack(side="left")
+
+            # Entry (Value)
+            ent = tk.Entry(row, width=20)
+            ent.insert(0, str(value))
+            ent.pack(side="left")
+
+            # Register for saving: Path is (sub_key, name)
+            if main_key not in self.entries: self.entries[main_key] = {}
+            self.entries[main_key][(sub_key, name)] = ent
+
+    def add_dict_item(self, main_key, sub_key, name_ent, val_ent):
+        """Adds a new key-value pair to the calibration dictionaries."""
+        name = name_ent.get().strip()
+        val = val_ent.get().strip()
+
+        if name and val and "New Sample" not in name:
+            # Add to dictionary
+            if sub_key not in self.config_dict[main_key]:
+                self.config_dict[main_key][sub_key] = {}
+
+            self.config_dict[main_key][sub_key][name] = self._parse_string(val)
+
+            # Save, log, and Refresh
+            self.save_data()
+            self.refresh_ui()
+            self.log_to_console(f"📝 Added to {sub_key}: {name} = {val}")
 
 if __name__ == "__main__":
     root = tk.Tk(); app = DarePyGUI(root); root.mainloop()

@@ -43,7 +43,13 @@ beam_center_mask:
   _desc: |
     5. BEAM CENTER MASK
     Interactive tool for finding (0,0,0) and masking the beam stop.
-  scan_nr: 89583 # High-intensity scan (e.g., AgBE or Direct Beam) for calibration
+  sample_name: 'AgBE'
+  # The dictionary keys automatically define your available distances
+  scans:
+    1.6: 89580
+    6.0: 89583
+    18.0: 89585
+    2.5: 0
 
 pipeline_control:
   _desc: |
@@ -80,11 +86,16 @@ calibration_samples:
   water_cell: EC   # Empty container for the water standard
   empty_cell:
     default: EC    # Default container background for all samples
+    Test: EC
   thickness:       # Sample thickness (cm) per sample name
     KG_D2OdMCT_25wt: 0.1
     LG_D2OdMCT_50wt: 0.2
     default: 0.1   # Default value if sample name is not listed
 
+    H2O: 0.2
+    test: 0.2
+    EC: 0.1
+    Test: 0.6
 detector_geometry:
   _desc: |
     9. DETECTOR GEOMETRY
