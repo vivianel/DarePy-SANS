@@ -2,3 +2,4 @@ raw_data/
 analysis/
 codes/__pycache__/
 config_history/
+__pycache__/

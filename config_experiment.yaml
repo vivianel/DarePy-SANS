@@ -33,7 +33,9 @@ plot_2d:
     4. PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
   list_scan: '89617:89622' # Scans to visualize (supports range shorthand)
-  clim: 0, 5               # Intensity limits for colorbar [min, max]
+  clim:                    # Intensity limits for colorbar [min, max]
+  - 0
+  - 5
   plot_scale: 'log'        # Color mapping: 'log' or 'lin'
   enable_bg_subtraction: false # Preview data minus a specific background scan
   background_scan_nr: 23088    # Scan number to subtract for 2D preview
@@ -46,20 +48,25 @@ beam_center_mask:
   sample_name: 'AgBE'
   # The dictionary keys automatically define your available distances
   scans:
-    1.6: 89580
     6.0: 89583
     18.0: 89585
-    2.5: 0
-
+    1.6: 89580
+    1.2: 0
+    4.5: 89576
+  scan_nr: 89576
 pipeline_control:
   _desc: |
     6. PIPELINE CONTROL
     Master execution toggles for the DarePy-SANS.py script.
   dry_run: false         # True: Check file availability without calculating
-  run_transmission: true # Calculate T for all samples
-  run_reduction: true    # Perform the full I(q) reduction
   live_monitoring: false # Auto-process new files as they appear at the beamline
   monitor_interval: 10   # Delay (sec) between checks for new raw data
+
+transmission_setup:
+  _desc: |
+    5. TRANSMISSION CALCULATION
+    Specific hardware settings for calculating sample attenuation.
+  transmission_dist: 18.0       # Distance (m) used specifically for T measurements
 
 physics_corrections:
   _desc: |
@@ -67,7 +74,6 @@ physics_corrections:
     Toggles for standard SANS mathematical corrections.
   wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF5 metadata
   target_detector_distances: all # Filter by distance (m): 'all' or list [1.6, 6.0]
-  transmission_dist: 18          # Distance used specifically for T measurements
   normalize_to_monitor: true     # Account for primary beam flux fluctuations
   subtract_dark_current: true    # Subtract ambient noise (Cadmium measurement)
   subtract_empty_cell: true      # Remove container scattering
@@ -86,41 +92,87 @@ calibration_samples:
   water_cell: EC   # Empty container for the water standard
   empty_cell:
     default: EC    # Default container background for all samples
-    Test: EC
   thickness:       # Sample thickness (cm) per sample name
     KG_D2OdMCT_25wt: 0.1
     LG_D2OdMCT_50wt: 0.2
     default: 0.1   # Default value if sample name is not listed
 
-    H2O: 0.2
     test: 0.2
-    EC: 0.1
-    Test: 0.6
 detector_geometry:
   _desc: |
     9. DETECTOR GEOMETRY
     Beam center (pixels) and beamstopper coordinates per detector distance.
     Refresh the gui after the calculation with the iterative tool.
   beam_center_guess:
-    6.0: 61.53, 65.23
-    18.0: 59.68, 63.97
-    1.6: 59.28, 64.62
-    4.5: 69.23, 83.41
+    6.0:
+    - 61.53
+    - 65.23
+    18.0:
+    - 59.68
+    - 63.97
+    1.6:
+    - 59.28
+    - 64.62
+    4.5:
+    - 59.45
+    - 64.45
   beamstopper_coordinates:
     6.0:
-      bs0: 57, 72, 52, 67    # [x_min, x_max, y_min, y_max]
-      bs1: 0, 128, 122, 128
+      bs0:                   # [x_min, x_max, y_min, y_max]
+      - 57
+      - 72
+      - 52
+      - 67
+      bs1:
+      - 0
+      - 128
+      - 122
+      - 128
     18.0:
-      bs0: 57, 71, 51, 67
-      bs1: 0, 128, 120, 128
+      bs0:
+      - 57
+      - 71
+      - 51
+      - 67
+      bs1:
+      - 0
+      - 128
+      - 120
+      - 128
     1.6:
-      bs0: 55, 73, 50, 69
+      bs0:
+      - 55
+      - 73
+      - 50
+      - 69
     4.5:
-      bs0: 57, 71, 51, 64
+      bs0:
+      - 57
+      - 72
+      - 51
+      - 66
+      bs1:
+      - 0
+      - 128
+      - 123
+      - 128
+      bs2:
+      - 56
+      - 72
+      - 64
+      - 67
   transmission_coordinates: # ROI for calculating transmission counts
-    1.65: 59, 68, 56, 70
-    8.0: 59, 67, 56, 69
+    1.65:
+    - 59
+    - 68
+    - 56
+    - 70
+    8.0:
 
+    - 59
+    - 67
+    - 56
+    - 69
 analysis_flags:
   _desc: |
     10. ANALYSIS FLAGS
@@ -145,12 +197,12 @@ merging_settings:
   run_step_4_incoherent: false    # Fit and subtract flat incoherent background
   skip_start: # Points to trim from low-q end per distance
     '18.0': 5
-    '6.0': 10
     '1.6': 15
+    4.5: 10
   skip_end:   # Points to trim from high-q end (noisy regions) per distance
     '18.0': 25
-    '6.0': 25
     '1.6': 5
+    4.5: 25
   interp_type: log    # Resampling spacing: 'log' or 'lin'
   interp_points: 150  # Total points in final merged curve
   last_points_to_fit: 50 # Points used for Porod/Background estimation

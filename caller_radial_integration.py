@@ -1,190 +1,151 @@
 # -*- coding: utf-8 -*-
 """
-DarePy-SANS: Main Orchestration Script
-Updated for YAML-based configuration, improved path management, and timing.
+DarePy-SANS: Main Orchestration Script (Integration Only)
+Fixed: Loads previous results and maps transmission distance correctly.
 """
 import sys
 import time
 import os
+import pickle
 from pathlib import Path
 
 # ==========================================
 # %% DYNAMIC PATH INJECTION
 # ==========================================
-# Safely find the 'codes' folder even when running in Spyder
 try:
     current_dir = Path(__file__).resolve().parent
 except NameError:
     current_dir = Path(os.getcwd()).resolve()
 
 code_dir = current_dir / 'codes'
-
 if str(code_dir) not in sys.path:
     sys.path.insert(0, str(code_dir))
 
 # ==========================================
 # STEP 0 & 1: LOAD MASTER CONFIGURATIONS
 # ==========================================
-from utils import load_config, load_instrument_registry
+from utils import load_config, load_instrument_registry, create_analysis_folder
+import prepare_input as org
+import integration as ri
 
 ext_cfg = load_config()
 INSTRUMENT_REGISTRY = load_instrument_registry()
 
-# Extract the critical variables needed for validation and imports
 selected_inst = ext_cfg['instrument_setup']['which_instrument']
-path_dir = Path(ext_cfg['analysis_paths']['project_base'])
-# ==========================================
-# STEP 2: DRY RUN / PATH VALIDATION
-# ==========================================
-if ext_cfg.get('pipeline_control', {}).get('dry_run', False):
-    print("\n" + "="*40)
-    print("      DAREPY-SANS: DRY-RUN MODE")
-    print("="*40)
-
-    validation_errors = 0
-
-    # 1. Validate Code Directory
-    if not code_dir.exists():
-        print(f"[ERROR] Codes directory NOT FOUND: {code_dir}")
-        validation_errors += 1
-    else:
-        print(f"[OK] Codes directory found: {code_dir}")
-
-    # 2. Validate Raw Data Path
-    p_raw = Path(ext_cfg['analysis_paths']['raw_data'])
-    if not p_raw.exists():
-        print(f"[ERROR] Raw data path NOT FOUND: {p_raw}")
-        validation_errors += 1
-    else:
-        print(f"[OK] Raw data path found: {p_raw}")
-
-    # 3. Validate Efficiency Map
-    map_name = INSTRUMENT_REGISTRY[selected_inst]['efficiency_map']
-    eff_map = code_dir / map_name
-
-    if not eff_map.exists():
-        print(f"[ERROR] Efficiency map '{map_name}' NOT FOUND in: {code_dir}")
-        validation_errors += 1
-    else:
-        print(f"[OK] Efficiency map found: {map_name}")
-
-    print("="*40)
-    if validation_errors > 0:
-        print(f"FAILED: {validation_errors} path/file error(s) found.")
-        print("Please check your 'config_experiment.yaml' and file locations.")
-        sys.exit(1)
-    else:
-        print("SUCCESS: All paths and critical files are valid.")
-        print("Set 'dry_run: false' in your YAML to begin processing.")
-        sys.exit(0)
+# Identify the analysis folder to find saved results
+analysis_folder = create_analysis_folder({
+    'analysis': {
+        'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
+        'path_dir': ext_cfg['analysis_paths']['project_base']
+    }
+})
 
 # ==========================================
-# STEP 3: ORCHESTRATION & IMPORTS
+# STEP 2: LOAD PREVIOUS RESULTS (Step 3 Output)
 # ==========================================
-if not code_dir.exists():
-    print(f"Error: Codes directory not found at {code_dir}")
-    sys.exit(1)
+result_file = os.path.join(analysis_folder, 'result.npy')
 
-# Add the codes directory to Python's path so it can find your modules
-sys.path.append(str(code_dir))
-
-# Now we can import your modules safely
-import prepare_input as org
-from transmission import trans_calc
-import integration as ri
+if os.path.exists(result_file):
+    print(f"📦 Loading previously calculated results (Transmissions) from: {result_file}")
+    with open(result_file, 'rb') as f:
+        result = pickle.load(f)
+else:
+    print("⚠️ No existing results found. Initializing blank results container.")
+    result = {
+        'transmission': {},
+        'overview': {},
+        'integration': {
+            'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
+            'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
+            'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
+        }
+    }
 
 # ==========================================
-# STEP 4: CONSTRUCT CONFIGURATION OBJECT
+# STEP 3: CONSTRUCT CONFIGURATION OBJECT
 # ==========================================
 configuration = {
     'instrument': INSTRUMENT_REGISTRY[selected_inst],
     'experiment': {
         'calibration': ext_cfg['calibration_samples'],
-        # [CHANGED] Now pulls from 'physics_corrections'
-        'wl_input': ext_cfg['physics_corrections']['wavelength']
+        'wl_input': ext_cfg['physics_corrections']['wavelength'],
+        'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
+        # FIX: Map the transmission distance to where the backend expects it
+        'trans_dist': ext_cfg.get('transmission_setup', {}).get('transmission_dist', 18)
     },
     'physics_corrections': ext_cfg.get('physics_corrections', {}),
     'analysis': {
-        'path_dir': str(path_dir),
+        'path_dir': ext_cfg['analysis_paths']['project_base'],
         'path_hdf_raw': ext_cfg['analysis_paths']['raw_data'],
         'scripts_dir': ext_cfg['analysis_paths']['scripts_dir'],
+        'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
         'exclude_files': ext_cfg['analysis_flags'].get('exclude_files', []),
         'force_reintegrate': ext_cfg['analysis_flags']['force_reintegrate'],
         'save_plot_azimuthal': ext_cfg['analysis_flags']['save_plot_azimuthal'],
         'save_plot_radial': ext_cfg['analysis_flags']['save_plot_radial'],
-        'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
         'save_data_azimuthal': ext_cfg['analysis_flags']['save_data_azimuthal'],
         'save_2d_patterns': ext_cfg['analysis_flags']['save_2d_patterns'],
-        'beam_center_guess': ext_cfg['detector_geometry']['beam_center_guess'],
-        'beamstopper_coordinates': ext_cfg['detector_geometry']['beamstopper_coordinates'],
-        'transmission_coordinates': ext_cfg['detector_geometry']['transmission_coordinates'],
-        # [CHANGED] Now pulls from 'physics_corrections'
+        'beam_center_guess': {
+            # Beam centers MUST be floats for sub-pixel accuracy in pyFAI
+            k: [float(x) for x in str(v).split(',')] if isinstance(v, str) else v
+            for k, v in ext_cfg['detector_geometry']['beam_center_guess'].items()
+        },
+        'beamstopper_coordinates': {
+            # Mask coordinates MUST be integers for numpy array slicing
+            k: {sk: ([int(float(x)) for x in str(sv).split(',')] if isinstance(sv, str) else [int(x) for x in sv])
+                for sk, sv in v.items()}
+            for k, v in ext_cfg['detector_geometry']['beamstopper_coordinates'].items()
+        },
+        'transmission_coordinates': ext_cfg['detector_geometry'].get('transmission_coordinates', {}),
         'target_detector_distances': ext_cfg['physics_corrections']['target_detector_distances']
     }
 }
 
-# Initialize result container
-result = {
-    'transmission': {},
-    'overview': {},
-    'integration': {
-        'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
-        'integration_points': ext_cfg['analysis_flags']['integration_points'],
-        'sectors_nr': ext_cfg['analysis_flags']['sectors_nr']
-    }
-}
-
 # ==========================================
-# STEP 5: EXECUTION PIPELINE (WITH LIVE MONITORING)
+# STEP 4: EXECUTION PIPELINE
 # ==========================================
 ctrl = ext_cfg.get('pipeline_control', {})
-live_mode = ctrl.get('live_monitoring', False)
-monitor_interval = ctrl.get('monitor_interval', 60)
-
-# We define a loop counter to track the iterations
 iteration = 1
 
 while True:
-    # --- START TIMING ---
     pipeline_start_time = time.time()
     print("\n" + "="*50)
-    print(f"   STARTING DAREPY-SANS PIPELINE (Iteration {iteration})")
+    print(f"   STARTING RADIAL INTEGRATION (Iteration {iteration})")
     print("="*50)
 
-    # 1. Load files (Always ON)
-    print("\n--- Step 1: Listing and Parsing HDF5 Files ---")
+    # 1. Silent File Discovery
     class_files = org.list_files(configuration, result)
 
-    if not class_files or not class_files.get('name_hdf'):
-        print("\n[FATAL ERROR] No valid HDF5 files found to process. Halting pipeline.")
-        sys.exit(1)
+    # --- THE CRITICAL FIX: INJECT TRANSMISSIONS INTO METADATA ---
+    if os.path.exists(result_file):
+        with open(result_file, 'rb') as f:
+            saved_data = pickle.load(f)
+            # 1. Update the result dict for global access
+            saved_trans = saved_data.get('transmission', {})
+            result['transmission'].update(saved_trans)
 
-    # 2. Transmission
-    # Read the run_transmission flag from the pipeline_control YAML block
-    run_trans = ctrl.get('run_transmission', True)
+            # 2. Inject into class_files (This solves the KeyError)
+            if class_files and saved_trans:
+                # Create a list matching the length of indexed files
+                trans_column = []
+                for hdf_name in class_files['name_hdf']:
+                    # Get the calculated value, or default to 1.0 (no correction)
+                    val = saved_trans.get(hdf_name, 1.0)
+                    trans_column.append(val)
 
-    if str(run_trans).lower() == 'false' or run_trans is False:
-        print("\n--- Step 2: Transmission Calculation Skipped by User in YAML ---")
-    else:
-        trans_dist_val = configuration['physics_corrections'].get('transmission_dist', 0)
+                # Attach the column to the metadata table
+                class_files['transmission'] = trans_column
+                # Ensure result['overview'] also has it
+                result['overview']['transmission'] = trans_column
 
-        # Check if it's a number and greater than 0
-        if isinstance(trans_dist_val, (int, float)) and trans_dist_val > 0:
-            print(f"\n--- Step 2: Calculating Transmissions (Distance: {trans_dist_val}m) ---")
-            result = trans_calc(configuration, class_files, result)
-        elif isinstance(trans_dist_val, (int, float)) and trans_dist_val < 0:
-            print(f"\n--- Step 2: SANS-LLB Mode (Transmission will be calculated on-the-fly) ---")
-            # For LLB, we still might need to prepare the EB references
-            result = trans_calc(configuration, class_files, result)
-        else:
-            print("\n--- Step 2: Transmission Calculation Skipped (No valid distance provided) ---")
+                print(f"🔗 Successfully linked {len(trans_column)} transmissions to file list.")
 
-    # 3: Data reduction (organize and integrate)
+    if not class_files:
+        break
+
+    # 2. Integration Loop
     if ctrl.get('run_reduction', True):
-        print("\n--- Step 3a: Organizing Files by Detector Distance ---")
         result = org.select_detector_distances(configuration, class_files, result)
-
-        print("\n--- Step 3b: Running Radial/Azimuthal Integration ---")
         target_dist = configuration['analysis']['target_detector_distances']
 
         if target_dist == 'all':
@@ -194,62 +155,17 @@ while True:
         else:
             processed_det_distances = [str(d).replace('.', 'p') for d in target_dist]
 
-        if not processed_det_distances:
-            print("[WARNING] No detector distances were found to process! Check your raw data.")
-        else:
-            for det_str in processed_det_distances:
-                print(f"\n--- Processing Detector Distance: {det_str.replace('p', '.')}m ---")
-                result = ri.set_integration(configuration, result, det_str)
-    else:
-        print("\n--- Step 3: Data Reduction Skipped by User in YAML ---")
+        for det_str in processed_det_distances:
+            print(f" -> Processing Distance: {det_str.replace('p', '.')}m")
+            # This will now find the loaded transmission values in 'result'
+            result = ri.set_integration(configuration, result, det_str)
 
-    # --- END TIMING & REPORT ---
-    pipeline_end_time = time.time()
-    elapsed_time = pipeline_end_time - pipeline_start_time
-    print("\n" + "-"*50)
-    print(f" Iteration {iteration} finished in {elapsed_time:.2f} seconds.")
-    print("-"*50)
+    elapsed_time = time.time() - pipeline_start_time
+    print(f"\nIteration {iteration} finished in {elapsed_time:.2f} seconds.")
 
-    # ==========================================
-    # LIVE MONITORING LOGIC
-    # ==========================================
-    if not live_mode:
-        print("Live monitoring is disabled. Pipeline complete.")
-        break  # Exit the loop
-
-    print(f"\n[LIVE MODE] Waiting {monitor_interval} seconds for new data...")
-    time.sleep(monitor_interval)
-
-    # PREPARE FOR NEXT ITERATION
-    # 1. Turn off 'force_reintegrate' so we only process new files
-    configuration['analysis']['force_reintegrate'] = 0
-
-    # 2. Identify the most recent HDF5 file in the raw directory
-    p_raw = Path(configuration['analysis']['path_hdf_raw'])
-    all_raw_files = list(p_raw.glob('*.hdf*')) # Catch .hdf or .hdf5
-
-    if all_raw_files:
-        # Sort files by modification time (newest last)
-        all_raw_files.sort(key=lambda x: x.stat().st_mtime)
-        last_file = all_raw_files[-1]
-
-        print(f"[LIVE MODE] Forcing re-integration of the last active file:\n -> {last_file.name}")
-
-        # We need to pass this specific file to `integration.py` so it knows to override
-        # the `force_reintegrate = 0` rule for this file ONLY.
-        # We store it in the configuration so Step 3b can access it.
-        configuration['analysis']['force_last_file'] = last_file.name
-
+    if not ext_cfg.get('pipeline_control', {}).get('live_monitoring', False):
+        break
+    time.sleep(ext_cfg.get('pipeline_control', {}).get('monitor_interval', 60))
     iteration += 1
 
-# ==========================================
-# PIPELINE COMPLETE & TIMING REPORT
-# ==========================================
-# --- END TIMING ---
-pipeline_end_time = time.time()
-elapsed_time = pipeline_end_time - pipeline_start_time
-
-print("\n" + "="*40)
-print(" DarePy-SANS run finished successfully.")
-print(f" Total Execution Time: {elapsed_time:.2f} seconds")
-print("="*40 + "\n")
+print("\nPipeline Complete.")
