@@ -4,11 +4,11 @@
 # ==========================================
 analysis_paths:
   project_base:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/2024_1598_Paula/                        # where the results should be saved
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/                        # where the results should be saved
   raw_data:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/2024_1598_Paula/DarePy-SANS_old/raw_data/              # where the raw data is located
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/raw_data/              # where the raw data is located
   scripts_dir:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/2024_1598_Paula/DarePy-SANS/            # where the scripts are saved
+    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/DarePy-SANS/            # where the scripts are saved
 
 # ==========================================
 # 2. RENAME SAMPLES
@@ -87,14 +87,8 @@ calibration_samples:
   empty_cell:                      # Maps real sample names to their specific empty cell runs.
     default: EC                    # Fallback if a sample isn't explicitly listed above.
   thickness:                       # Maps samples to their cell thickness in cm.
-    A2: 0.2
-    C9: 0.2
-    C10: 0.2
-    D9: 0.2
-    D10: 0.2
-    E3: 0.2
-    LH3_1: 0.2
-    LH3_2: 0.2
+    KG_D2OdMCT_25wt: 0.1
+    LG_D2OdMCT_50wt: 0.2
     default: 0.1                   # Fallback if a sample isn't explicitly listed above.
 
 # ==========================================
@@ -170,13 +164,13 @@ detector_geometry:
 # Fine-tuning for the integration process.
 # ==========================================
 analysis_flags:
-  exclude_files: '55157:55164, 55181'          # As a string of scan numbers to completely ignore (e.g., '55157:55165, 55181').
+  exclude_files: []          # Empty: [], or a tring of scan numbers to completely ignore (e.g., '85776:89530, 89650, 89585, 89586, 89625:89648'). All the numbers in the range mentioned here would be excluded.
   force_reintegrate: false   # If true, overwrites previously processed data. If false, skips to save time.
   save_plot_radial: false
   integration_points: 120    # Number of q-bins for 1D radial integration.
   sectors_nr: 18             # Number of "pizza slices" for azimuthal integration.
   save_plot_azimuthal: false
-  save_data_azimuthal: true
+  save_data_azimuthal: false
   save_2d_patterns: false
   pixel_range_azim:          # The radial ranges [min, max] for azimuthal integrations.
  # - [10, 40]                 # Range 1 (Low q)
