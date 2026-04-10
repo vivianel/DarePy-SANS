@@ -17,7 +17,7 @@ import prepare_input as org
 
 def run_listing(configuration, result):
     print("\n" + "="*40)
-    print("--- Step 1: Listing and Parsing HDF5 Files ---")
+    print("--- Listing and Parsing HDF5 Files ---")
     print("="*40)
 
     # This calls the library function that was crashing

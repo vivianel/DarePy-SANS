@@ -22,7 +22,7 @@ def run_calibration_check(configuration, class_files):
     Uses utils.find_strict_calibration_file for metadata-aware matching.
     """
     print("\n" + "="*60)
-    print("--- Step 2: Multi-Distance Calibration Validation ---")
+    print("--- Multi-Distance Calibration Validation ---")
     print("="*60)
 
     cal_setup = configuration['experiment']['calibration']
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     }
 
     result = {'overview': {}}
-    print("Step 0: Scanning raw data folder...")
+    print("Scanning raw data folder...")
     class_files = org.list_files(configuration, result)
 
     if class_files:

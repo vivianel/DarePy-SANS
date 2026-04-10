@@ -117,28 +117,29 @@ while True:
     class_files = org.list_files(configuration, result)
 
     # --- THE CRITICAL FIX: INJECT TRANSMISSIONS INTO METADATA ---
+    # --- METADATA INJECTION ---
     if os.path.exists(result_file):
         with open(result_file, 'rb') as f:
             saved_data = pickle.load(f)
-            # 1. Update the result dict for global access
             saved_trans = saved_data.get('transmission', {})
             result['transmission'].update(saved_trans)
 
-            # 2. Inject into class_files (This solves the KeyError)
             if class_files and saved_trans:
-                # Create a list matching the length of indexed files
-                trans_column = []
-                for hdf_name in class_files['name_hdf']:
-                    # Get the calculated value, or default to 1.0 (no correction)
-                    val = saved_trans.get(hdf_name, 1.0)
-                    trans_column.append(val)
-
-                # Attach the column to the metadata table
+                trans_column = [saved_trans.get(hdf, 1.0) for hdf in class_files['name_hdf']]
                 class_files['transmission'] = trans_column
-                # Ensure result['overview'] also has it
                 result['overview']['transmission'] = trans_column
+                print(f"🔗 Linked saved transmissions to file list.")
 
-                print(f"🔗 Successfully linked {len(trans_column)} transmissions to file list.")
+    # --- THE NEW VALIDATION GUARD ---
+    apply_t = configuration['physics_corrections'].get('apply_transmission', False)
+    has_t_data = 'transmission' in class_files if class_files else False
+
+    if apply_t and not has_t_data:
+        print("\n" + "!"*60)
+        print("🚨 ERROR: 'Apply Transmission' is ENABLED but no data was found!")
+        print("   -> You MUST run 'caller_transmission' first.")
+        print("!"*60 + "\n")
+        sys.exit(1)
 
     if not class_files:
         break

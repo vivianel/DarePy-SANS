@@ -20,7 +20,7 @@ def run_transmission(configuration, class_files, result, ctrl):
     # 1. Check the master toggle
     run_trans = ctrl.get('run_transmission', True)
     if not run_trans:
-        print("\n--- Step 3: Transmission Calculation Skipped (Disabled in YAML) ---")
+        print("\n--- Transmission Calculation Skipped (Disabled in YAML) ---")
         return result
 
     # 2. Get the distance from the new 'transmission_setup'
@@ -29,7 +29,7 @@ def run_transmission(configuration, class_files, result, ctrl):
     # 3. Your original logic: Check if dist > 0 or dist < 0 (LLB mode)
     if isinstance(t_dist, (int, float)) and t_dist != 0:
         print("\n" + "*"*50)
-        print(f"🚀 STARTING STEP 3: CALCULATING TRANSMISSIONS")
+        print(f"🚀 STARTING: CALCULATING TRANSMISSIONS")
         print(f"Target Distance: {t_dist}m")
         print("*"*50 + "\n")
 
@@ -97,4 +97,4 @@ if __name__ == "__main__":
         from utils import create_analysis_folder, save_results
         analysis_folder = create_analysis_folder(configuration)
         save_results(analysis_folder, result)
-        print(f"✅ Step 3 complete. Results saved to {analysis_folder}")
+        print(f"✅ Transmission calculation complete. Results saved to {analysis_folder}")
