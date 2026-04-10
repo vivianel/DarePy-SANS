@@ -121,8 +121,6 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 prop = prop / 1000.0
             elif which_property in ['detx', 'dety']:
                 prop = round(prop / 1000.0, 2)
-                if prop == 4.5 :
-                    prop = 6.0
             elif which_property == 'wl':
                 prop = prop * 10.0
             elif which_property == 'moni':
