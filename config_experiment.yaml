@@ -7,12 +7,13 @@ analysis_paths:
     1. ANALYSIS PATHS
     Tells the pipeline where to find and save data.
     ALWAYS use absolute paths with forward slashes (/).
-  project_base:
+  project_base: 
     C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/ # Root directory for results
-  raw_data:
+  raw_data: 
     C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/raw_data        # Source of HDF5/Nexus files
-  scripts_dir:
+  scripts_dir: 
     C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/DarePy-SANS/          # Location of source code
+  dry_run: false         # True: Check file availability without calculating
 
 instrument_setup:
   _desc: |
@@ -56,7 +57,6 @@ pipeline_control:
   _desc: |
     6. PIPELINE CONTROL
     Master execution toggles for the DarePy-SANS.py script.
-  dry_run: false         # True: Check file availability without calculating
   live_monitoring: false # Auto-process new files as they appear at the beamline
   monitor_interval: 10   # Delay (sec) between checks for new raw data
 
@@ -93,6 +93,7 @@ calibration_samples:
   thickness:       # Sample thickness (cm) per sample name
     default: 0.3   # Default value if sample name is not listed
 
+    CTAB: 0.1
 detector_geometry:
   _desc: |
     9. DETECTOR GEOMETRY

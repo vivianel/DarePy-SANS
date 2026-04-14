@@ -133,29 +133,89 @@ class DarePyGUI:
                 if main_idx == 5 and hasattr(self, 'sub_nb'): self.sub_nb.select(sub_idx)
             except: pass
 
-    def _create_field(self, parent, label, value, config_key, path):
-        """Creates the appropriate UI widget without duplicating labels for booleans."""
+    def build_config_area(self, parent, title, config_key):
+        """Entry point to build a section. Now pulls help text from the YAML."""
+        bg = parent.cget('bg')
+        group = tk.LabelFrame(parent, text=title, padx=10, pady=10, bg=bg)
+        # Snap the frame to the left
+        group.pack(fill="x", padx=10, pady=5, anchor="w")
+
+        if config_key not in self.entries:
+            self.entries[config_key] = {}
+
+        # Call the recursive builder to handle nested dicts and descriptions
+        self._build_nested_ui(group, self.config_dict.get(config_key, {}), config_key, path=())
+
+    def _build_nested_ui(self, parent, data, config_key, path):
+        """Recursively builds UI and extracts inline comments from ruamel.yaml."""
+        if not hasattr(data, "items"):
+            return
+
         bg = parent.cget('bg')
 
+        # 1. RENDER BLOCK DESCRIPTION (_desc)
+        if "_desc" in data:
+            desc_text = str(data["_desc"]).strip()
+            desc_box = tk.Message(parent, text=desc_text, font=("Arial", 9, "italic"),
+                                  fg="#555", bg="#f8f9fa", width=800,
+                                  justify="left", padx=10, pady=5)
+            desc_box.pack(fill="x", pady=(0, 10), anchor="w")
+
+        # 2. RENDER ACTUAL FIELDS
+        for k, v in data.items():
+            if str(k).startswith("_"): continue
+
+            # --- EXTRACT INLINE COMMENT ---
+            inline_comment = ""
+            if hasattr(data, 'ca') and k in data.ca.items:
+                # ruamel stores EOL comments at index 2 of the items list
+                comment_token = data.ca.items[k][2]
+                if comment_token:
+                    inline_comment = comment_token.value.strip().lstrip('#').strip()
+
+            current_path = path + (k,)
+            if isinstance(v, (dict, type(data))):
+                sub = tk.LabelFrame(parent, text=str(k), padx=10, pady=5,
+                                    font=("Arial", 9, "bold"), fg="#e67e22", bg=bg)
+                sub.pack(fill="x", padx=5, pady=5, anchor="w")
+                self._build_nested_ui(sub, v, config_key, current_path)
+            else:
+                # Pass the extracted comment to the field creator
+                self._create_field(parent, str(k), v, config_key, current_path, inline_comment)
+
+    def _create_field(self, parent, label, value, config_key, path, comment=""):
+        """Creates widgets with help text extracted from YAML comments."""
+        bg = parent.cget('bg')
+        f = tk.Frame(parent, bg=bg)
+        f.pack(fill="x", pady=4, anchor="w")
+
+        # 1. Label and Comment Row
+        label_frame = tk.Frame(f, bg=bg)
+        label_frame.pack(fill="x", anchor="w")
+
+        tk.Label(label_frame, text=label, font=("Arial", 9, "bold"), bg=bg).pack(side="left")
+
+        if comment:
+            # Display the YAML comment in a smaller, gray font next to the label
+            tk.Label(label_frame, text=f"  # {comment}", font=("Arial", 8, "italic"),
+                     fg="#888", bg=bg).pack(side="left")
+
+        # 2. Input Widget Row
         if isinstance(value, bool):
-            # For Booleans, the Checkbutton text IS the label. No separate tk.Label needed.
             var = tk.BooleanVar(master=self.root, value=value)
-            tk.Checkbutton(parent, text=label, variable=var, bg=bg,
-                           font=("Arial", 9, "bold"), anchor="w").pack(fill="x", pady=2)
+            cb = tk.Checkbutton(f, text="", variable=var, bg=bg)
+            cb.pack(anchor="w")
             self.entries[config_key][path] = var
-
         elif label == "which_instrument":
-            tk.Label(parent, text=label, font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
-            w = ttk.Combobox(parent, values=["SANS-I", "SANS-LLB"], state="readonly")
-            w.set(value); w.pack(fill="x", expand=True, ipady=3)
+            w = ttk.Combobox(f, values=["SANS-I", "SANS-LLB"], state="readonly")
+            w.set(value)
+            w.pack(anchor="w", ipady=2)
             self.entries[config_key][path] = w
-
         else:
-            # For everything else (strings, numbers, lists), create the label and entry box
-            tk.Label(parent, text=label, font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
-            w = tk.Entry(parent)
+            w = tk.Entry(f)
             disp = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
-            w.insert(0, disp); w.pack(fill="x", expand=True, ipady=3)
+            w.insert(0, disp)
+            w.pack(fill="x", padx=(0, 40), ipady=3)
             self.entries[config_key][path] = w
 
     def create_scrollable_tab(self, notebook, text):
@@ -180,42 +240,26 @@ class DarePyGUI:
         cv.bind("<Leave>", lambda e: cv.unbind_all("<MouseWheel>"))
         return sf, footer
 
-    def build_config_area(self, parent, title, config_key):
-        bg = self.root.cget('bg')
-        group = tk.LabelFrame(parent, text=title, padx=10, pady=10, bg=bg)
-        group.pack(fill="x", padx=10, pady=5, anchor="nw")
-        if config_key not in self.entries: self.entries[config_key] = {}
-        self._build_nested_ui(group, self.config_dict.get(config_key, {}), config_key, path=())
-
-    def _build_nested_ui(self, parent, data, config_key, path):
-        bg = parent.cget('bg')
-        if "_desc" in data:
-            tk.Label(parent, text=data["_desc"].strip(), font=("Arial", 9, "italic"), fg="#555",
-                     bg="#f8f9fa", justify="left", wraplength=650, padx=10, pady=10).pack(fill="x", pady=(0, 10))
-        for k, v in data.items():
-            if str(k).startswith("_"): continue
-            if isinstance(v, dict):
-                sub = tk.LabelFrame(parent, text=str(k), padx=10, pady=5, font=("Arial", 9, "bold"), fg="#e67e22", bg=bg)
-                sub.pack(fill="x", padx=5, pady=5)
-                self._build_nested_ui(sub, v, config_key, path + (k,))
-            else:
-                self._create_field(parent, str(k), v, config_key, path + (k,))
-
 
 
     def fill_notebook(self):
         bg = self.root.cget('bg')
 
-        # --- TAB 1: GLOBAL SETUP (Includes Step 1) ---
+        # --- TAB 1: GLOBAL SETUP ---
         s1, f1 = self.create_scrollable_tab(self.notebook, "1. Global Setup")
+
+        # Action Buttons
         tk.Button(f1, text="SAVE SETTINGS", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
                   command=self.save_data).pack(side="left", fill="x", expand=True, padx=2)
-        # Action: Step 1 Listing
         tk.Button(f1, text="LIST ALL MEASUREMENTS (Metadata)", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_listing.py")).pack(side="left", fill="x", expand=True, padx=2)
 
+        # This builds everything in analysis_paths, including your new dry_run checkbox
         self.build_config_area(s1, "Analysis Paths", "analysis_paths")
+
+        # Build the instrument section (now includes the dropdown)
         self.build_config_area(s1, "Instrument", "instrument_setup")
+
 
         # --- TAB 2 & 3: RENAME & VISUALS (Standard) ---
         s2, f2 = self.create_scrollable_tab(self.notebook, "2. Rename Samples")
@@ -267,10 +311,13 @@ class DarePyGUI:
         # Action: Run Step 3
         tk.Button(f5, text="RUN TRANSMISSION CALCULATION", bg="#03A9F4", fg="white",
                   font=("Arial", 10, "bold"), pady=12,
-                  command=lambda: self.run_script("caller_transmission.py")).pack(fill="x")
+                  command=lambda: self.run_script("step3_transmission.py")).pack(fill="x")
 
-        # Display ONLY the transmission distance setup
+        # 1. Display the transmission distance setup
         self.build_config_area(s5, "Transmission Physics", "transmission_setup")
+
+        # 2. ADDED: Display Thickness Editor here too for convenience
+        self._build_dict_editor(s5, "Sample Thickness (cm)", "calibration_samples", "thickness")
 
         # --- TAB 6: RADIAL INTEGRATION (Step 2 & 4) ---
         t6_main = ttk.Frame(self.notebook); self.notebook.add(t6_main, text="6. Radial Integration")
