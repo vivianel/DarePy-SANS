@@ -7,12 +7,12 @@ analysis_paths:
     1. ANALYSIS PATHS
     Tells the pipeline where to find and save data.
     ALWAYS use absolute paths with forward slashes (/).
-  project_base: 
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/             # Root directory for results
-  raw_data: 
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/raw_data/         # Source of HDF5/Nexus files
-  scripts_dir: 
-    C:/Users/lutzbueno_v/Documents/Analysis/data/collaborations/Jasper/Jasper_data/DarePy-SANS/            # Location of source code
+  project_base:
+    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/ # Root directory for results
+  raw_data:
+    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/raw_data        # Source of HDF5/Nexus files
+  scripts_dir:
+    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/DarePy-SANS/          # Location of source code
 
 instrument_setup:
   _desc: |
@@ -48,12 +48,10 @@ beam_center_mask:
   sample_name: 'AgBE'
   # The dictionary keys automatically define your available distances
   scans:
-    6.0: 89583
-    18.0: 89585
-    1.6: 89580
-    1.2: 0
-    4.5: 89576
-  scan_nr: 89576
+    6.0: 83896
+    18.0: 83879
+    1.6: 83910
+  scan_nr: 83879
 pipeline_control:
   _desc: |
     6. PIPELINE CONTROL
@@ -93,11 +91,8 @@ calibration_samples:
   empty_cell:
     default: EC    # Default container background for all samples
   thickness:       # Sample thickness (cm) per sample name
-    KG_D2OdMCT_25wt: 0.1
-    LG_D2OdMCT_50wt: 0.2
-    default: 0.1   # Default value if sample name is not listed
+    default: 0.3   # Default value if sample name is not listed
 
-    test: 0.2
 detector_geometry:
   _desc: |
     9. DETECTOR GEOMETRY
@@ -105,62 +100,53 @@ detector_geometry:
     Refresh the gui after the calculation with the iterative tool.
   beam_center_guess:
     6.0:
-    - 61.53
-    - 65.23
+    - 59.06
+    - 64.03
     18.0:
-    - 59.68
-    - 63.97
+    - 60.26
+    - 63.84
     1.6:
-    - 59.28
-    - 64.62
-    4.5:
-    - 59.45
+    - 59.83
     - 64.45
   beamstopper_coordinates:
     6.0:
-      bs0:                   # [x_min, x_max, y_min, y_max]
+      bs0:
       - 57
-      - 72
-      - 52
+      - 70
+      - 53
       - 67
       bs1:
       - 0
       - 128
       - 122
+      - 127
+      bs2:
+      - 0
+      - 128
+      - 124
       - 128
     18.0:
       bs0:
       - 57
-      - 71
-      - 51
-      - 67
+      - 69
+      - 52
+      - 65
       bs1:
+      - 57
+      - 69
+      - 61
+      - 66
+      bs2:
       - 0
       - 128
-      - 120
+      - 119
       - 128
     1.6:
       bs0:
-      - 55
-      - 73
-      - 50
-      - 69
-    4.5:
-      bs0:
-      - 57
-      - 72
-      - 51
-      - 66
-      bs1:
-      - 0
-      - 128
-      - 123
-      - 128
-      bs2:
       - 56
       - 72
-      - 64
-      - 67
+      - 52
+      - 68
   transmission_coordinates: # ROI for calculating transmission counts
     1.65:
     - 59
@@ -168,7 +154,6 @@ detector_geometry:
     - 56
     - 70
     8.0:
-
     - 59
     - 67
     - 56
@@ -185,24 +170,24 @@ analysis_flags:
   save_plot_azimuthal: false  # Export I(phi) plots
   save_data_azimuthal: false  # Export I(phi) as text
   save_2d_patterns: false     # Save corrected 2D detector images
-  pixel_range_azim: ''        # Radial range [min, max] for azimuthal integration
+  pixel_range_azim: ''        # Radial range [min, max] for azimuthal integration, you can use more than one range
 
 merging_settings:
   _desc: |
     11. MERGING SETTINGS
     Parameters for stitching multiple detector distances into one I(q) curve.
   run_step_1_plotting: true      # Preview individual curves before stitching
-  run_step_2_merging: false       # Merge overlapping regions
+  run_step_2_merging: true        # Merge overlapping regions
   run_step_3_interpolation: false # Interpolate to common q-grid
   run_step_4_incoherent: false    # Fit and subtract flat incoherent background
   skip_start: # Points to trim from low-q end per distance
-    '18.0': 5
-    '1.6': 15
-    4.5: 10
+    18.0: 5
+    1.6: 15
+    6: 5
   skip_end:   # Points to trim from high-q end (noisy regions) per distance
-    '18.0': 25
-    '1.6': 5
-    4.5: 25
+    18.0: 25
+    1.6: 5
+    6: 25
   interp_type: log    # Resampling spacing: 'log' or 'lin'
   interp_points: 150  # Total points in final merged curve
   last_points_to_fit: 50 # Points used for Porod/Background estimation

@@ -50,35 +50,35 @@ print("DAREPY-SANS: POST-PROCESSING & MERGING")
 print("="*60)
 
 # ==========================================
+# CLEAN UP YAML DICTIONARIES (Force numeric keys)
+# ==========================================
+raw_skip_start = m_set.get('skip_start', {})
+raw_skip_end = m_set.get('skip_end', {})
+
+# This gracefully handles if the YAML provided '1.6' (str), 1.6 (float), or 6 (int)
+skip_start = {float(k): int(v) for k, v in raw_skip_start.items()}
+skip_end = {float(k): int(v) for k, v in raw_skip_end.items()}
+
+# ==========================================
 # FUNCTION 1: INITIAL OVERLAY & NOISE CHECK
 # ==========================================
-# Retrieve the YAML parameters first so we can pass them to the plot function
-skip_start = m_set.get('skip_start', {'0': 0, '1': 0, '2': 0})
-skip_end = m_set.get('skip_end', {'0': 0, '1': 0, '2': 0})
-
 run_plotting = m_set.get('run_step_1_plotting', True)
 
 if run_plotting:
     print(f"\n[STEP 1] Generating plots with current YAML skip settings (Overwriting old files)...")
-    # force_replot=True will draw and save the plots even if they already exist
     merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end, force_replot=True)
 else:
     print(f"\n[SKIP] Step 1: Noise analysis plots disabled (Loading data only).")
-    # force_replot=False skips matplotlib entirely for existing files, saving tons of time
     merged_files = pp.plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False)
 
 # ==========================================
 # FUNCTION 2: SCALING & STITCHED MERGING (RAW)
 # ==========================================
 if m_set.get('run_step_2_merging', True):
-    skip_start = m_set.get('skip_start', {'0': 0, '1': 0, '2': 0})
-    skip_end = m_set.get('skip_end', {'0': 0, '1': 0, '2': 0})
-
     print(f"\n[STEP 2] Stitching raw segments (Applying Skips)...")
     pp.merging_data(path_dir_an, merged_files, skip_start, skip_end)
 else:
     print(f"\n[SKIP] Step 2: Raw merging disabled.")
-
 # ==========================================
 # FUNCTION 3: OPTIONAL INTERPOLATION / REBINNING
 # ==========================================

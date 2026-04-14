@@ -156,7 +156,7 @@ def calculate_1D_absolute_scalar(config, result, det_str, water_img, water_var=N
             sys.exit(1)
 
         # --- CRITICAL FIX: The Noise Gate ---
-        if mean_water_I < 1e-5:
+        if mean_water_I < 1e-10:
             print(f"  [WARNING] Water signal is essentially zero ({mean_water_I:.6e}).")
             print(f"  [WARNING] This standard is pure noise. Setting scalar to 1.0.")
             print(f"  [WARNING] Rely on caller_merging.py to scale the {det_str}m overlap.")

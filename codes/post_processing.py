@@ -48,6 +48,7 @@ def plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False):
     for key in list_class_files:
         if 'det' in key:
             det_dist_str = key.replace('det_files_', '').replace('p', '.')
+            det_dist_val = float(det_dist_str)  # <-- Convert to numeric float!
             total_samples = len(list_class_files[key]['scan'])
 
             for ii in range(total_samples):
@@ -71,7 +72,7 @@ def plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False):
                 merged_files[sample_name]['I'].append(I)
                 merged_files[sample_name]['q'].append(q)
                 merged_files[sample_name]['error'].append(e)
-                merged_files[sample_name]['det'].append(det_dist_str)
+                merged_files[sample_name]['det'].append(det_dist_val)
 
     print(f" -> Found {len(merged_files)} unique samples to plot.")
 
@@ -161,9 +162,9 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
         num_segments = len(merged_files[keys]['q'])
 
         if num_segments > 1:
-            # Sort detectors from low-q to high-q based on the first q-point of each list item
+            # Sort detectors from HIGH-q to LOW-q so the highest-q curve is the baseline
             first_q_vals = [merged_files[keys]['q'][kk][0] for kk in range(num_segments)]
-            idx_det = np.argsort(first_q_vals)
+            idx_det = np.argsort(first_q_vals)[::-1]  # <--- Added [::-1] here!
             scaling = 1.0
 
             for ii in idx_det:
@@ -182,6 +183,13 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
 
                 end_idx = max(0, len(q) - s_end)
                 q, I, e = q[s_start:end_idx], I[s_start:end_idx], e[s_start:end_idx]
+
+                # ==========================================
+                # Prevent crash if array was completely trimmed
+                # ==========================================
+                if len(q) == 0:
+                    print(f"  [WARNING] Det {d_label}m was completely trimmed/empty. Skipping.")
+                    continue
 
                 # 3. Calculate Scaling based on Overlap
                 if ii != idx_det[0] and len(q_all) > 0:
