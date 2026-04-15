@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
+from pathlib import Path
 import sys
 import os
-from pathlib import Path
 
-# ==========================================
-# %% DYNAMIC PATH INJECTION
-# ==========================================
-current_dir = Path(__file__).resolve().parent
-code_dir = current_dir / 'codes'
+# 1. Get the directory of the current script (darepy/codes/)
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Go up one level to find utils.py (in darepy/)
+parent_dir = os.path.dirname(current_script_dir)
 
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-# Now we can import your tools
+# 3. Now you can safely import utils
 from utils import load_config, load_instrument_registry
 import prepare_input as org
 

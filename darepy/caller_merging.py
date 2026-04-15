@@ -4,29 +4,26 @@ DarePy-SANS: Post-Processing & Merging Caller
 Orchestrates a 4-step modular pipeline:
 1. Overlay/Noise Analysis, 2. Stitched Merging, 3. Interpolation, 4. Background Subtraction
 """
+
 import sys
 import os
-from pathlib import Path
 
-# ==========================================
-# %% DYNAMIC PATH INJECTION
-# ==========================================
-# Safely find the 'codes' folder even when running in Spyder's interactive console
-try:
-    current_dir = Path(__file__).resolve().parent
-except NameError:
-    current_dir = Path(os.getcwd()).resolve()
+# 1. Get the directory of the current script (darepy/codes/)
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Go up one level to find utils.py (in darepy/)
+parent_dir = os.path.dirname(current_script_dir)
 
-codes_dir = current_dir / 'codes'
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-if str(codes_dir) not in sys.path:
-    sys.path.insert(0, str(codes_dir))
+# 3. Now you can safely import utils
+from utils import load_config
 
 # ==========================================
 # %% STANDARD IMPORTS
 # ==========================================
 import post_processing as pp
-from utils import load_config
+
 
 # ==========================================
 # STEP 0: LOAD CONFIGURATION

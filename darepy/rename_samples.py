@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Jul 18 12:37:26 2022
-
-@author: lutzbueno_v
-
-This script makes an exact copy of immutable SANS HDF5 raw data files,
-appends a suffix to the filename, and renames the sample entries within the COPY.
-"""
-
 import h5py
 import numpy as np
 import os
 import sys
 import math
 import shutil
+from pathlib import Path
+
+# ==========================================
+# %% 1. PATH INJECTION
+# ==========================================
+current_dir = Path(__file__).resolve().parent
+parent_dir = current_dir.parent # Points to /darepy/
+
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
 from utils import load_config, parse_scan_list
 
-# %% USER INPUT PARAMETERS
-
+# Load settings from the YAML path provided by the GUI
 config = load_config()
+
+# %% USER INPUT PARAMETERS
 path_hdf_raw = config['analysis_paths']['raw_data']
 cfg_rename = config['rename_samples']
 

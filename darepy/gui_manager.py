@@ -1,25 +1,49 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import os, ast, shutil
 from datetime import datetime
 from ruamel.yaml import YAML
+import sys
 
-# --- SETUP ---
-CONFIG_FILE = "config_experiment.yaml"
+# --- DYNAMIC PATH SETUP ---
+script_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(script_dir)
+
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+global CONFIG_FILE
+CONFIG_FILE = None
+
+if len(sys.argv) > 1:
+    CONFIG_FILE = sys.argv[1]
+
 yaml = YAML()
 yaml.preserve_quotes = True
-yaml.boolean_representation = ['false', 'true']
 
 class DarePyGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("DarePy-SANS Control Panel")
-        self.root.geometry("1000x1000")
+        self.root.geometry("1000x850") # Slightly shorter for better fit
+
+        global CONFIG_FILE
+        if not CONFIG_FILE:
+            self.root.withdraw()
+            initial_dir = os.path.join(root_dir, "experiments")
+            CONFIG_FILE = filedialog.askopenfilename(
+                initialdir=initial_dir,
+                title="Select config_experiment.yaml",
+                filetypes=(("YAML files", "*.yaml"), ("All files", "*.*"))
+            )
+            if not CONFIG_FILE:
+                sys.exit()
+            self.root.deiconify()
 
         self.setup_styles()
         self.entries = {}
 
-        # 1. Main Notebook
+        # Main Notebook
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(expand=True, fill="both", padx=10, pady=10)
 
@@ -544,9 +568,32 @@ class DarePyGUI:
         self.console.insert(tk.END, f"{msg}\n"); self.console.see(tk.END); self.root.update()
 
     def run_script(self, name):
+        """Runs the script in the active Spyder console."""
         if self.save_data():
-            self.log_to_console(f"🚀 RUNNING: {name}\n💡 TIP: Open NEW console (Ctrl+T) in Spyder.")
-            os.startfile(os.path.join(os.path.dirname(__file__), name))
+            # Check darepy/codes/ then darepy/
+            script_path = os.path.normpath(os.path.join(script_dir, "codes", name))
+            if not os.path.exists(script_path):
+                script_path = os.path.normpath(os.path.join(script_dir, name))
+
+            if os.path.exists(script_path):
+                self.log_to_console(f"🚀 RUNNING: {name}")
+                try:
+                    # The magic connection to Spyder's console
+                    from IPython import get_ipython
+                    ipy = get_ipython()
+                    if ipy:
+                        # We use %run to pass the CONFIG_FILE as an argument
+                        ipy.run_line_magic('run', f'"{script_path}" "{CONFIG_FILE}"')
+                        return
+                except:
+                    pass
+
+                # Fallback for standard terminal
+                import subprocess
+                subprocess.Popen([sys.executable, script_path, CONFIG_FILE])
+            else:
+                self.log_to_console(f"❌ ERROR: {name} not found.")
+
 
     def remove_dict_item(self, m_key, s_key, item_name):
         """Generic remover for dictionary items (Empty Cell or Thickness)."""

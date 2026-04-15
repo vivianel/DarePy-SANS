@@ -31,9 +31,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
     """
     global _CACHED_CONFIG, _CACHED_REGISTRY
 
-    # 1. LAZY LOADING: Only read the YAML files from the hard drive ONCE.
+    # Inside load_hdf in utils.py
     if _CACHED_CONFIG is None or _CACHED_REGISTRY is None:
-        from utils import load_config, load_instrument_registry # Ensure imports match your structure
+        # Calling without arguments lets the functions check sys.argv[1]
         _CACHED_CONFIG = load_config()
         _CACHED_REGISTRY = load_instrument_registry()
 
@@ -369,27 +369,62 @@ CURRENT_DIR = os.path.dirname(CURRENT_DIR)
 DEFAULT_CONFIG_PATH = os.path.join(CURRENT_DIR, "config_experiment.yaml")
 DEFAULT_REGISTRY_PATH = os.path.join(CURRENT_DIR, "instrument_registry.yaml")
 
+# --- Dynamic Root Detection ---
+# 1. This is the /darepy/ folder
+CODE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 2. This is the DarePy-SANS root folder
+ROOT_DIR = os.path.dirname(CODE_DIR)
 
-def load_config(filepath=DEFAULT_CONFIG_PATH):
-    """Loads the main experiment YAML configuration file."""
+# 3. Registry is at the ROOT, Config is in the /experiments/ subfolder
+DEFAULT_REGISTRY_PATH = os.path.join(ROOT_DIR, "instrument_registry.yaml")
+# (Config path is handled dynamically by load_config now)
+
+def load_config(filepath=None):
+    """Loads the experiment YAML, prioritizing paths sent by the GUI."""
+
+    # 1. Logic: If no filepath is passed to the function, check the command line
+    if filepath is None:
+        if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+            filepath = sys.argv[1]
+        else:
+            # Fallback to your original default if run manually
+            filepath = DEFAULT_CONFIG_PATH
+
+    # 2. Try to open the determined path
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"\n[ERROR] config_experiment.yaml not found at:\n{filepath}")
-        print("Please ensure the YAML file is in the same directory as utils.py")
+        print(f"\n[ERROR] Configuration file not found at:\n{filepath}")
+        print("💡 TIP: Ensure you selected the correct folder in the GUI.")
         sys.exit(1)
 
-def load_instrument_registry(filepath=DEFAULT_REGISTRY_PATH):
-    """Loads the instrument hardware registry YAML."""
+def load_instrument_registry(filepath=None):
+    """
+    Loads the registry from the same folder as the experiment config.
+    """
+    global CONFIG_FILE
+
+    # 1. Determine the folder where the config file lives
+    if filepath is None:
+        # Get the path from sys.argv (passed by GUI)
+        if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+            config_full_path = sys.argv[1]
+            # Get the directory (e.g., .../experiments/2022_2358_MF_8mm_rest/)
+            experiment_dir = os.path.dirname(config_full_path)
+            filepath = os.path.join(experiment_dir, "instrument_registry.yaml")
+        else:
+            # Fallback for manual testing in the darepy folder
+            filepath = os.path.join(os.getcwd(), "instrument_registry.yaml")
+
+    # 2. Attempt to load
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"\n[ERROR] instrument_registry.yaml not found at:\n{filepath}")
-        print("Please ensure the YAML file is in the same directory as utils.py")
+        print(f"\n[ERROR] instrument_registry.yaml NOT FOUND at:\n{filepath}")
+        print("💡 TIP: Ensure BOTH the config and registry are in your experiment folder.")
         sys.exit(1)
-
 
 def parse_scan_list(input_data):
     """

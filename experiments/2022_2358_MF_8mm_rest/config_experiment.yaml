@@ -1,0 +1,3443 @@
+!!python/object/apply:ruamel.yaml.comments.CommentedMap
+dictitems:
+  analysis_flags: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '10. ANALYSIS FLAGS
+
+          Detailed integration settings.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      exclude_files: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - 85776:89530
+      force_reintegrate: false
+      integration_points: 120
+      pixel_range_azim: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - ''
+      save_2d_patterns: false
+      save_data_azimuthal: false
+      save_plot_azimuthal: false
+      save_plot_radial: false
+      sectors_nr: 18
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 162
+          - 2
+          - 162
+          - 9
+          exclude_files:
+          - 165
+          - 2
+          - 165
+          - 17
+          force_reintegrate:
+          - 166
+          - 2
+          - 166
+          - 21
+          integration_points:
+          - 168
+          - 2
+          - 168
+          - 22
+          pixel_range_azim:
+          - 173
+          - 2
+          - 173
+          - 20
+          save_2d_patterns:
+          - 172
+          - 2
+          - 172
+          - 20
+          save_data_azimuthal:
+          - 171
+          - 2
+          - 171
+          - 23
+          save_plot_azimuthal:
+          - 170
+          - 2
+          - 170
+          - 23
+          save_plot_radial:
+          - 167
+          - 2
+          - 167
+          - 20
+          sectors_nr:
+          - 169
+          - 2
+          - 169
+          - 14
+        line: 162
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        exclude_files: null
+        force_reintegrate: null
+        integration_points: null
+        pixel_range_azim: null
+        save_2d_patterns: null
+        save_data_azimuthal: null
+        save_plot_azimuthal: null
+        save_plot_radial: null
+        sectors_nr: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            exclude_files:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Scans to skip (e.g., bad data or setup runs)
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5157
+                    line: 166
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 31
+                    index: 5110
+                    line: 165
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            force_reintegrate:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# True: Overwrite existing .dat files
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5225
+                    line: 167
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5187
+                    line: 166
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            integration_points:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Number of bins in q-space
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5340
+                    line: 169
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5312
+                    line: 168
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            pixel_range_azim:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Radial range [min, max] for azimuthal integration, you
+                  can use more than one range
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5711
+                    line: 175
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5625
+                    line: 173
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            save_2d_patterns:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Save corrected 2D detector images
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5595
+                    line: 173
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5559
+                    line: 172
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            save_data_azimuthal:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Export I(phi) as text
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5529
+                    line: 172
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5505
+                    line: 171
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            save_plot_azimuthal:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Export I(phi) plots
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5475
+                    line: 171
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5453
+                    line: 170
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            save_plot_radial:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Export I(q) plots as PNG
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5282
+                    line: 168
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5255
+                    line: 167
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            sectors_nr:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Number of ''pizza slices'' for azimuthal integration
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5423
+                    line: 170
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 30
+                    index: 5370
+                    line: 169
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  analysis_paths: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '1. ANALYSIS PATHS
+
+          Tells the pipeline where to find and save data.
+
+          ALWAYS use absolute paths with forward slashes (/).
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      dry_run: false
+      project_base: C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2022_2358_MF_8mm_rest
+      raw_data: C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/raw_data
+      scripts_dir: C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 5
+          - 2
+          - 5
+          - 9
+          dry_run:
+          - 15
+          - 2
+          - 15
+          - 11
+          project_base:
+          - 9
+          - 2
+          - 10
+          - 4
+          raw_data:
+          - 11
+          - 2
+          - 12
+          - 4
+          scripts_dir:
+          - 13
+          - 2
+          - 14
+          - 4
+        line: 5
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        dry_run: null
+        project_base: null
+        raw_data: null
+        scripts_dir: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            dry_run:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# True: Check file availability without calculating
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 799
+                    line: 17
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 25
+                    index: 746
+                    line: 15
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            project_base:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Root directory for results
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 429
+                    line: 11
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 107
+                    index: 400
+                    line: 10
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            raw_data:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Source of HDF5/Nexus files
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 572
+                    line: 13
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 101
+                    index: 543
+                    line: 12
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            scripts_dir:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Location of source code
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 721
+                    line: 15
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 107
+                    index: 695
+                    line: 14
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  beam_center_mask: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '5. BEAM CENTER MASK
+
+          Interactive tool for finding (0,0,0) and masking the beam stop.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      sample_name: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - AgBE
+      scan_nr: 83910
+      scans: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 1.6
+            state: &id001
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : 83910
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 6.0
+            state: &id002
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : 83896
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 18.0
+            state: &id003
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 2
+              _underscore: null
+              _width: 4
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : 83879
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 1.6
+                state: *id001
+              : - 53
+                - 4
+                - 53
+                - 9
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 6.0
+                state: *id002
+              : - 51
+                - 4
+                - 51
+                - 9
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 18.0
+                state: *id003
+              : - 52
+                - 4
+                - 52
+                - 10
+            line: 51
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 1.6
+              state: *id001
+            : null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 6.0
+              state: *id002
+            : null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 18.0
+              state: *id003
+            : null
+          _ref: []
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 45
+          - 2
+          - 45
+          - 9
+          sample_name:
+          - 48
+          - 2
+          - 48
+          - 15
+          scan_nr:
+          - 54
+          - 2
+          - 54
+          - 11
+          scans:
+          - 50
+          - 2
+          - 51
+          - 4
+        line: 45
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        sample_name: null
+        scan_nr: null
+        scans: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            sample_name:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: "\n  # The dictionary keys automatically define your available\
+                  \ distances\n"
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 2097
+                    line: 50
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 2
+                    index: 2029
+                    line: 49
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  calibration_samples: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '8. CALIBRATION SAMPLES
+
+          Keywords in raw data used to identify standard measurements.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      dark_current: Cd
+      empty_beam: EB
+      empty_cell: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          default: EC
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              default:
+              - 91
+              - 4
+              - 91
+              - 13
+            line: 91
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            default: null
+          _ref: []
+          _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+            state: !!python/tuple
+            - null
+            - _items:
+                default:
+                - null
+                - null
+                - !!python/object/new:ruamel.yaml.tokens.CommentToken
+                  state: !!python/tuple
+                  - null
+                  - _value: '# Default container background for all samples
+
+                      '
+                    end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                      state: !!python/tuple
+                      - null
+                      - column: 0
+                        index: 3930
+                        line: 92
+                        name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                    start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                      state: !!python/tuple
+                      - null
+                      - column: 19
+                        index: 3883
+                        line: 91
+                        name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                - null
+              _post: []
+              _pre: null
+              comment: null
+      thickness: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          CTAB: 0.1
+          default: 0.3
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              CTAB:
+              - 95
+              - 4
+              - 95
+              - 10
+              default:
+              - 93
+              - 4
+              - 93
+              - 13
+            line: 93
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            CTAB: null
+            default: null
+          _ref: []
+          _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+            state: !!python/tuple
+            - null
+            - _items:
+                default:
+                - null
+                - null
+                - !!python/object/new:ruamel.yaml.tokens.CommentToken
+                  state: !!python/tuple
+                  - null
+                  - _value: '# Default value if sample name is not listed
+
+
+                      '
+                    end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                      state: !!python/tuple
+                      - null
+                      - column: 0
+                        index: 4054
+                        line: 95
+                        name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                    start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                      state: !!python/tuple
+                      - null
+                      - column: 19
+                        index: 4008
+                        line: 93
+                        name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                - null
+              _post: &id004 []
+              _pre: null
+              comment:
+              - &id005 !!python/object/new:ruamel.yaml.tokens.CommentToken
+                state: !!python/tuple
+                - null
+                - _value: '# Sample thickness (cm) per sample name
+
+                    '
+                  end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 0
+                      index: 3989
+                      line: 93
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                  start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 19
+                      index: 3949
+                      line: 92
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+              - null
+              - *id004
+              - *id004
+              - *id004
+              - *id004
+              - *id004
+              - *id004
+              - *id004
+      water: H2O
+      water_cell: EC
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 83
+          - 2
+          - 83
+          - 9
+          dark_current:
+          - 87
+          - 2
+          - 87
+          - 16
+          empty_beam:
+          - 86
+          - 2
+          - 86
+          - 14
+          empty_cell:
+          - 90
+          - 2
+          - 91
+          - 4
+          thickness:
+          - 92
+          - 2
+          - 93
+          - 4
+          water:
+          - 88
+          - 2
+          - 88
+          - 9
+          water_cell:
+          - 89
+          - 2
+          - 89
+          - 14
+        line: 83
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        dark_current: null
+        empty_beam: null
+        empty_cell: null
+        thickness: null
+        water: null
+        water_cell: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            dark_current:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Background noise run (B4C or Cadmium)
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3730
+                    line: 88
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 19
+                    index: 3690
+                    line: 87
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            empty_beam:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Direct beam run for Transmission calculation
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3671
+                    line: 87
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 19
+                    index: 3624
+                    line: 86
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            thickness:
+            - null
+            - null
+            - *id005
+            - null
+            water:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Standard used for absolute calibration
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3790
+                    line: 89
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 19
+                    index: 3749
+                    line: 88
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            water_cell:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Empty container for the water standard
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3850
+                    line: 90
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 19
+                    index: 3809
+                    line: 89
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  detector_geometry: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '9. DETECTOR GEOMETRY
+
+          Beam center (pixels) and beamstopper coordinates per detector distance.
+
+          Refresh the gui after the calculation with the iterative tool.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      beam_center_guess: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 1.6
+            state: &id006
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : - 59.83
+            - 64.45
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 6.0
+            state: &id007
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : - 59.06
+            - 64.03
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 18.0
+            state: &id008
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 2
+              _underscore: null
+              _width: 4
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : - 60.26
+            - 63.84
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 1.6
+                state: *id006
+              : - 108
+                - 4
+                - 109
+                - 4
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 6.0
+                state: *id007
+              : - 102
+                - 4
+                - 103
+                - 4
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 18.0
+                state: *id008
+              : - 105
+                - 4
+                - 106
+                - 4
+            line: 102
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 1.6
+              state: *id006
+            : null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 6.0
+              state: *id007
+            : null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 18.0
+              state: *id008
+            : null
+          _ref: []
+          _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+            state: !!python/tuple
+            - null
+            - _items: {}
+              _post: []
+              _pre: null
+              comment: null
+      beamstopper_coordinates: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 1.6
+            state: &id009
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : !!python/object/apply:ruamel.yaml.comments.CommentedMap
+            dictitems:
+              bs0:
+              - 56
+              - 72
+              - 52
+              - 68
+            state: !!python/tuple
+            - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+              _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+                state: !!python/tuple
+                - null
+                - _flow_style: false
+              _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+                col: 6
+                data:
+                  bs0:
+                  - 145
+                  - 6
+                  - 146
+                  - 6
+                line: 145
+              _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+                _transform_type: null
+                _trval: null
+                _uri_decoded_suffix: null
+                handle: null
+                handles: null
+                suffix: null
+            - _ok: !!set
+                bs0: null
+              _ref: []
+              _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+                state: !!python/tuple
+                - null
+                - _items: {}
+                  _post: []
+                  _pre: null
+                  comment: null
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 6.0
+            state: &id010
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : !!python/object/apply:ruamel.yaml.comments.CommentedMap
+            dictitems:
+              bs0:
+              - 57
+              - 70
+              - 53
+              - 67
+              bs1:
+              - 0
+              - 128
+              - 122
+              - 127
+              bs2:
+              - 0
+              - 128
+              - 124
+              - 128
+            state: !!python/tuple
+            - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+              _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+                state: !!python/tuple
+                - null
+                - _flow_style: false
+              _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+                col: 6
+                data:
+                  bs0:
+                  - 113
+                  - 6
+                  - 114
+                  - 6
+                  bs1:
+                  - 118
+                  - 6
+                  - 119
+                  - 6
+                  bs2:
+                  - 123
+                  - 6
+                  - 124
+                  - 6
+                line: 113
+              _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+                _transform_type: null
+                _trval: null
+                _uri_decoded_suffix: null
+                handle: null
+                handles: null
+                suffix: null
+            - _ok: !!set
+                bs0: null
+                bs1: null
+                bs2: null
+              _ref: []
+              _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+                state: !!python/tuple
+                - null
+                - _items: {}
+                  _post: []
+                  _pre: null
+                  comment: null
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 18.0
+            state: &id011
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 2
+              _underscore: null
+              _width: 4
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : !!python/object/apply:ruamel.yaml.comments.CommentedMap
+            dictitems:
+              bs0:
+              - 57
+              - 69
+              - 52
+              - 65
+              bs1:
+              - 57
+              - 69
+              - 61
+              - 66
+              bs2:
+              - 0
+              - 128
+              - 119
+              - 128
+            state: !!python/tuple
+            - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+              _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+                state: !!python/tuple
+                - null
+                - _flow_style: false
+              _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+                col: 6
+                data:
+                  bs0:
+                  - 129
+                  - 6
+                  - 130
+                  - 6
+                  bs1:
+                  - 134
+                  - 6
+                  - 135
+                  - 6
+                  bs2:
+                  - 139
+                  - 6
+                  - 140
+                  - 6
+                line: 129
+              _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+                _transform_type: null
+                _trval: null
+                _uri_decoded_suffix: null
+                handle: null
+                handles: null
+                suffix: null
+            - _ok: !!set
+                bs0: null
+                bs1: null
+                bs2: null
+              _ref: []
+              _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+                state: !!python/tuple
+                - null
+                - _items: {}
+                  _post: []
+                  _pre: null
+                  comment: null
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 1.6
+                state: *id009
+              : - 144
+                - 4
+                - 145
+                - 6
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 6.0
+                state: *id010
+              : - 112
+                - 4
+                - 113
+                - 6
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 18.0
+                state: *id011
+              : - 128
+                - 4
+                - 129
+                - 6
+            line: 112
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 1.6
+              state: *id009
+            : null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 6.0
+              state: *id010
+            : null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 18.0
+              state: *id011
+            : null
+          _ref: []
+          _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+            state: !!python/tuple
+            - null
+            - _items: {}
+              _post: []
+              _pre: null
+              comment: null
+      transmission_coordinates: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 1.65
+            state: &id012
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 4
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : - 59
+            - 68
+            - 56
+            - 70
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 8.0
+            state: &id013
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : - 59
+            - 67
+            - 56
+            - 69
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 1.65
+                state: *id012
+              : - 151
+                - 4
+                - 152
+                - 4
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 8.0
+                state: *id013
+              : - 156
+                - 4
+                - 157
+                - 4
+            line: 151
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 1.65
+              state: *id012
+            : null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 8.0
+              state: *id013
+            : null
+          _ref: []
+          _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+            state: !!python/tuple
+            - null
+            - _items: {}
+              _post: &id014 []
+              _pre: null
+              comment:
+              - &id015 !!python/object/new:ruamel.yaml.tokens.CommentToken
+                state: !!python/tuple
+                - null
+                - _value: '# ROI for calculating transmission counts
+
+                    '
+                  end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 0
+                      index: 4903
+                      line: 151
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                  start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 28
+                      index: 4861
+                      line: 150
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+              - null
+              - *id014
+              - *id014
+              - *id014
+              - *id014
+              - *id014
+              - *id014
+              - *id014
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 97
+          - 2
+          - 97
+          - 9
+          beam_center_guess:
+          - 101
+          - 2
+          - 102
+          - 4
+          beamstopper_coordinates:
+          - 111
+          - 2
+          - 112
+          - 4
+          transmission_coordinates:
+          - 150
+          - 2
+          - 151
+          - 4
+        line: 97
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        beam_center_guess: null
+        beamstopper_coordinates: null
+        transmission_coordinates: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            transmission_coordinates:
+            - null
+            - null
+            - *id015
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  instrument_setup: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '2. INSTRUMENT SETUP
+
+          Defines the physical conditions of your neutron scattering experiment.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      which_instrument: SANS-I
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 18
+          - 2
+          - 18
+          - 9
+          which_instrument:
+          - 21
+          - 2
+          - 21
+          - 20
+        line: 18
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        which_instrument: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            which_instrument:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Backend selector: SANS-I or SANS-LLB
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 994
+                    line: 23
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 27
+                    index: 954
+                    line: 21
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  merging_settings: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '11. MERGING SETTINGS
+
+          Parameters for stitching multiple detector distances into one I(q) curve.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      interp_points: 150
+      interp_type: log
+      last_points_to_fit: 50
+      run_step_1_plotting: true
+      run_step_2_merging: true
+      run_step_3_interpolation: false
+      run_step_4_incoherent: false
+      skip_end: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 1.6
+            state: &id016
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : 5
+          6: 25
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 18.0
+            state: &id017
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 2
+              _underscore: null
+              _width: 4
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : 25
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 1.6
+                state: *id016
+              : - 189
+                - 4
+                - 189
+                - 9
+              6:
+              - 190
+              - 4
+              - 190
+              - 7
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 18.0
+                state: *id017
+              : - 188
+                - 4
+                - 188
+                - 10
+            line: 188
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 1.6
+              state: *id016
+            : null
+            6: null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 18.0
+              state: *id017
+            : null
+          _ref: []
+          _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+            state: !!python/tuple
+            - null
+            - _items: {}
+              _post: &id018 []
+              _pre: null
+              comment:
+              - &id022 !!python/object/new:ruamel.yaml.tokens.CommentToken
+                state: !!python/tuple
+                - null
+                - _value: '# Points to trim from high-q end (noisy regions) per distance
+
+                    '
+                  end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 0
+                      index: 6296
+                      line: 188
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                  start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 14
+                      index: 6234
+                      line: 187
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+              - null
+              - *id018
+              - *id018
+              - *id018
+              - *id018
+              - *id018
+              - *id018
+              - *id018
+      skip_start: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+        dictitems:
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 1.6
+            state: &id019
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 1
+              _underscore: null
+              _width: 3
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : 15
+          6: 5
+          ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+            args:
+            - 18.0
+            state: &id020
+              _e_sign: null
+              _e_width: null
+              _exp: null
+              _m_lead0: 0
+              _m_sign: false
+              _prec: 2
+              _underscore: null
+              _width: 4
+              _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+                state: !!python/tuple
+                - null
+                - always_dump: false
+                  value: null
+          : 5
+        state: !!python/tuple
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+          _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+            state: !!python/tuple
+            - null
+            - _flow_style: false
+          _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+            col: 4
+            data:
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 1.6
+                state: *id019
+              : - 185
+                - 4
+                - 185
+                - 9
+              6:
+              - 186
+              - 4
+              - 186
+              - 7
+              ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+                args:
+                - 18.0
+                state: *id020
+              : - 184
+                - 4
+                - 184
+                - 10
+            line: 184
+          _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+            _transform_type: null
+            _trval: null
+            _uri_decoded_suffix: null
+            handle: null
+            handles: null
+            suffix: null
+        - _ok: !!set
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 1.6
+              state: *id019
+            : null
+            6: null
+            ? !!python/object/new:ruamel.yaml.scalarfloat.ScalarFloat
+              args:
+              - 18.0
+              state: *id020
+            : null
+          _ref: []
+          _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+            state: !!python/tuple
+            - null
+            - _items: {}
+              _post: &id021 []
+              _pre: null
+              comment:
+              - &id023 !!python/object/new:ruamel.yaml.tokens.CommentToken
+                state: !!python/tuple
+                - null
+                - _value: '# Points to trim from low-q end per distance
+
+                    '
+                  end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 0
+                      index: 6187
+                      line: 184
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                  start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                    state: !!python/tuple
+                    - null
+                    - column: 14
+                      index: 6142
+                      line: 183
+                      name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+              - null
+              - *id021
+              - *id021
+              - *id021
+              - *id021
+              - *id021
+              - *id021
+              - *id021
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 176
+          - 2
+          - 176
+          - 9
+          interp_points:
+          - 192
+          - 2
+          - 192
+          - 17
+          interp_type:
+          - 191
+          - 2
+          - 191
+          - 15
+          last_points_to_fit:
+          - 193
+          - 2
+          - 193
+          - 22
+          run_step_1_plotting:
+          - 179
+          - 2
+          - 179
+          - 23
+          run_step_2_merging:
+          - 180
+          - 2
+          - 180
+          - 22
+          run_step_3_interpolation:
+          - 181
+          - 2
+          - 181
+          - 28
+          run_step_4_incoherent:
+          - 182
+          - 2
+          - 182
+          - 25
+          skip_end:
+          - 187
+          - 2
+          - 188
+          - 4
+          skip_start:
+          - 183
+          - 2
+          - 184
+          - 4
+        line: 176
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        interp_points: null
+        interp_type: null
+        last_points_to_fit: null
+        run_step_1_plotting: null
+        run_step_2_merging: null
+        run_step_3_interpolation: null
+        run_step_4_incoherent: null
+        skip_end: null
+        skip_start: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            interp_points:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Total points in final merged curve
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 6448
+                    line: 193
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 22
+                    index: 6411
+                    line: 192
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            interp_type:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Resampling spacing: ''log'' or ''lin''
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 6389
+                    line: 192
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 22
+                    index: 6352
+                    line: 191
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            last_points_to_fit:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Points used for Porod/Background estimation
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 6519
+                    line: 194
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 25
+                    index: 6473
+                    line: 193
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            run_step_1_plotting:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Preview individual curves before stitching
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5921
+                    line: 180
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 5876
+                    line: 179
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            run_step_2_merging:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Merge overlapping regions
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 5983
+                    line: 181
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 34
+                    index: 5955
+                    line: 180
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            run_step_3_interpolation:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Interpolate to common q-grid
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 6048
+                    line: 182
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 34
+                    index: 6017
+                    line: 181
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            run_step_4_incoherent:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Fit and subtract flat incoherent background
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 6128
+                    line: 183
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 34
+                    index: 6082
+                    line: 182
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            skip_end:
+            - null
+            - null
+            - *id022
+            - null
+            skip_start:
+            - null
+            - null
+            - *id023
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  physics_corrections: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '7. PHYSICS CORRECTIONS FOR REDUCTION
+
+          Toggles for standard SANS mathematical corrections.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      apply_flat_field: true
+      apply_transmission: true
+      normalize_to_monitor: true
+      normalize_to_thickness: true
+      perform_absolute_scaling: true
+      subtract_dark_current: true
+      subtract_empty_cell: true
+      target_detector_distances: all
+      wavelength: auto
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 69
+          - 2
+          - 69
+          - 9
+          apply_flat_field:
+          - 77
+          - 2
+          - 77
+          - 20
+          apply_transmission:
+          - 78
+          - 2
+          - 78
+          - 22
+          normalize_to_monitor:
+          - 74
+          - 2
+          - 74
+          - 24
+          normalize_to_thickness:
+          - 79
+          - 2
+          - 79
+          - 26
+          perform_absolute_scaling:
+          - 80
+          - 2
+          - 80
+          - 28
+          subtract_dark_current:
+          - 75
+          - 2
+          - 75
+          - 25
+          subtract_empty_cell:
+          - 76
+          - 2
+          - 76
+          - 23
+          target_detector_distances:
+          - 73
+          - 2
+          - 73
+          - 29
+          wavelength:
+          - 72
+          - 2
+          - 72
+          - 14
+        line: 69
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        apply_flat_field: null
+        apply_transmission: null
+        normalize_to_monitor: null
+        normalize_to_thickness: null
+        perform_absolute_scaling: null
+        subtract_dark_current: null
+        subtract_empty_cell: null
+        target_detector_distances: null
+        wavelength: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            apply_flat_field:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Correct for detector pixel sensitivity (Plexi/H2O)
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3259
+                    line: 78
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 3206
+                    line: 77
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            apply_transmission:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Correct for sample attenuation
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3325
+                    line: 79
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 3292
+                    line: 78
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            normalize_to_monitor:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Account for primary beam flux fluctuations
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3030
+                    line: 75
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 2985
+                    line: 74
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            normalize_to_thickness:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Normalize by sample path length (cm)
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3397
+                    line: 80
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 3358
+                    line: 79
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            perform_absolute_scaling:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Convert counts to absolute cross-section (cm-1)
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3481
+                    line: 82
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 3430
+                    line: 80
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            subtract_dark_current:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Subtract ambient noise (Cadmium measurement)
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3110
+                    line: 76
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 3063
+                    line: 75
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            subtract_empty_cell:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Remove container scattering
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 3173
+                    line: 77
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 3143
+                    line: 76
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            target_detector_distances:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Filter by distance (m): ''all'' or list [1.6, 6.0]
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 2952
+                    line: 74
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 2901
+                    line: 73
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            wavelength:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Neutron wavelength in Ang. ''auto'' reads HDF5 metadata
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 2868
+                    line: 73
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 33
+                    index: 2812
+                    line: 72
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  pipeline_control: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '6. PIPELINE CONTROL
+
+          Master execution toggles for the DarePy-SANS.py script.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      live_monitoring: false
+      monitor_interval: 10
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 56
+          - 2
+          - 56
+          - 9
+          live_monitoring:
+          - 59
+          - 2
+          - 59
+          - 19
+          monitor_interval:
+          - 60
+          - 2
+          - 60
+          - 20
+        line: 56
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        live_monitoring: null
+        monitor_interval: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            live_monitoring:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Auto-process new files as they appear at the beamline
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 2363
+                    line: 60
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 25
+                    index: 2307
+                    line: 59
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            monitor_interval:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Delay (sec) between checks for new raw data
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 2435
+                    line: 62
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 25
+                    index: 2388
+                    line: 60
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  plot_2d: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '4. PLOT 2D PATTERNS
+
+          Quick visualization of detector counts in 2D.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      background_scan_nr: 23088
+      clim:
+      - 0
+      - 5
+      enable_bg_subtraction: false
+      list_scan: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - 89617:89622
+      output_mode: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - frames
+      plot_scale: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - log
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 32
+          - 2
+          - 32
+          - 9
+          background_scan_nr:
+          - 41
+          - 2
+          - 41
+          - 22
+          clim:
+          - 36
+          - 2
+          - 37
+          - 2
+          enable_bg_subtraction:
+          - 40
+          - 2
+          - 40
+          - 25
+          list_scan:
+          - 35
+          - 2
+          - 35
+          - 13
+          output_mode:
+          - 42
+          - 2
+          - 42
+          - 15
+          plot_scale:
+          - 39
+          - 2
+          - 39
+          - 14
+        line: 32
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        background_scan_nr: null
+        clim: null
+        enable_bg_subtraction: null
+        list_scan: null
+        output_mode: null
+        plot_scale: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            background_scan_nr:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Scan number to subtract for 2D preview
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1806
+                    line: 42
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 31
+                    index: 1765
+                    line: 41
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            clim:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Intensity limits for colorbar [min, max]
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1584
+                    line: 37
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 27
+                    index: 1541
+                    line: 36
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - []
+            enable_bg_subtraction:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Preview data minus a specific background scan
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1734
+                    line: 41
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 31
+                    index: 1686
+                    line: 40
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            list_scan:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Scans to visualize (supports range shorthand)
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1514
+                    line: 36
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 27
+                    index: 1466
+                    line: 35
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            output_mode:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Export as animated ''gif'' or individual ''frames''
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1884
+                    line: 44
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 27
+                    index: 1833
+                    line: 42
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            plot_scale:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Color mapping: ''log'' or ''lin''
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1655
+                    line: 40
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 27
+                    index: 1623
+                    line: 39
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  rename_samples: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '3. RENAME SAMPLES
+
+          Standardize sample names in metadata for correct downstream matching.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      files_change: 89582
+      replace_with: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - test_name
+      subscript: !!python/object/new:ruamel.yaml.scalarstring.SingleQuotedScalarString
+      - ''
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 24
+          - 2
+          - 24
+          - 9
+          files_change:
+          - 27
+          - 2
+          - 27
+          - 16
+          replace_with:
+          - 29
+          - 2
+          - 29
+          - 16
+          subscript:
+          - 28
+          - 2
+          - 28
+          - 13
+        line: 24
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        files_change: null
+        replace_with: null
+        subscript: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            files_change:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Scan numbers to fix (e.g., ''85776:89530, 89650'')
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1192
+                    line: 28
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 24
+                    index: 1141
+                    line: 27
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            replace_with:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# New label to overwrite the metadata name
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1345
+                    line: 31
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 28
+                    index: 1301
+                    line: 29
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+            subscript:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Append text (use ''temp'' for auto-recorded temperature)
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 1273
+                    line: 29
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 24
+                    index: 1216
+                    line: 28
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+  transmission_setup: !!python/object/apply:ruamel.yaml.comments.CommentedMap
+    dictitems:
+      _desc: !!python/object/new:ruamel.yaml.scalarstring.LiteralScalarString
+        args:
+        - '5. TRANSMISSION CALCULATION
+
+          Specific hardware settings for calculating sample attenuation.
+
+          '
+        state: !!python/tuple
+        - null
+        - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+            state: !!python/tuple
+            - null
+            - always_dump: false
+              value: null
+      transmission_dist: 18.0
+    state: !!python/tuple
+    - _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+        state: !!python/tuple
+        - null
+        - always_dump: false
+          value: null
+      _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+        state: !!python/tuple
+        - null
+        - _flow_style: false
+      _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+        col: 2
+        data:
+          _desc:
+          - 63
+          - 2
+          - 63
+          - 9
+          transmission_dist:
+          - 66
+          - 2
+          - 66
+          - 21
+        line: 63
+      _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+        _transform_type: null
+        _trval: null
+        _uri_decoded_suffix: null
+        handle: null
+        handles: null
+        suffix: null
+    - _ok: !!set
+        _desc: null
+        transmission_dist: null
+      _ref: []
+      _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+        state: !!python/tuple
+        - null
+        - _items:
+            transmission_dist:
+            - null
+            - null
+            - !!python/object/new:ruamel.yaml.tokens.CommentToken
+              state: !!python/tuple
+              - null
+              - _value: '# Distance (m) used specifically for T measurements
+
+
+                  '
+                end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 0
+                    index: 2650
+                    line: 68
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+                start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+                  state: !!python/tuple
+                  - null
+                  - column: 32
+                    index: 2597
+                    line: 66
+                    name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            - null
+          _post: []
+          _pre: null
+          comment: null
+state: !!python/tuple
+- _yaml_anchor: !!python/object/new:ruamel.yaml.anchor.Anchor
+    state: !!python/tuple
+    - null
+    - always_dump: false
+      value: null
+  _yaml_format: !!python/object/new:ruamel.yaml.comments.Format
+    state: !!python/tuple
+    - null
+    - _flow_style: false
+  _yaml_line_col: !!python/object:ruamel.yaml.comments.LineCol
+    col: 0
+    data:
+      analysis_flags:
+      - 161
+      - 0
+      - 162
+      - 2
+      analysis_paths:
+      - 4
+      - 0
+      - 5
+      - 2
+      beam_center_mask:
+      - 44
+      - 0
+      - 45
+      - 2
+      calibration_samples:
+      - 82
+      - 0
+      - 83
+      - 2
+      detector_geometry:
+      - 96
+      - 0
+      - 97
+      - 2
+      instrument_setup:
+      - 17
+      - 0
+      - 18
+      - 2
+      merging_settings:
+      - 175
+      - 0
+      - 176
+      - 2
+      physics_corrections:
+      - 68
+      - 0
+      - 69
+      - 2
+      pipeline_control:
+      - 55
+      - 0
+      - 56
+      - 2
+      plot_2d:
+      - 31
+      - 0
+      - 32
+      - 2
+      rename_samples:
+      - 23
+      - 0
+      - 24
+      - 2
+      transmission_setup:
+      - 62
+      - 0
+      - 63
+      - 2
+    line: 4
+  _yaml_tag: !!python/object:ruamel.yaml.tag.Tag
+    _transform_type: null
+    _trval: null
+    _uri_decoded_suffix: null
+    handle: null
+    handles: null
+    suffix: null
+- _ok: !!set
+    analysis_flags: null
+    analysis_paths: null
+    beam_center_mask: null
+    calibration_samples: null
+    detector_geometry: null
+    instrument_setup: null
+    merging_settings: null
+    physics_corrections: null
+    pipeline_control: null
+    plot_2d: null
+    rename_samples: null
+    transmission_setup: null
+  _ref: []
+  _yaml_comment: !!python/object/new:ruamel.yaml.comments.Comment
+    state: !!python/tuple
+    - null
+    - _items: {}
+      _post: &id024 []
+      _pre: null
+      comment:
+      - null
+      - - !!python/object/new:ruamel.yaml.tokens.CommentToken
+          state: !!python/tuple
+          - null
+          - _value: '# ==========================================
+
+              '
+            end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+              state: !!python/tuple
+              - null
+              - column: 0
+                index: 45
+                line: 1
+                name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            pre_done: true
+            start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+              state: !!python/tuple
+              - null
+              - column: 0
+                index: 0
+                line: 0
+                name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+        - !!python/object/new:ruamel.yaml.tokens.CommentToken
+          state: !!python/tuple
+          - null
+          - _value: '# DAREPY-SANS CONFIGURATION
+
+              '
+            end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+              state: !!python/tuple
+              - null
+              - column: 0
+                index: 73
+                line: 2
+                name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            pre_done: true
+            start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+              state: !!python/tuple
+              - null
+              - column: 0
+                index: 45
+                line: 1
+                name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+        - !!python/object/new:ruamel.yaml.tokens.CommentToken
+          state: !!python/tuple
+          - null
+          - _value: '# ==========================================
+
+
+              '
+            end_mark: !!python/object/new:ruamel.yaml.error.FileMark
+              state: !!python/tuple
+              - null
+              - column: 0
+                index: 119
+                line: 4
+                name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+            pre_done: true
+            start_mark: !!python/object/new:ruamel.yaml.error.FileMark
+              state: !!python/tuple
+              - null
+              - column: 0
+                index: 73
+                line: 2
+                name: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest/config_experiment.yaml
+      - *id024
+      - *id024
+      - *id024
+      - *id024
+      - *id024
+      - *id024
+      - *id024
