@@ -7,16 +7,11 @@ Modernized for Pluggable Physics Pipeline and Live-Mode efficiency.
 import os
 import re
 import sys
+import csv  # Replaced pandas with native csv
 import numpy as np
-import pandas as pd
-from tabulate import tabulate
-from utils import find_hdf_by_identifier, parse_scan_list
 import pickle
-
-# Note: Assuming these are in your utils.py file
-from utils import load_hdf
-from utils import create_analysis_folder
-from utils import save_results
+from tabulate import tabulate
+from utils import find_hdf_by_identifier, parse_scan_list, load_hdf, create_analysis_folder, save_results
 
 def list_files(config, result):
     # Initialize dictionary for storing metadata
@@ -28,40 +23,30 @@ def list_files(config, result):
     }
 
     path_hdf_raw = config['analysis']['path_hdf_raw']
-    exclude_files = config['analysis'].get('exclude_files', [])
     raw_exclude = config['analysis'].get('exclude_files', [])
     exclude_files = parse_scan_list(raw_exclude)
 
-    # 1. Find all hdf files & Apply the "_mod" Logic Gate
     files_dict = {}
 
     for r, d, f in os.walk(path_hdf_raw):
         f.sort()
         for file in f:
             if file.endswith('.hdf'):
-                # Extract scan number using regex
                 scan_match = re.findall(r"\D(\d{6})\D", file)
                 if not scan_match:
-                    continue # Skip files that don't match the standard scan format
+                    continue
 
                 scan_nr = int(scan_match[0])
 
-                # --- THE SMART LOGIC GATE ---
                 if scan_nr in files_dict:
-                    # If we already logged this scan, only overwrite it if the current file is the modified copy
                     if '_mod' in file:
                         files_dict[scan_nr] = file
                 else:
-                    # First time seeing this scan number, add it to the dictionary
                     files_dict[scan_nr] = file
 
-    # Convert the smartly filtered dictionary back into a sorted list of files
-    files = list(files_dict.values())
-    files.sort()
+    files = sorted(list(files_dict.values()))
 
-    # 2. Extract metadata
-    for ii, file in enumerate(files):
-        # Extract scan number again for the final processing logic
+    for file in files:
         scan_nr = int(re.findall(r"\D(\d{6})\D", file)[0])
 
         if scan_nr not in exclude_files:
@@ -77,26 +62,15 @@ def list_files(config, result):
             class_files['dety_m'].append(load_hdf(path_hdf_raw, file, 'dety'))
             class_files['wl_A'].append(load_hdf(path_hdf_raw, file, 'wl'))
 
-            # Keep an eye out: we load the sample name directly from the chosen file
             sample_name = load_hdf(path_hdf_raw, file, 'sample_name')
             class_files['sample_name'].append(sample_name)
 
             res = load_hdf(path_hdf_raw, file, 'counts')
-            if res is not None and res.ndim > 2:
-                class_files['frame_nr'].append(res.shape[0])
-            else:
-                class_files['frame_nr'].append(1)
+            class_files['frame_nr'].append(res.shape[0] if (res is not None and res.ndim > 2) else 1)
 
-            # 3. Assign sample thickness
             list_thickness = config['experiment'].get('sample_thickness', {})
-            if sample_name in list_thickness:
-                class_files['thickness_cm'].append(list_thickness[sample_name])
-            elif 'all' in list_thickness:
-                class_files['thickness_cm'].append(list_thickness['all'])
-            else:
-                class_files['thickness_cm'].append(0.1) # Default fallback
+            class_files['thickness_cm'].append(list_thickness.get(sample_name, list_thickness.get('all', 0.1)))
 
-    # 4. Save parsed list and config
     path_dir_an = create_analysis_folder(config)
     save_list_files(path_dir_an, path_dir_an, class_files, 'all_files', result)
 
@@ -107,27 +81,33 @@ def list_files(config, result):
     return class_files
 
 def save_list_files(path_save, path_dir_an, class_files, name, result):
-    """Prints a neat table of the files to the console and saves it to a CSV file."""
-    df = pd.DataFrame(class_files)
+    """Saves metadata to CSV and prints a table WITHOUT pandas."""
 
     save_file = os.path.join(path_save, f"{name}.csv")
 
-    # 1. Write the FULL table to the CSV file
-    df.to_csv(save_file, index=False)
+    # Get keys for the header
+    keys = class_files.keys()
+    # Transpose dictionary of lists into a list of rows
+    rows = zip(*[class_files[k] for k in keys])
 
-    # 2. Print the TRUNCATED table to the Spyder console for easy viewing
-    # 'showindex=False' keeps the console printout clean
-    data_console = tabulate(df.head(20), headers='keys', tablefmt='psql', showindex=False)
+    # 1. Write the FULL table to CSV using native 'csv' module
+    with open(save_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(keys)
+        writer.writerows(rows)
+
+    # 2. Print TRUNCATED table for the console
+    # Re-generating rows for tabulate (it only needs the first 20)
+    truncated_rows = list(zip(*[class_files[k] for k in keys]))[:20]
+    data_console = tabulate(truncated_rows, headers=keys, tablefmt='psql')
 
     print(f"\n[INFO] Saving file list: {name}.csv")
     print(data_console)
 
-    # Add a helpful little note if there are more than 20 files
-    if len(df) > 20:
-        print(f"... (Showing first 20 of {len(df)} files. Check {name}.csv for the full list!)")
+    if len(class_files['name_hdf']) > 20:
+        print(f"... (Showing first 20 of {len(class_files['name_hdf'])} files. Check {name}.csv!)")
 
     print("-" * 20)
-
     result['overview'][name] = class_files
     save_results(path_dir_an, result)
 
