@@ -4,36 +4,35 @@
 
 analysis_paths:
   _desc: |
-    1. ANALYSIS PATHS
-    Tells the pipeline where to find and save data.
-    ALWAYS use absolute paths with forward slashes (/).
-  project_base: 
-    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest # Root directory for results
-  raw_data: 
-    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/raw_data        # Source of HDF5/Nexus files
-  scripts_dir: 
-    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS                                   # Location of source code
-  dry_run: false         # True: Check file availability without calculating
+    ANALYSIS PATHS
+    Tells the reduction pipeline where to find the raw data and save the results.
+  project_base:
+    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest # Root directory for the config files and for saving the results
+  raw_data:
+    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/raw_data        # Source of HDF files
+  scripts_dir:
+    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS                             # Location of source code = git repository
+  dry_run: false         # If true = Check path availability without listing
 
 instrument_setup:
   _desc: |
-    2. INSTRUMENT SETUP
+    INSTRUMENT SETUP
     Defines the physical conditions of your neutron scattering experiment.
-  which_instrument: SANS-I # Backend selector: SANS-I or SANS-LLB
+  which_instrument: SANS-I # Backend selector ofr instrument: SANS-I or SANS-LLB
 
 rename_samples:
   _desc: |
-    3. RENAME SAMPLES
-    Standardize sample names in metadata for correct downstream matching.
-  files_change: 83864   # Scan numbers to fix (e.g., '85776:89530, 89650')
-  subscript: ''         # Append text (use 'temp' for auto-recorded temperature)
+    RENAME SAMPLES
+    Standardize sample names in metadata for correct downstream matching, especially for merging files.
+  files_change: 83864   # Scan numbers to fix (e.g., 85776:89530, 89650)
+  subscript: ''         # Append text. Write 'temp' for adding the auto-recorded temperature to the file name
   replace_with: 'test_name' # New label to overwrite the metadata name
 
 plot_2d:
   _desc: |
-    4. PLOT 2D PATTERNS
+    PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 83910         # Scans to visualize (supports range shorthand)
+  list_scan: 83910         # Scans to visualize (e.g., 85776:89530, 89650)
   clim:                    # Intensity limits for colorbar [min, max]
   - 0
   - 5
@@ -44,10 +43,9 @@ plot_2d:
 
 beam_center_mask:
   _desc: |
-    5. BEAM CENTER MASK
-    Interactive tool for finding (0,0,0) and masking the beam stop.
-  sample_name: 'AgBE'
-  # The dictionary keys automatically define your available distances
+    BEAM CENTER MASK
+    Interactive tool for finding beam center and masking the beam stop.
+  sample_name: 'AgBE' # sample used for the center
   scans:
     6.0: 83896
     18.0: 83879
@@ -55,39 +53,39 @@ beam_center_mask:
   scan_nr: 83910
 pipeline_control:
   _desc: |
-    6. PIPELINE CONTROL
+    PIPELINE CONTROL
     Master execution toggles for the DarePy-SANS.py script.
   live_monitoring: false # Auto-process new files as they appear at the beamline
   monitor_interval: 10   # Delay (sec) between checks for new raw data
 
 transmission_setup:
   _desc: |
-    5. TRANSMISSION CALCULATION
+    TRANSMISSION CALCULATION
     Specific hardware settings for calculating sample attenuation.
-  transmission_dist: 18.0       # Distance (m) used specifically for T measurements
+  transmission_dist: 18.0       # Distance (m) used specifically for transmission measurements
 
 physics_corrections:
   _desc: |
-    7. PHYSICS CORRECTIONS FOR REDUCTION
+    PHYSICS CORRECTIONS FOR REDUCTION
     Toggles for standard SANS mathematical corrections.
-  wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF5 metadata
-  target_detector_distances: all # Filter by distance (m): 'all' or list [1.6, 6.0]
+  wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
+  target_detector_distances: all # Filter by distance (m): 'all' or list 1.6, 6.0
   normalize_to_monitor: true     # Account for primary beam flux fluctuations
-  subtract_dark_current: true    # Subtract ambient noise (Cadmium measurement)
+  subtract_dark_current: true    # Subtract ambient noise and counts (Cadmium measurement)
   subtract_empty_cell: true      # Remove container scattering
-  apply_flat_field: true         # Correct for detector pixel sensitivity (Plexi/H2O)
+  apply_flat_field: true         # Correct for detector pixel sensitivity (H2O)
   apply_transmission: true       # Correct for sample attenuation
   normalize_to_thickness: true   # Normalize by sample path length (cm)
   perform_absolute_scaling: true # Convert counts to absolute cross-section (cm-1)
 
 calibration_samples:
   _desc: |
-    8. CALIBRATION SAMPLES
+    CALIBRATION SAMPLES
     Keywords in raw data used to identify standard measurements.
   empty_beam: EB   # Direct beam run for Transmission calculation
-  dark_current: Cd # Background noise run (B4C or Cadmium)
-  water: H2O       # Standard used for absolute calibration
-  water_cell: EC   # Empty container for the water standard
+  dark_current: Cd # Background noise run (Cadmium)
+  water: H2O       # Standard used for absolute calibration (H2O)
+  water_cell: EC   # Empty container for the water used as a standard for absolutre calibration
   empty_cell:
     default: EC    # Default container background for all samples
   thickness:       # Sample thickness (cm) per sample name
@@ -96,10 +94,10 @@ calibration_samples:
     CTAB: 0.1
 detector_geometry:
   _desc: |
-    9. DETECTOR GEOMETRY
-    Beam center (pixels) and beamstopper coordinates per detector distance.
+    DETECTOR GEOMETRY
+    Beam center (pixels) and beamstop coordinates per detector distance.
     Refresh the gui after the calculation with the iterative tool.
-  beam_center_guess:
+  beam_center_guess: # center  of the scattering pattern for a given detector distance in meters
     6.0:
     - 59.06
     - 64.03
@@ -109,7 +107,7 @@ detector_geometry:
     1.6:
     - 59.57
     - 64.17
-  beamstopper_coordinates:
+  beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
     6.0:
       bs0:
       - 57
@@ -148,7 +146,7 @@ detector_geometry:
       - 72
       - 51
       - 67
-  transmission_coordinates: # ROI for calculating transmission counts
+  transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
     1.65:
     - 59
     - 68
@@ -161,7 +159,7 @@ detector_geometry:
     - 69
 analysis_flags:
   _desc: |
-    10. ANALYSIS FLAGS
+    ANALYSIS FLAGS
     Detailed integration settings.
   exclude_files: '85776:89530' # Scans to skip (e.g., bad data or setup runs)
   force_reintegrate: false    # True: Overwrite existing .dat files
@@ -175,7 +173,7 @@ analysis_flags:
 
 merging_settings:
   _desc: |
-    11. MERGING SETTINGS
+    MERGING SETTINGS
     Parameters for stitching multiple detector distances into one I(q) curve.
   run_step_1_plotting: true      # Preview individual curves before stitching
   run_step_2_merging: true        # Merge overlapping regions
