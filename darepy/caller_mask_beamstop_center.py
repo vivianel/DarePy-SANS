@@ -21,18 +21,37 @@ if parent_dir not in sys.path:
 # %% STANDARD IMPORTS
 # ==========================================
 import numpy as np
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+
 import matplotlib.pyplot as plt
 import matplotlib
 import pyFAI.azimuthalIntegrator as pyFAI_ai
-from utils import load_hdf, find_hdf_filename, load_config
+from utils import load_hdf, find_hdf_filename, load_config, load_instrument_registry
 
 # ==========================================
 # %% Configuration
 # ==========================================
-
-
 config = load_config()
+# --- FIX: Retrieve the absolute path used by the loader ---
+import sys
+if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+    yaml_filepath = os.path.abspath(sys.argv[1])
+else:
+    # Fallback to the pointer logic if running manually in Spyder
+    from utils import CURRENT_DIR
+    pointer_file = os.path.join(CURRENT_DIR, ".active_experiment.txt")
+    if os.path.exists(pointer_file):
+        with open(pointer_file, 'r') as f:
+            exp_folder = f.read().strip()
+            yaml_filepath = os.path.join(exp_folder, "config_experiment.yaml")
+    else:
+        # Emergency fallback to current logic
+        yaml_filepath = os.path.join(config['analysis_paths']['scripts_dir'], 'config_experiment.yaml')
+
+print(f"Target YAML for saving: {yaml_filepath}")
+
 # Pull paths dynamically from YAML
 path_hdf_raw = config['analysis_paths']['raw_data']
 
@@ -41,8 +60,6 @@ instrument = config['instrument_setup']['which_instrument']
 # Assuming you move this down to where config = load_config() is called:
 scanNr = config['beam_center_mask']['scan_nr']
 
-yaml_filepath = config['analysis_paths']['scripts_dir']
-yaml_filepath = os.path.join(yaml_filepath, 'config_experiment.yaml')
 
 # ==========================================
 # %% Load Data
@@ -58,8 +75,7 @@ else:
     import sys; sys.exit(1) #to stop the script if the file is missing
 
 # Load the central instrument registry
-with open("instrument_registry.yaml", 'r') as f:
-    inst_reg = yaml.safe_load(f)
+inst_reg = load_instrument_registry()
 
 # Pull pixel size dynamically!
 pixel1 = inst_reg[instrument]['pixel_size']

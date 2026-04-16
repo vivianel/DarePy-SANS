@@ -1,5 +1,5 @@
-raw_data/
-analysis/
-codes/__pycache__/
-config_history/
-__pycache__/
+# 3. Ignore everything inside 'experiments' so we can pick only one
+/experiments/*
+# 4. Specifically allow the 'default_exp' folder and all its contents
+!/experiments/default_exp/
+/darepy/codes/__pycache__/

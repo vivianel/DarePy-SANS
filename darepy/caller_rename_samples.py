@@ -8,17 +8,17 @@ import shutil
 from pathlib import Path
 
 # ==========================================
-# %% 1. PATH INJECTION
+# %% DYNAMIC PATH INJECTION
 # ==========================================
 current_dir = Path(__file__).resolve().parent
-parent_dir = current_dir.parent # Points to /darepy/
+code_dir = current_dir / 'codes'
 
-if str(parent_dir) not in sys.path:
-    sys.path.insert(0, str(parent_dir))
+if str(code_dir) not in sys.path:
+    sys.path.insert(0, str(code_dir))
 
 from utils import load_config, parse_scan_list
 
-# Load settings from the YAML path provided by the GUI
+# Load settings automatically! (Reads from GUI or Spyder's working directory)
 config = load_config()
 
 # %% USER INPUT PARAMETERS
@@ -28,13 +28,7 @@ cfg_rename = config['rename_samples']
 files_change = parse_scan_list(cfg_rename['files_change'])
 subscript = cfg_rename['subscript']
 replace_with = cfg_rename['replace_with']
-#copy_suffix = cfg_rename['copy_suffix']
-
-# Copy Suffix (NEW)
-#    This text will be added to the end of the newly created HDF5 file.
-#    Example: 'sans2025n083877.hdf' becomes 'sans2025n083877_mod.hdf'
 copy_suffix = '_mod'
-
 
 # %% SCRIPT LOGIC (No User Modification Needed Below This Line)
 
@@ -47,13 +41,13 @@ try:
                 files.append(file)
 
     if not files:
-        print(f"Warning: No valid original .hdf files found in '{path_hdf_raw}'. Exiting.")
-        sys.exit(0)
+        print(f"❌ [ERROR] No valid original .hdf files found in '{path_hdf_raw}'.")
+        sys.exit(1)  # Changed from 0 to 1 to force a failure
 except FileNotFoundError:
-    print(f"Error: Raw data path '{path_hdf_raw}' not found. Please check the path.")
+    print(f"❌ [ERROR] Raw data path '{path_hdf_raw}' not found. Please check the path.")
     sys.exit(1)
 except Exception as e:
-    print(f"An unexpected error occurred while listing files: {e}")
+    print(f"❌ [ERROR] An unexpected error occurred while listing files: {e}")
     sys.exit(1)
 
 
@@ -84,6 +78,9 @@ def _load_hdf_string(hdf_file_object, dataset_path):
         print(f"Warning: Could not load string from '{dataset_path}': {e}")
         return None
 
+# Track processed files to ensure everything requested was found
+scans_found = []
+processed_count = 0
 
 for ii in range(0, len(files)):
     file_name = files[ii]
@@ -97,12 +94,14 @@ for ii in range(0, len(files)):
 
     process_this_file = False
     if not files_change:
-        if replace_with != 0:
+        if replace_with != 0 or subscript != '':
             process_this_file = True
     elif current_scan_nr in files_change:
         process_this_file = True
 
     if process_this_file:
+        scans_found.append(current_scan_nr)
+
         full_hdf_path = os.path.join(path_hdf_raw, file_name)
 
         # --- NEW COPY LOGIC ---
@@ -157,6 +156,7 @@ for ii in range(0, len(files)):
             file_hdf.create_dataset(dataset_path, data=np.array([np.bytes_(new_sample_name)]))
 
             print(f"  -> Success: '{current_sample_name}' renamed to '{new_sample_name}' in copied file.")
+            processed_count += 1
 
         except FileNotFoundError:
             print(f"Error: HDF5 file '{new_hdf_path}' not accessible.")
@@ -167,3 +167,27 @@ for ii in range(0, len(files)):
         finally:
             if file_hdf:
                 file_hdf.close()
+
+
+# ==========================================
+# STRICT VALIDATION CHECKS
+# ==========================================
+
+# 1. Did we miss any specific files requested by the user?
+if files_change:
+    missing_scans = [scan for scan in files_change if scan not in scans_found]
+    if missing_scans:
+        print("\n" + "!" * 50)
+        print(f"❌ [FATAL ERROR] Missing Requested Scans")
+        print("!" * 50)
+        print(f"The following scans were NOT found in the raw data folder:")
+        print(f"Missing: {missing_scans}")
+        print("\nPlease check your folder path or scan numbers.")
+        sys.exit(1) # Force the script to report failure
+
+# 2. Did the script do literally nothing?
+if processed_count == 0:
+    print(f"\n❌ [ERROR] No files were processed. Ensure you provided scan numbers or replacement variables.")
+    sys.exit(1)
+
+print(f"\n✅ Script finished successfully. Processed {processed_count} file(s).")

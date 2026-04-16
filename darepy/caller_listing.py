@@ -3,17 +3,31 @@ from pathlib import Path
 import sys
 import os
 
-# 1. Get the directory of the current script (darepy/codes/)
-current_script_dir = os.path.dirname(os.path.abspath(__file__))
-# 2. Go up one level to find utils.py (in darepy/)
-parent_dir = os.path.dirname(current_script_dir)
+# ==========================================
+# %% DYNAMIC PATH INJECTION
+# ==========================================
+# 1. Get the current directory (darepy/)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Point to the codes/ subfolder where utils.py lives
+codes_dir = os.path.join(current_dir, 'codes')
 
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
+# 3. Add it to the system path
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
 
-# 3. Now you can safely import utils
+# Now we can safely import your tools from the codes/ folder
 from utils import load_config, load_instrument_registry
 import prepare_input as org
+
+# 4. Catch the YAML path sent by the GUI
+if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+    CONFIG_FILE = sys.argv[1]
+    # NEW: Force the process to look in the directory where the YAML lives
+    experiment_dir = os.path.dirname(os.path.abspath(CONFIG_FILE))
+    os.chdir(experiment_dir)
+    print(f"📂 GUI Handoff: Working directory set to {experiment_dir}")
+else:
+    CONFIG_FILE = None
 
 def run_path_validation(configuration, ext_cfg):
     """
@@ -47,7 +61,7 @@ def run_path_validation(configuration, ext_cfg):
 
     # Get the filename from the registry and check the codes folder
     map_name = registry.get(inst, {}).get('efficiency_map', 'none')
-    eff_path = c_dir / 'codes' / map_name
+    eff_path = c_dir / 'darepy/codes' / map_name
 
     if not eff_path.exists():
         print(f"❌ [ERROR] Efficiency map '{map_name}' NOT FOUND in codes folder.")
@@ -108,10 +122,10 @@ if __name__ == "__main__":
         else:
             # KEEP GOING if paths are correct
             print("\n✨ Dry Run Successful! Path validation passed. Proceeding to scan...")
+    else:
+        # Initialize result container
+        result = {'overview': {}}
 
-    # Initialize result container
-    result = {'overview': {}}
-
-    # This will now run regardless of whether Dry Run was checked,
-    # as long as the validation didn't fail.
-    run_listing(configuration, result)
+        # This will now run regardless of whether Dry Run was checked,
+        # as long as the validation didn't fail.
+        run_listing(configuration, result)
