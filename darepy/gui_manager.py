@@ -226,49 +226,69 @@ class DarePyGUI:
         self._build_nested_ui(group, self.config_dict.get(config_key, {}), config_key, path=())
 
     def _build_nested_ui(self, parent, data, config_key, path):
+        """
+        Dynamically builds the UI based on YAML structure, pulling in block
+        descriptions (_desc) and inline comments to guide the user.
+        """
         if not hasattr(data, "items"): return
         bg = parent.cget('bg')
 
-        # Description text
+        # --- 1. BLOCK DESCRIPTIONS (_desc) ---
+        # We use a Label with a light blue-grey background and left alignment
+        # to act as a clear instructional header for the section.
         if "_desc" in data:
             desc_text = str(data["_desc"]).strip()
-            desc_box = tk.Message(parent, text=desc_text, font=("Arial", 9, "italic"),
-                                  fg="#555", bg="#f8f9fa", width=800,
-                                  justify="left", padx=10, pady=5)
+            desc_box = tk.Label(parent, text=desc_text, font=("Arial", 12, "italic"),
+                                fg="#444", bg="#eef2f7", justify="left",
+                                anchor="w", padx=12, pady=8, wraplength=800)
             desc_box.pack(fill="x", pady=(0, 10), anchor="w")
 
         for k, v in data.items():
             if str(k).startswith("_"): continue
 
-            # Extract comment
+            # --- 2. INLINE COMMENT EXTRACTION ---
+            # ruamel.yaml stores comments in the 'ca' (Comment Annotation) attribute.
+            # Index 2 in the ca.items list typically holds the end-of-line comment.
             inline_comment = ""
             if hasattr(data, 'ca') and k in data.ca.items:
                 comment_token = data.ca.items[k][2]
                 if comment_token:
+                    # Clean the # symbol and whitespace
                     inline_comment = comment_token.value.strip().lstrip('#').strip()
 
             current_path = path + (k,)
+
+            # If the value is a nested dictionary, create a LabelFrame and recurse
             if isinstance(v, (dict, type(data))):
                 sub = tk.LabelFrame(parent, text=str(k), padx=10, pady=5,
-                                    font=("Arial", 9, "bold"), fg="#e67e22", bg=bg)
+                                    font=("Arial", 12, "bold"), fg="#e67e22", bg=bg)
                 sub.pack(fill="x", padx=5, pady=5, anchor="w")
                 self._build_nested_ui(sub, v, config_key, current_path)
             else:
+                # Pass the extracted comment to the field generator
                 self._create_field(parent, str(k), v, config_key, current_path, inline_comment)
 
     def _create_field(self, parent, label, value, config_key, path, comment=""):
+        """
+        Creates an individual input field with its label and associated help comment.
+        """
         bg = parent.cget('bg')
         f = tk.Frame(parent, bg=bg)
         f.pack(fill="x", pady=4, anchor="w")
 
         label_frame = tk.Frame(f, bg=bg)
         label_frame.pack(fill="x", anchor="w")
+
+        # Primary Key Label
         tk.Label(label_frame, text=label, font=("Arial", 9, "bold"), bg=bg).pack(side="left")
 
+        # --- 3. DISPLAY HELP COMMENT ---
+        # If a comment existed in the YAML, display it in a subtle grey italic font
         if comment:
             tk.Label(label_frame, text=f"  # {comment}", font=("Arial", 8, "italic"),
                      fg="#888", bg=bg).pack(side="left")
 
+        # Render the appropriate widget based on value type
         if isinstance(value, bool):
             var = tk.BooleanVar(master=self.root, value=value)
             tk.Checkbutton(f, text="", variable=var, bg=bg).pack(anchor="w")
@@ -280,6 +300,7 @@ class DarePyGUI:
             self.entries[config_key][path] = w
         else:
             w = tk.Entry(f)
+            # Handle list displays (e.g., [min, max]) by converting to comma-separated strings
             disp = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
             w.insert(0, disp)
             w.pack(fill="x", padx=(0, 40), ipady=3)
@@ -363,10 +384,46 @@ class DarePyGUI:
         tk.Button(sc, text="🔍 CHECK EXISTENCE OF ALL CALIBRATION FILES", bg="#2196F3", fg="white",
                   font=("Arial", 9, "bold"), pady=8, command=lambda: self.run_script("caller_check_calibration.py")).pack(fill="x", pady=10)
 
-        cal_f = tk.LabelFrame(sc, text="Primary Standards", padx=10, pady=10, bg=bg); cal_f.pack(fill="x", padx=10, pady=5)
-        for field in ['dark_current', 'water', 'water_cell']:
-            tk.Label(cal_f, text=field, font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
-            e = tk.Entry(cal_f); e.insert(0, self.config_dict.get('calibration_samples', {}).get(field, "")); e.pack(fill="x", pady=2)
+        cal_data = self.config_dict.get('calibration_samples', {})
+
+        # --- ADDED: SECTION DESCRIPTION (_desc) ---
+        if "_desc" in cal_data:
+             tk.Label(sc, text=str(cal_data["_desc"]).strip(), font=("Arial", 12, "italic"),
+                      fg="#444", bg="#eef2f7", justify="left", anchor="w",
+                      padx=10, pady=8, wraplength=800).pack(fill="x", pady=(0, 10))
+
+        # --- ADDED: SAFE COMMENT EXTRACTOR ---
+        def get_cal_comment(key):
+            try:
+                ca_items = getattr(getattr(cal_data, 'ca', None), 'items', None)
+                if ca_items and key in ca_items:
+                    for token in ca_items[key]:
+                        if token and hasattr(token, 'value'):
+                            val = token.value.strip().lstrip('#').strip()
+                            if val: return f"  # {val}"
+            except Exception: pass
+            return ""
+
+        cal_f = tk.LabelFrame(sc, text="Primary Standards", padx=10, pady=10, bg=bg, fg="#e67e22", font=("Arial", 10, "bold"))
+        cal_f.pack(fill="x", padx=10, pady=5)
+
+        # Note: I added 'empty_beam' back into this list since it's in your YAML
+        for field in ['empty_beam', 'dark_current', 'water', 'water_cell']:
+            row_f = tk.Frame(cal_f, bg=bg)
+            row_f.pack(fill="x", pady=2, anchor="w")
+
+            lbl_f = tk.Frame(row_f, bg=bg)
+            lbl_f.pack(fill="x", anchor="w")
+
+            tk.Label(lbl_f, text=field, font=("Arial", 9, "bold"), bg=bg).pack(side="left")
+
+            cmt = get_cal_comment(field)
+            if cmt:
+                tk.Label(lbl_f, text=cmt, font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
+
+            e = tk.Entry(row_f)
+            e.insert(0, str(cal_data.get(field, "")))
+            e.pack(fill="x", pady=(2, 5))
             self.entries['calibration_samples'][(field,)] = e
 
         self._build_dict_editor(sc, "Empty Cell Mapping", "calibration_samples", "empty_cell")
@@ -390,63 +447,137 @@ class DarePyGUI:
         m_data = self.config_dict.get('merging_settings', {})
         if 'merging_settings' not in self.entries: self.entries['merging_settings'] = {}
 
+        # Helper to safely extract comments for this specific block
+        def get_comment(key):
+            try:
+                ca_items = getattr(getattr(m_data, 'ca', None), 'items', None)
+                if ca_items and key in ca_items:
+                    for token in ca_items[key]:
+                        if token and hasattr(token, 'value'):
+                            val = token.value.strip().lstrip('#').strip()
+                            if val: return f"  # {val}"
+            except Exception: pass
+            return ""
+
+        # --- ADDED: Description Header for Merging ---
+        if "_desc" in m_data:
+             tk.Label(top_f, text=str(m_data["_desc"]).strip(), font=("Arial", 12, "italic"),
+                      fg="#444", bg="#eef2f7", justify="left", anchor="w",
+                      padx=10, pady=8, wraplength=800).pack(fill="x", pady=(0, 10))
+
+        # --- ADDED: Booleans with Extracted Comments ---
         for k in ['run_step_1_plotting', 'run_step_2_merging', 'run_step_3_interpolation', 'run_step_4_incoherent']:
             val = m_data.get(k, False)
             var = tk.BooleanVar(master=self.root, value=val)
-            tk.Checkbutton(top_f, text=k, variable=var, bg=bg).pack(anchor="w")
+
+            row_f = tk.Frame(top_f, bg=bg)
+            row_f.pack(fill="x", anchor="w", pady=2)
+
+            tk.Checkbutton(row_f, text=k, variable=var, bg=bg, font=("Arial", 9, "bold")).pack(side="left")
+
+            cmt = get_comment(k)
+            if cmt:
+                tk.Label(row_f, text=cmt, font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
+
             self.entries['merging_settings'][(k,)] = var
 
-        tk.Label(top_f, text="interp_type", font=("Arial", 9, "bold"), bg=bg).pack(anchor="w", pady=(5,0))
-        i_ent = tk.Entry(top_f); i_ent.insert(0, m_data.get('interp_type', 'log'))
-        i_ent.pack(fill="x"); self.entries['merging_settings'][('interp_type',)] = i_ent
+        # --- ADDED: Interp Type with Extracted Comment ---
+        i_row = tk.Frame(top_f, bg=bg); i_row.pack(fill="x", pady=(10,0))
+        tk.Label(i_row, text="interp_type", font=("Arial", 9, "bold"), bg=bg).pack(side="left")
 
+        i_cmt = get_comment('interp_type')
+        if i_cmt:
+            tk.Label(i_row, text=i_cmt, font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
+
+        i_ent = tk.Entry(top_f); i_ent.insert(0, m_data.get('interp_type', 'log'))
+        i_ent.pack(fill="x", pady=(2, 5))
+        self.entries['merging_settings'][('interp_type',)] = i_ent
+
+        # Call the table builder you already updated
         self._build_merging_table(s7, "Data Clipping (Skip Points)", "merging_settings")
 
 
-    # --- CUSTOM UI LOGIC (Tables & Dictionaries) ---
     def _build_merging_table(self, parent, title, m_key):
         bg = self.root.cget('bg')
+        if m_key not in self.entries: self.entries[m_key] = {}
+
         group = tk.LabelFrame(parent, text=title, padx=10, pady=10, bg=bg, fg="#e67e22", font=("Arial", 10, "bold"))
         group.pack(fill="x", padx=10, pady=5)
 
-        add_f = tk.Frame(group, bg=bg); add_f.pack(fill="x", pady=(0, 10))
-        tk.Label(add_f, text="Add Distance:", font=("Arial", 8, "italic"), bg=bg).pack(side="left")
-        new_d = tk.Entry(add_f, width=10); new_d.pack(side="left", padx=5)
-        tk.Button(add_f, text=" + ", bg="#4CAF50", fg="white",
-                  command=lambda: self.add_merging_dist(m_key, new_d)).pack(side="left")
+        m_data = self.config_dict.get(m_key, {})
 
-        h_f = tk.Frame(group, bg=bg); h_f.pack(fill="x")
-        tk.Label(h_f, text="Distance (m)", width=12, font=("Arial", 8, "bold"), bg=bg).pack(side="left")
+        # --- 1. SECTION DESCRIPTION (_desc) ---
+        if isinstance(m_data, dict) and "_desc" in m_data:
+             tk.Label(group, text=str(m_data["_desc"]).strip(), font=("Arial", 12, "italic"),
+                      fg="#444", bg="#eef2f7", justify="left", anchor="w",
+                      padx=10, pady=8, wraplength=800).pack(fill="x", pady=(0, 10))
+
+        # --- 2. ULTRA-SAFE INLINE COMMENT EXTRACTION ---
+        c_start, c_end = "", ""
+        try:
+            ca_items = getattr(getattr(m_data, 'ca', None), 'items', None)
+            if ca_items:
+                # Helper to safely dig through ruamel's comment tokens
+                def get_comment(key):
+                    for token in ca_items.get(key, []):
+                        if token and hasattr(token, 'value'):
+                            val = token.value.strip().lstrip('#').strip()
+                            if val: return val
+                    return ""
+
+                c_start = get_comment('skip_start')
+                c_end = get_comment('skip_end')
+        except Exception:
+            pass # Failsafe so the GUI never crashes here
+
+        # Display the extracted comments above the table
+        if c_start or c_end:
+            info_f = tk.Frame(group, bg=bg); info_f.pack(fill="x", pady=(0, 5))
+            if c_start: tk.Label(info_f, text=f"  # Skip Start: {c_start}", font=("Arial", 8, "italic"), fg="#777", bg=bg).pack(anchor="w")
+            if c_end: tk.Label(info_f, text=f"  # Skip End: {c_end}", font=("Arial", 8, "italic"), fg="#777", bg=bg).pack(anchor="w")
+        # -----------------------------------------------------------
+
+        # --- 3. TABLE HEADERS ---
+        h_f = tk.Frame(group, bg=bg); h_f.pack(fill="x", pady=(0,5))
+        tk.Label(h_f, text="Distance (m)", width=12, font=("Arial", 8, "bold"), bg=bg, anchor="w").pack(side="left")
         tk.Label(h_f, text="Skip Start", width=15, font=("Arial", 8, "bold"), bg=bg).pack(side="left")
         tk.Label(h_f, text="Skip End", width=15, font=("Arial", 8, "bold"), bg=bg).pack(side="left")
 
-        starts = self.config_dict[m_key].get('skip_start', {})
-        ends = self.config_dict[m_key].get('skip_end', {})
-        all_dists = sorted(set(list(starts.keys()) + list(ends.keys())), key=float)
+        # --- 4. TABLE ROWS ---
+        starts = m_data.get('skip_start', {})
+        ends = m_data.get('skip_end', {})
 
-        for d in all_dists:
+        for d in sorted(set(list(starts.keys()) + list(ends.keys())), key=float):
             r = tk.Frame(group, bg=bg); r.pack(fill="x", pady=2)
-            tk.Label(r, text=f"{d} m", width=12, anchor="w", bg=bg, font=("Arial", 9, "bold")).pack(side="left")
+            tk.Label(r, text=f"{d} m", width=12, bg=bg, anchor="w").pack(side="left")
             s_ent = tk.Entry(r, width=15); s_ent.insert(0, str(starts.get(d, 0))); s_ent.pack(side="left", padx=2)
             self.entries[m_key][('skip_start', d)] = s_ent
             e_ent = tk.Entry(r, width=15); e_ent.insert(0, str(ends.get(d, 0))); e_ent.pack(side="left", padx=2)
             self.entries[m_key][('skip_end', d)] = e_ent
-            tk.Button(r, text=" 🗑️ ", bg="#f44336", fg="white", font=("Arial", 7),
-                      command=lambda dist=d: self.remove_merging_dist(m_key, dist)).pack(side="right")
 
     def _build_dict_editor(self, parent, title, m_key, s_key):
         bg = self.root.cget('bg')
         if m_key not in self.entries: self.entries[m_key] = {}
         g = tk.LabelFrame(parent, text=title, padx=10, pady=10, bg=bg, fg="#e67e22", font=("Arial", 10, "bold"))
         g.pack(fill="x", padx=10, pady=5)
+
+        d_dict = self.config_dict.get(m_key, {}).get(s_key, {})
+
+        # --- ADDED: Check for _desc, use font 12, and align left (anchor="w", justify="left") ---
+        if isinstance(d_dict, dict) and "_desc" in d_dict:
+            tk.Label(g, text=str(d_dict["_desc"]).strip(), font=("Arial", 12, "italic"),
+                     fg="#444", bg="#eef2f7", justify="left", anchor="w",
+                     padx=10, pady=8, wraplength=800).pack(fill="x", pady=(0, 10))
+        # ----------------------------------------------------------------------------------------
+
         af = tk.Frame(g, bg=bg); af.pack(fill="x", pady=(0,10))
         nn = tk.Entry(af, width=25); nn.insert(0, "New Sample..."); nn.pack(side="left", padx=2)
         nv = tk.Entry(af, width=15); nv.insert(0, "0.1"); nv.pack(side="left", padx=2)
         tk.Button(af, text=" + ", bg="#4CAF50", fg="white", font=("Arial", 9, "bold"),
                   command=lambda: self.add_dict_item(m_key, s_key, nn, nv)).pack(side="left", padx=5)
 
-        d_dict = self.config_dict.get(m_key, {}).get(s_key, {})
         for k, v in d_dict.items():
+            if str(k).startswith("_"): continue # <-- ADDED: Skip the _desc key in the loop
             r = tk.Frame(g, bg=bg); r.pack(fill="x", pady=2)
             tk.Label(r, text=k, width=30, anchor="w", bg=bg).pack(side="left")
             e = tk.Entry(r, width=20); e.insert(0, str(v)); e.pack(side="left")
