@@ -3,3 +3,4 @@
 # 4. Specifically allow the 'default_exp' folder and all its contents
 !/experiments/default_exp/
 /darepy/codes/__pycache__/
+/darepy/.active_experiment.txt

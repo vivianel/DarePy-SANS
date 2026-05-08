@@ -54,6 +54,7 @@ def trans_calc_reference(config, result, class_files):
     eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
     eb_id = get_flexible_value(eb_block, 'default', default_fallback='EB')
 
+
     if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['experiment']['trans_dist'] > 0):
         class_trans = result['overview']['trans_files']
         trans_dist = config['physics_corrections']['transmission_dist']
@@ -227,15 +228,28 @@ def trans_calc_sample(config, result):
 
     # Map back to all_files
     list_trans_all = []
+    list_thick_all = [] # Add this
     class_all = result['overview']['all_files']
+
+    # Re-fetch thickness mapping from config
+    thickness_map = config['experiment']['sample_thickness']
+    default_t = thickness_map.get('default', 0.1)
+
     for ii in range(len(class_all['sample_name'])):
-        if class_all['sample_name'][ii] in class_trans['sample_name']:
-            idx_trans = list(class_trans['sample_name']).index(str(class_all['sample_name'][ii]))
+        s_name = str(class_all['sample_name'][ii])
+
+        # Update Transmission
+        if s_name in class_trans['sample_name']:
+            idx_trans = list(class_trans['sample_name']).index(s_name)
             list_trans_all.append(class_trans['transmission'][idx_trans])
         else:
             list_trans_all.append('--')
 
+        # Update/Fix Thickness
+        list_thick_all.append(thickness_map.get(s_name, default_t))
+
     class_all['transmission'] = list_trans_all
+    class_all['thickness_cm'] = list_thick_all # Use a clear header name
     save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
     return result
 

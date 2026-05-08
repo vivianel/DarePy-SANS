@@ -84,6 +84,18 @@ if __name__ == "__main__":
     # --- STEP 3: SINGLE EXECUTION SEQUENCE ---
     print("Step 0: Indexing files (Required for Transmission)...")
     class_files = org.list_files(configuration, result)
+    # --- FIX: Map thickness to class_files before processing ---
+    thickness_map = configuration['experiment']['sample_thickness']
+    default_t = thickness_map.get('default', 0.1) # Fallback to 0.1 if default is missing
+
+    # Assign thickness based on sample name
+    t_list = []
+    for name in class_files['sample_name']:
+        # Get specific thickness or use default
+        t_list.append(thickness_map.get(name, default_t))
+
+    class_files['thickness_cm'] = t_list
+    # -----------------------------------------------------------
 
     if class_files:
         ctrl = ext_cfg.get('pipeline_control', {})
