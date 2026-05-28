@@ -293,8 +293,15 @@ class DarePyGUI:
             var = tk.BooleanVar(master=self.root, value=value)
             tk.Checkbutton(f, text="", variable=var, bg=bg).pack(anchor="w")
             self.entries[config_key][path] = var
-        elif label == "which_instrument":
-            w = ttk.Combobox(f, values=["SANS-I", "SANS-LLB"], state="readonly")
+        elif label in ["which_instrument", "source_shape", "aperture_shape", "integration_direction"]:
+            if label == "which_instrument":
+                opts = ["SANS-I", "SANS-LLB"]
+            elif label == "integration_direction":
+                opts = ["horizontal", "vertical", "azimuthal"]
+            else:
+                opts = ["rectangular", "circular"] # For the shapes
+
+            w = ttk.Combobox(f, values=opts, state="readonly")
             w.set(value)
             w.pack(anchor="w", ipady=2)
             self.entries[config_key][path] = w
@@ -435,6 +442,9 @@ class DarePyGUI:
 
         sd, _ = self.create_scrollable_tab(self.sub_nb, "Analysis Flags")
         self.build_config_area(sd, "Flags", "analysis_flags")
+
+        sr, _ = self.create_scrollable_tab(self.sub_nb, "Resolution Settings")
+        self.build_config_area(sr, "Resolution Geometry (dq)", "resolution_settings")
 
         # --- TAB 7: MERGING CURVES ---
         s7, f7 = self.create_scrollable_tab(self.notebook, "7. Merging Curves")

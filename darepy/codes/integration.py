@@ -11,6 +11,7 @@ from setup_integrator import(generate_beamstop_mask, setup_integration)
 from absolute_scaling import calculate_1D_absolute_scalar, apply_absolute_scaling, process_water_standard
 import normalize_counts as norm
 import plot_integration as plot_integ
+from resolution import calculate_q_resolution
 
 def _parse_pixel_ranges(raw_ranges):
     """Helper function to cleanly parse legacy single ranges or nested lists."""
@@ -228,10 +229,10 @@ def integrate(config, result, det_str, path_rad_int, path_det):
 
             # --- INTEGRATIONS & PLOTTING ---
             f_rad = make_file_name(path_rad_int, 'radial_integ', 'dat', sample_name, det_str, scanNr, ff)
-            radial_integ(config, result, img, f_rad, img1_variance=var)
+            radial_integ(config, result, img, f_rad, det_str, ii, img1_variance=var)
 
             f_azim = make_file_name(path_rad_int, 'azim_integ', 'dat', sample_name, det_str, scanNr, ff)
-            data_azimuth = azimuthal_integ(config, result, img, f_azim, img1_variance=var)
+            data_azimuth = azimuthal_integ(config, result, img, f_azim, det_str, ii, img1_variance=var)
 
             if config['analysis'].get('save_2d_patterns', 0) == 1:
                 f_pat = make_file_name(path_rad_int, 'pattern2D', 'dat', sample_name, det_str, scanNr, ff)
@@ -265,7 +266,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
 
     return result
 
-def radial_integ(config, result, img1, file_name, img1_variance=None):
+def radial_integ(config, result, img1, file_name, det_str, ii, img1_variance=None):
     """Performs 1D radial integration using a dynamic mask for non-positive pixels."""
     ai = result['integration'].get('ai')
     permanent_mask = result['integration'].get('int_mask')
@@ -282,16 +283,38 @@ def radial_integ(config, result, img1, file_name, img1_variance=None):
         q, I, sigma = ai.integrate1d(
             img1, integration_points, correctSolidAngle=True, variance=img1_variance,
             mask=mask, method='nosplit_csr', unit='q_A^-1', safe=True,
-            error_model=error_model, flat=None, dark=None
-        )
-        data_save = np.column_stack((q, I, sigma))
-        header_text = 'q (A-1), absolute intensity  I (1/cm), standard deviation'
+            error_model=error_model, flat=None, dark=None)
+
+        # -------------------------------------------------------------
+        # 2. RESOLUTION (dq) CALCULATION
+        # Extract parameters inherently known to pyFAI (Stored in SI Units: meters)
+        det_dist_m = ai.dist
+        wl_A = ai.wavelength * 1e10   # Convert meters back to Angstroms
+
+        # Extract upstream collimation (L1) which pyFAI does not know
+        class_file = result['overview']['det_files_' + det_str]
+        L1_m = class_file['coll_m'][ii]
+
+        #bCheck the toggle flag from the YAML!
+        if config.get('physics_corrections', {}).get('apply_resolution_smearing', False):
+            dq = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m)
+        else:
+            dq = np.zeros_like(q) # Fill with zeros if turned off
+
+        # 3. Stack and Export as 4 columns
+        data_save = np.column_stack((q, I, sigma, dq))
+        header_text = 'q (A-1), absolute intensity  I (1/cm), standard deviation, dq (A-1)'
+
         np.savetxt(file_name, data_save, delimiter=',', header=header_text, comments='# ')
+
     except Exception as e:
         print(f"  [ERROR] Radial integration failed: {e}")
 
-def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
-    """Performs 2D azimuthal integration, applies dynamic masking, and optionally saves 1D profiles."""
+
+def azimuthal_integ(config, result, img1, file_name, det_str, ii, img1_variance=None):
+    """Performs 2D azimuthal integration, applies dynamic masking, and saves 1D profiles & sector cuts."""
+    import os
+
     ai = result['integration'].get('ai')
     permanent_mask = result['integration'].get('int_mask')
     integration_points = result['integration'].get('integration_points')
@@ -312,29 +335,67 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
         )
 
         if q_all_sectors is not None:
+            # EXTRACT PHYSICS PARAMETERS FOR RESOLUTION
+            det_dist_m = ai.dist
+            wl_A = ai.wavelength * 1e10
+            class_file = result['overview']['det_files_' + det_str]
+            L1_m = class_file['coll_m'][ii]
+
             data_save = np.column_stack((q_all_sectors, I_all.transpose(), sigma_all.transpose()))
 
-            # Check the save flag (Handles 1, True, or 'true' from YAML safely)
             save_flag = config['analysis'].get('save_data_azimuthal', 0)
             if save_flag in [1, True, 'true', 'True']:
+
+                print(f"    -> Azimuthal Export triggered. Slicing into {sectors_nr} sectors...")
 
                 # 1. SAVE THE MASTER 2D CAKE PLOT
                 header_text = f'q (A-1), {sectors_nr} columns for absolute intensity\nAngles {angles_all}'
                 np.savetxt(file_name, data_save, delimiter=',', header=header_text, comments='# ')
 
-                # 2. EXTRACT AND SAVE INDIVIDUAL 1D AZIMUTHAL PROFILES
+                # Prepare Angle Midpoints
+                npt_azim_plot = np.linspace(0, 360, sectors_nr + 1)
+                range_angle_midpoints = [(npt_azim_plot[rr] + npt_azim_plot[rr+1]) / 2 for rr in range(sectors_nr)]
+
+                q = q_all_sectors
+                I = I_all.transpose()     # shape: (len(q), sectors_nr)
+                sigma = sigma_all.transpose()
+
+                # ==============================================================
+                # 2. EXTRACT SECTOR AVERAGES I(q) WITH DYNAMIC dq SMEARING
+                # ==============================================================
+                base_dir = os.path.dirname(file_name)
+                base_name = os.path.basename(file_name)
+
+                for az_idx, chi_center in enumerate(range_angle_midpoints):
+                    I_sector = I[:, az_idx]
+                    sigma_sector = sigma[:, az_idx]
+
+                    if config.get('physics_corrections', {}).get('apply_resolution_smearing', False):
+                        # Calculate highly specific dq for this exact sector angle
+                        dq_sector = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m, chi_deg=chi_center)
+                    else:
+                        dq_sector = np.zeros_like(q)
+
+                    # Package 4-column data (q, I, err, dq)
+                    export_data_iq = np.column_stack((q, I_sector, sigma_sector, dq_sector))
+                    hdr_iq = f"q(A-1), I(cm-1), err, dq(A-1) | Sector Angle: {chi_center:.1f} deg"
+
+                    # Safely construct the filename so it never overwrites itself
+                    new_filename = base_name.replace('azim_integ', f'sector_Iq_chi{chi_center:.0f}')
+                    file_name_iq = os.path.join(base_dir, new_filename)
+
+                    np.savetxt(file_name_iq, export_data_iq, delimiter=',', header=hdr_iq, comments='# ')
+
+                print(f"    -> Saved {sectors_nr} individual sector cuts (Iq) successfully.")
+
+                # ==============================================================
+                # 3. EXTRACT AZIMUTHAL PROFILES I(chi) vs chi
+                # ==============================================================
                 raw_ranges = result['integration'].get('pixel_range_azim')
                 ranges_to_save = _parse_pixel_ranges(raw_ranges)
 
-                q = q_all_sectors
-                I = I_all.transpose()
-
-                # If no ranges were explicitly provided, DEFAULT TO FULL AVAILABLE q-RANGE!
                 if not ranges_to_save:
                     ranges_to_save = [[0, len(q)]]
-
-                npt_azim_plot = np.linspace(0, 360, sectors_nr + 1)
-                range_angle_midpoints = [(npt_azim_plot[rr] + npt_azim_plot[rr+1]) / 2 for rr in range(sectors_nr)]
 
                 for i, q_bnds in enumerate(ranges_to_save):
                     start_idx = max(0, min(q_bnds[0], len(q) - 1))
@@ -347,14 +408,13 @@ def azimuthal_integ(config, result, img1, file_name, img1_variance=None):
                     I_select = I[q_range, :]
                     I_sum = np.nansum(I_select, axis=0)
 
-                    # Package the data for this specific range
-                    export_data = np.column_stack((range_angle_midpoints, I_sum))
-                    hdr_string = f"Chi_deg, I_Sum_q{q_bnds[0]}-{q_bnds[1]}"
+                    export_data_ichi = np.column_stack((range_angle_midpoints, I_sum))
+                    hdr_ichi = f"Chi_deg, I_Sum_q{q_bnds[0]}-{q_bnds[1]}"
 
-                    # Dynamically inject the specific q-range into the filename!
-                    file_name_1d = file_name.replace('azim_integ', f'azim_integ_q{q_bnds[0]}-{q_bnds[1]}')
+                    new_ichi_filename = base_name.replace('azim_integ', f'azim_profile_q{q_bnds[0]}-{q_bnds[1]}')
+                    file_name_ichi = os.path.join(base_dir, new_ichi_filename)
 
-                    np.savetxt(file_name_1d, export_data, delimiter=',', header=hdr_string, comments='# ')
+                    np.savetxt(file_name_ichi, export_data_ichi, delimiter=',', header=hdr_ichi, comments='# ')
 
             return data_save
 

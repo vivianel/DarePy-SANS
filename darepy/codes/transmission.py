@@ -26,22 +26,18 @@ def trans_calc(config, class_files, result):
         print("\n[INFO] Skipping transmission calculation (run_transmission set to False in YAML).")
         return result
 
-    # Check if a valid transmission distance exists
-    trans_dist = config.get('physics_corrections', {}).get('transmission_dist', 0)
-    if not trans_dist or float(trans_dist) <= 0:
-        print("\n[INFO] Skipping transmission calculation (No valid transmission_dist provided).")
-        return result
-
     # ==========================================
     # 2. PROCEED WITH MATH
     # ==========================================
     instrument = config['instrument']['name']
 
-    if instrument == 'SANS-I' or instrument == 'SANS-LLB':
+    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] > 0):
         result = select_transmission(config, class_files, result)
         result = trans_calc_reference(config, result, class_files)
         result = trans_calc_sample(config, result)
-
+    if instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist']  < 0:
+        result = trans_calc_reference(config, result, class_files)
+        result = trans_calc_sample(config, result)
     return result
 
 def trans_calc_reference(config, result, class_files):
@@ -55,7 +51,14 @@ def trans_calc_reference(config, result, class_files):
     eb_id = get_flexible_value(eb_block, 'default', default_fallback='EB')
 
 
-    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['experiment']['trans_dist'] > 0):
+    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] > 0):
+
+        # Check if a valid transmission distance exists
+        trans_dist = config.get('physics_corrections', {}).get('transmission_dist', 0)
+        if not trans_dist or float(trans_dist) <= 0:
+            print("\n[INFO] Skipping transmission calculation (No valid transmission_dist provided).")
+            return result
+
         class_trans = result['overview']['trans_files']
         trans_dist = config['physics_corrections']['transmission_dist']
 
@@ -131,7 +134,7 @@ def trans_calc_reference(config, result, class_files):
         else:
             sys.exit(f'Please measure an empty beam ({eb_id}) for the same detector distance ({trans_dist}m).')
 
-    elif instrument == 'SANS-LLB' and config['experiment']['trans_dist'] < 0:
+    elif instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist']  < 0:
         det_dist = list(set(class_files['detx_m']))
         for jj in det_dist:
             class_dist = {k: [] for k in class_files.keys()}
@@ -166,92 +169,187 @@ def trans_calc_reference(config, result, class_files):
 def trans_calc_sample(config, result):
     path_dir_an = create_analysis_folder(config)
     path_hdf_raw = config['analysis']['path_hdf_raw']
+    instrument = config['instrument']['name']
 
-    list_trans = []
-    list_counts = []
-    mask = result['transmission']['mask']
-    EB_ref = result['transmission']['mean_EB']
+    # =========================================================================
+    # CASE 1: Standard Single-Distance Transmission (SANS-I or SANS-LLB > 0)
+    # =========================================================================
+    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] > 0):
+        list_trans = []
+        list_counts = []
+        mask = result['transmission']['mask']
+        EB_ref = result['transmission']['mean_EB']
 
-    class_trans = result['overview']['trans_files']
-    trans_dist = config['physics_corrections']['transmission_dist']
-    eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
+        class_trans = result['overview']['trans_files']
+        trans_dist = config['physics_corrections']['transmission_dist']
+        eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
 
-    # --- LOG BOOK SETUP ---
-    trans_log = []
-    log_headers = ["Scan", "Sample", "Det_m", "EB_Used", "Trans_Counts", "Transmission"]
+        # --- LOG BOOK SETUP ---
+        trans_log = []
+        log_headers = ["Scan", "Sample", "Det_m", "EB_Used", "Trans_Counts", "Transmission"]
 
-    for ii in range(len(class_trans['sample_name'])):
-        hdf_name = class_trans['name_hdf'][ii]
-        sample_name = class_trans['sample_name'][ii]
-        scanNr = class_trans['scan'][ii]
-        det_m = class_trans['detx_m'][ii]
+        for ii in range(len(class_trans['sample_name'])):
+            hdf_name = class_trans['name_hdf'][ii]
+            sample_name = class_trans['sample_name'][ii]
+            scanNr = class_trans['scan'][ii]
+            det_m = class_trans['detx_m'][ii]
 
-        counts = load_hdf(path_hdf_raw, hdf_name , 'counts')
-        img = normalize_trans(config, result, hdf_name, counts)
+            counts = load_hdf(path_hdf_raw, hdf_name , 'counts')
+            img = normalize_trans(config, result, hdf_name, counts)
 
-        sum_counts = float(np.sum(np.multiply(img, mask)))
-        list_counts.append(sum_counts)
+            sum_counts = float(np.sum(np.multiply(img, mask)))
+            list_counts.append(sum_counts)
 
-        eb_id = get_flexible_value(eb_block, sample_name, default_fallback='EB')
-        eb_hdf = find_hdf_by_identifier(eb_id, class_trans)
+            eb_id = get_flexible_value(eb_block, sample_name, default_fallback='EB')
+            eb_hdf = find_hdf_by_identifier(eb_id, class_trans)
 
-        current_log = [scanNr, sample_name, det_m, eb_id, f"{sum_counts:.2e}"]
+            current_log = [scanNr, sample_name, det_m, eb_id, f"{sum_counts:.2e}"]
 
-        if class_trans['detx_m'][ii] == trans_dist and hdf_name != eb_hdf:
-            trans = np.divide(sum_counts, EB_ref)
-            list_trans.append(round(trans, 3))
-            current_log.append(f"{trans:.3f}")
-        else:
-            list_trans.append(1)
-            current_log.append("REF (1.000)" if hdf_name == eb_hdf else "1.000")
+            if class_trans['detx_m'][ii] == trans_dist and hdf_name != eb_hdf:
+                trans = np.divide(sum_counts, EB_ref)
+                list_trans.append(round(trans, 3))
+                current_log.append(f"{trans:.3f}")
+            else:
+                list_trans.append(1)
+                current_log.append("REF (1.000)" if hdf_name == eb_hdf else "1.000")
 
-        trans_log.append(current_log)
+            trans_log.append(current_log)
 
-    class_trans['transmission'] = list_trans
-    class_trans['counts'] = list_counts
-    result['overview']['trans_files']['transmission'] = list_trans
-    result['overview']['trans_files']['counts'] = list_counts
+        class_trans['transmission'] = list_trans
+        class_trans['counts'] = list_counts
+        result['overview']['trans_files']['transmission'] = list_trans
+        result['overview']['trans_files']['counts'] = list_counts
 
-    # --- PRINT AND SAVE LOG DIRECTLY IN ANALYSIS FOLDER ---
-    print("\n" + "="*80)
-    print("TRANSMISSION LOG")
-    print("="*80)
-    print(tabulate(trans_log, headers=log_headers, tablefmt="grid"))
+        # --- PRINT AND SAVE LOG DIRECTLY IN ANALYSIS FOLDER ---
+        print("\n" + "="*80)
+        print("TRANSMISSION LOG")
+        print("="*80)
+        print(tabulate(trans_log, headers=log_headers, tablefmt="grid"))
 
-    # SAVED DIRECTLY IN path_dir_an
-    log_file = os.path.join(path_dir_an, "transmission_log.csv")
-    with open(log_file, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(log_headers)
-        writer.writerows(trans_log)
-    print(f"\n[INFO] Transmission log saved to: {log_file}")
+        log_file = os.path.join(path_dir_an, "transmission_log.csv")
+        with open(log_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(log_headers)
+            writer.writerows(trans_log)
+        print(f"\n[INFO] Transmission log saved to: {log_file}")
 
-    # Map back to all_files
-    list_trans_all = []
-    list_thick_all = [] # Add this
-    class_all = result['overview']['all_files']
+        # Map back to all_files
+        list_trans_all = []
+        list_thick_all = []
+        class_all = result['overview']['all_files']
 
-    # Re-fetch thickness mapping from config
-    thickness_map = config['experiment']['sample_thickness']
-    default_t = thickness_map.get('default', 0.1)
+        # Re-fetch thickness mapping from config
+        thickness_map = config['experiment']['sample_thickness']
+        default_t = thickness_map.get('default', 0.1)
 
-    for ii in range(len(class_all['sample_name'])):
-        s_name = str(class_all['sample_name'][ii])
+        for ii in range(len(class_all['sample_name'])):
+            s_name = str(class_all['sample_name'][ii])
 
-        # Update Transmission
-        if s_name in class_trans['sample_name']:
-            idx_trans = list(class_trans['sample_name']).index(s_name)
-            list_trans_all.append(class_trans['transmission'][idx_trans])
-        else:
-            list_trans_all.append('--')
+            # Update Transmission
+            if s_name in class_trans['sample_name']:
+                idx_trans = list(class_trans['sample_name']).index(s_name)
+                list_trans_all.append(class_trans['transmission'][idx_trans])
+            else:
+                list_trans_all.append('--')
 
-        # Update/Fix Thickness
-        list_thick_all.append(thickness_map.get(s_name, default_t))
+            # Update/Fix Thickness
+            list_thick_all.append(thickness_map.get(s_name, default_t))
 
-    class_all['transmission'] = list_trans_all
-    class_all['thickness_cm'] = list_thick_all # Use a clear header name
-    save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
-    return result
+        class_all['transmission'] = list_trans_all
+        class_all['thickness_cm'] = list_thick_all
+        save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
+
+        return result
+
+    # =========================================================================
+    # CASE 2: Multi-Distance Transmission (SANS-LLB with dist < 0)
+    # =========================================================================
+    elif instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] < 0:
+        list_trans_all = []
+        list_counts_all = []
+        list_thick_all = []
+
+        # In the < 0 case, select_transmission is bypassed, so we use all_files directly.
+        class_all = result['overview']['all_files']
+        eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
+
+        trans_log = []
+        log_headers = ["Scan", "Sample", "Det_m", "EB_Used", "Trans_Counts", "Transmission"]
+
+        thickness_map = config['experiment']['sample_thickness']
+        default_t = thickness_map.get('default', 0.1)
+
+        for ii in range(len(class_all['sample_name'])):
+            hdf_name = class_all['name_hdf'][ii]
+            sample_name = class_all['sample_name'][ii]
+            scanNr = class_all['scan'][ii]
+            det_m = class_all['detx_m'][ii]
+
+            # 1. Search for the correct mask and EB reference based on this specific det_m
+            mask_key = 'mask_' + str(det_m)
+            eb_ref_key = 'mean_EB_' + str(det_m)
+
+            eb_id = get_flexible_value(eb_block, sample_name, default_fallback='EB')
+
+            # We need a subset of files at this distance to correctly identify if THIS file is the empty beam
+            class_dist = {k: [] for k in class_all.keys()}
+            for idx in range(len(class_all['detx_m'])):
+                if class_all['detx_m'][idx] == det_m:
+                    for k in class_all.keys():
+                        class_dist[k].append(class_all[k][idx])
+
+            eb_hdf = find_hdf_by_identifier(eb_id, class_dist)
+
+            # 2. Check if a valid reference was calculated for this distance
+            if mask_key in result['transmission'] and eb_ref_key in result['transmission']:
+                mask = result['transmission'][mask_key]
+                EB_ref = result['transmission'][eb_ref_key]
+
+                counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
+                img = normalize_trans(config, result, hdf_name, counts)
+
+                sum_counts = float(np.sum(np.multiply(img, mask)))
+                list_counts_all.append(sum_counts)
+
+                current_log = [scanNr, sample_name, det_m, eb_id, f"{sum_counts:.2e}"]
+
+                if hdf_name != eb_hdf:
+                    # Protect against division by zero
+                    trans = np.divide(sum_counts, EB_ref) if EB_ref > 0 else 0
+                    list_trans_all.append(round(trans, 3))
+                    current_log.append(f"{trans:.3f}")
+                else:
+                    list_trans_all.append(1.000)
+                    current_log.append("REF (1.000)")
+            else:
+                # Fallback if no empty beam was computed for this specific distance
+                list_counts_all.append('--')
+                list_trans_all.append('--')
+                current_log = [scanNr, sample_name, det_m, eb_id, "--", "NO_REF_FOUND"]
+
+            trans_log.append(current_log)
+            list_thick_all.append(thickness_map.get(sample_name, default_t))
+
+        # 3. Update the global file registry and print/save logs
+        class_all['transmission'] = list_trans_all
+        class_all['counts'] = list_counts_all
+        class_all['thickness_cm'] = list_thick_all
+
+        print("\n" + "="*80)
+        print("TRANSMISSION LOG (MULTI-DISTANCE)")
+        print("="*80)
+        print(tabulate(trans_log, headers=log_headers, tablefmt="grid"))
+
+        log_file = os.path.join(path_dir_an, "transmission_log_multidist.csv")
+        with open(log_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(log_headers)
+            writer.writerows(trans_log)
+        print(f"\n[INFO] Multi-distance transmission log saved to: {log_file}")
+
+        save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
+
+        return result
 
 def normalize_trans(config, result, hdf_name, counts):
     counts = norm.normalize_deadtime(config, hdf_name, counts)

@@ -6,11 +6,11 @@ analysis_paths:
   _desc: |
     ANALYSIS PATHS
     Tells the reduction pipeline where to find the raw data and save the results.
-  project_base: 
+  project_base:
     C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest # Root directory for the config files and for saving the results
-  raw_data: 
+  raw_data:
     C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/raw_data        # Source of HDF files
-  scripts_dir: 
+  scripts_dir:
     C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS                             # Location of source code = git repository
   dry_run: false         # If true = Check path availability without listing
 
@@ -77,6 +77,25 @@ physics_corrections:
   apply_transmission: true       # Correct for sample attenuation
   normalize_to_thickness: true   # Normalize by sample path length (cm)
   perform_absolute_scaling: true # Convert counts to absolute cross-section (cm-1)
+  apply_resolution_smearing: true   # Toggle for calculating dq
+
+resolution_settings:
+  _desc: |
+    RESOLUTION SETTINGS
+    Geometric parameters for dq smearing. Automatically handles
+    anisotropic smearing for azimuthal sector cuts.
+  calculate_resolution: true    # true for calculating the experimental resolution
+  # Source (A1) Settings - e.g., the neutron guide
+  source_shape: 'rectangular'    # 'circular' or 'rectangular'
+  source_slit_width: 0.050       # W1 in meters (e.g., 50 mm)
+  source_slit_height: 0.050      # H1 in meters (e.g., 50 mm)
+  source_aperture_radius: 0.009  # Fallback for circular
+
+  # Sample (A2) Settings - e.g., the microfluidic channel
+  aperture_shape: 'rectangular'  # 'circular' or 'rectangular'
+  sample_slit_width: 0.0002      # W2 in meters (e.g., 200 um)
+  sample_slit_height: 0.002      # H2 in meters (e.g., 2 mm)
+  sample_aperture_radius: 0.004  # Fallback for circular
 
 calibration_samples:
   _desc: |
@@ -90,8 +109,8 @@ calibration_samples:
     default: EC    # Default container background for all samples
   thickness:       # Sample thickness (cm) per sample name
     default: 0.3   # Default value if sample name is not listed
-
     CTAB: 0.1
+
 detector_geometry:
   _desc: |
     DETECTOR GEOMETRY
@@ -169,7 +188,7 @@ analysis_flags:
   save_plot_azimuthal: false  # Export I(phi) plots
   save_data_azimuthal: false  # Export I(phi) as text
   save_2d_patterns: false     # Save corrected 2D detector images
-  pixel_range_azim: ''        # Radial range [min, max] for azimuthal integration, you can use more than one range
+  pixel_range_azim: ''        # Radial range [[min, max], [min, max]] for azimuthal integration, you can use more than one range
 
 merging_settings:
   _desc: |
