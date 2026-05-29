@@ -107,21 +107,29 @@ class DarePyGUI:
                     raw = entry.get()
                     actual = raw if isinstance(raw, bool) else self._parse_string(raw)
                     target = self.config_dict[s_key]
+
+                    # Traverse down the path
                     for p in path[:-1]:
                         if p not in target: target[p] = {}
                         target = target[p]
-                    target[path[-1]] = actual
+
+                    # IN-PLACE UPDATE to preserve ruamel.yaml comments and formatting
+                    last_key = path[-1]
+                    if isinstance(actual, list) and isinstance(target.get(last_key), list):
+                        target[last_key][:] = actual  # Update list elements in-place
+                    elif isinstance(actual, dict) and isinstance(target.get(last_key), dict):
+                        target[last_key].update(actual) # Update dictionary in-place
+                    else:
+                        target[last_key] = actual
 
             # Write the current file
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(self.config_dict, f)
 
             self.log_to_console(f"✅ Settings saved to: {os.path.basename(self.config_file)}")
-
-            # Trigger the smart archiving
             self.archive_config()
-
             return True
+
         except Exception as e:
             self.log_to_console(f"❌ SAVE ERROR: {e}")
             return False
@@ -605,20 +613,37 @@ class DarePyGUI:
 
     def remove_distance(self, dist):
         if messagebox.askyesno("Confirm", f"Remove {dist}m from all settings?"):
+
+            # 1. Clean from GUI entries memory
             if 'beam_center_mask' in self.entries:
                 self.entries['beam_center_mask'].pop(('scans', dist), None)
+            if 'merging_settings' in self.entries:
+                self.entries['merging_settings'].pop(('skip_start', dist), None)
+                self.entries['merging_settings'].pop(('skip_end', dist), None)
+
+            # 2. Extract target config blocks
             bm = self.config_dict.get('beam_center_mask', {})
             dg = self.config_dict.get('detector_geometry', {})
+            ms = self.config_dict.get('merging_settings', {})
+
+            # Create variations of the key (str, int, float) to ensure catching ruamel formatting
             keys_to_purge = [dist, str(dist)]
             try: keys_to_purge.append(float(dist))
             except: pass
+
+            # 3. Deep purge across the file
             for k in keys_to_purge:
                 if 'scans' in bm: bm['scans'].pop(k, None)
                 if 'beam_center_guess' in dg: dg['beam_center_guess'].pop(k, None)
                 if 'beamstopper_coordinates' in dg: dg['beamstopper_coordinates'].pop(k, None)
                 if 'transmission_coordinates' in dg: dg['transmission_coordinates'].pop(k, None)
+                if 'skip_start' in ms: ms['skip_start'].pop(k, None)
+                if 'skip_end' in ms: ms['skip_end'].pop(k, None)
+
+            # 4. Save and Update
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(self.config_dict, f)
+
             self.log_to_console(f"🗑️ Purged distance {dist}m from all records.")
             self.refresh_ui()
 
@@ -651,11 +676,28 @@ class DarePyGUI:
             try:
                 d = float(v)
                 if d.is_integer(): d = int(d)
-                scans = self.config_dict['beam_center_mask'].setdefault('scans', {})
+
+                # Fetch all relevant top-level dictionaries
+                bm = self.config_dict.setdefault('beam_center_mask', {})
+                dg = self.config_dict.setdefault('detector_geometry', {})
+                ms = self.config_dict.setdefault('merging_settings', {})
+
+                scans = bm.setdefault('scans', {})
                 if d not in scans:
                     scans[d] = 0
-                    self.save_data(); self.refresh_ui()
-            except: pass
+
+                # Cascade the new distance to all other config sections with defaults
+                dg.setdefault('beam_center_guess', {}).setdefault(d, [0.0, 0.0])
+                dg.setdefault('beamstopper_coordinates', {}).setdefault(d, [0.0, 0.0, 0.0, 0.0])
+                dg.setdefault('transmission_coordinates', {}).setdefault(d, [0.0, 0.0, 0.0, 0.0])
+                ms.setdefault('skip_start', {}).setdefault(d, 0)
+                ms.setdefault('skip_end', {}).setdefault(d, 0)
+
+                self.save_data()
+                self.refresh_ui()
+
+            except Exception as e:
+                self.log_to_console(f"⚠️ Add distance error: {e}")
 
     def add_dict_item(self, m_key, s_key, n_ent, v_ent):
         n, v = n_ent.get().strip(), v_ent.get().strip()
