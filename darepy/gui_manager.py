@@ -426,9 +426,9 @@ class DarePyGUI:
         self._build_dict_editor(sc, "Empty Cell Mapping", "calibration_samples", "empty_cell")
         self._build_dict_editor(sc, "Sample Thickness (cm)", "calibration_samples", "thickness")
 
-        s_combined, _ = self.create_scrollable_tab(self.sub_nb, "Pipeline & Physics Settings")
-        self.build_config_area(s_combined, "Pipeline Control", "pipeline_control")
+        s_combined, _ = self.create_scrollable_tab(self.sub_nb, "Physics Settings & Pipeline Control")
         self.build_config_area(s_combined, "Physics Corrections", "physics_corrections")
+        self.build_config_area(s_combined, "Pipeline Control", "pipeline_control")
 
         sd, _ = self.create_scrollable_tab(self.sub_nb, "Analysis Flags")
         self.build_config_area(sd, "Flags", "analysis_flags")
