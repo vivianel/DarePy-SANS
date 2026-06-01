@@ -19,7 +19,7 @@ def load_standards(config, result, det):
     calib_map = result['overview'].get(f'calibration_map_{det}')
 
     if not calib_map:
-        print(f"\n  [FATAL ERROR] Calibration map for {det}m is missing! Run prepare_input first.")
+        print(f"\n  [FATAL ERROR] Standards are missing for {det}m! double check your calibration samples.")
         sys.exit(1)
 
     standard_requirements = {

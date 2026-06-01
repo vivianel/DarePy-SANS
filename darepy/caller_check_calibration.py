@@ -31,8 +31,7 @@ def run_calibration_check(configuration, class_files):
     required_ids = {
         'Dark Current (Cd)': cal_setup.get('dark_current'),
         'Water Standard (H2O)': cal_setup.get('water'),
-        'Water Cell (EC)': cal_setup.get('water_cell'),
-        'Empty Beam (EB)': cal_setup.get('empty_beam')
+        'Water Cell (EC)': cal_setup.get('water_cell')
     }
 
     # Identify all unique detector distances present in the loaded data

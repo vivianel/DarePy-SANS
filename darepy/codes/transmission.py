@@ -29,13 +29,13 @@ def trans_calc(config, class_files, result):
     # ==========================================
     # 2. PROCEED WITH MATH
     # ==========================================
-    instrument = config['instrument']['name']
+    beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
 
-    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] > 0):
+    if beamstop == 'standard':
         result = select_transmission(config, class_files, result)
         result = trans_calc_reference(config, result, class_files)
         result = trans_calc_sample(config, result)
-    if instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist']  < 0:
+    if beamstop == 'semitransparent':
         result = trans_calc_reference(config, result, class_files)
         result = trans_calc_sample(config, result)
     return result
@@ -47,20 +47,22 @@ def trans_calc_reference(config, result, class_files):
     instrument = config['instrument']['name']
     coordinates = config['analysis']['transmission_coordinates']
 
-    eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
+    eb_block = config.get('transmission_setup', {}).get('empty_beam', 'EB')
     eb_id = get_flexible_value(eb_block, 'default', default_fallback='EB')
 
+    beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
 
-    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] > 0):
+
+    if beamstop == 'standard':
 
         # Check if a valid transmission distance exists
-        trans_dist = config.get('physics_corrections', {}).get('transmission_dist', 0)
+        trans_dist = config.get('physics_corrections', {}).get('dist_trans_measurements', 0)
         if not trans_dist or float(trans_dist) <= 0:
-            print("\n[INFO] Skipping transmission calculation (No valid transmission_dist provided).")
+            print("\n[INFO] Skipping transmission calculation (No valid dist_trans_measurements provided).")
             return result
 
         class_trans = result['overview']['trans_files']
-        trans_dist = config['physics_corrections']['transmission_dist']
+        trans_dist = config['transmission_setup']['dist_trans_measurements']
 
         eb_hdf = find_hdf_by_identifier(eb_id, class_trans)
 
@@ -134,7 +136,7 @@ def trans_calc_reference(config, result, class_files):
         else:
             sys.exit(f'Please measure an empty beam ({eb_id}) for the same detector distance ({trans_dist}m).')
 
-    elif instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist']  < 0:
+    elif beamstop == 'semitransparent':
         det_dist = list(set(class_files['detx_m']))
         for jj in det_dist:
             class_dist = {k: [] for k in class_files.keys()}
@@ -153,7 +155,7 @@ def trans_calc_reference(config, result, class_files):
                 try:
                     c = coordinates[jj]
                 except KeyError:
-                    sys.exit(f'Check coordinates for EB ({eb_id}) at distance {jj}m.')
+                    sys.exit(f'Check coordinates for the semi-transparent beamstop transmission region ({eb_id}) at distance {jj}m. Zeros are a problem.')
 
                 mask[c[0]:c[1], c[2]:c[3]] = 1
                 Factor_correction = 1
@@ -170,19 +172,20 @@ def trans_calc_sample(config, result):
     path_dir_an = create_analysis_folder(config)
     path_hdf_raw = config['analysis']['path_hdf_raw']
     instrument = config['instrument']['name']
+    beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
 
     # =========================================================================
     # CASE 1: Standard Single-Distance Transmission (SANS-I or SANS-LLB > 0)
     # =========================================================================
-    if instrument == 'SANS-I' or (instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] > 0):
+    if beamstop == 'standard':
         list_trans = []
         list_counts = []
         mask = result['transmission']['mask']
         EB_ref = result['transmission']['mean_EB']
 
         class_trans = result['overview']['trans_files']
-        trans_dist = config['physics_corrections']['transmission_dist']
-        eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
+        trans_dist = config['physics_corrections']['dist_trans_measurements']
+        eb_block = config.get('transmission_setup', {}).get('empty_beam', 'EB')
 
         # --- LOG BOOK SETUP ---
         trans_log = []
@@ -264,14 +267,14 @@ def trans_calc_sample(config, result):
     # =========================================================================
     # CASE 2: Multi-Distance Transmission (SANS-LLB with dist < 0)
     # =========================================================================
-    elif instrument == 'SANS-LLB' and config['physics_corrections']['transmission_dist'] < 0:
+    elif beamstop == 'semitransparent':
         list_trans_all = []
         list_counts_all = []
         list_thick_all = []
 
         # In the < 0 case, select_transmission is bypassed, so we use all_files directly.
         class_all = result['overview']['all_files']
-        eb_block = config.get('calibration_samples', {}).get('empty_beam', 'EB')
+        eb_block = config.get('transmission_setup', {}).get('empty_beam', 'EB')
 
         trans_log = []
         log_headers = ["Scan", "Sample", "Det_m", "EB_Used", "Trans_Counts", "Transmission"]
@@ -358,7 +361,7 @@ def normalize_trans(config, result, hdf_name, counts):
     return counts
 
 def select_transmission(config, class_files, result):
-    trans_dist = config['physics_corrections']['transmission_dist']
+    trans_dist = config['physics_corrections']['dist_trans_measurements']
 
     if not trans_dist or not isinstance(trans_dist, (int, float)):
         return result
@@ -370,8 +373,8 @@ def select_transmission(config, class_files, result):
          if (class_files['att'][ii] > 0 and
              class_files['detx_m'][ii] == trans_dist and
              class_files['time_s'][ii] > 0 and
-             class_files['beamstop_y'][ii] < -30):
-
+             (class_files['beamstop_y'][ii] < -30 or class_files['beamstop_y'][ii] < 0)):
+             print('Im here')
              for k in list_keys:
                  class_trans[k].append(class_files[k][ii])
 

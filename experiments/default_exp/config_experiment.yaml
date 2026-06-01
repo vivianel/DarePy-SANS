@@ -7,9 +7,9 @@ analysis_paths:
     ANALYSIS PATHS
     Tells the reduction pipeline where to find the raw data and save the results.
   project_base:
-    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2022_2358_MF_8mm_rest # Root directory for the config files and for saving the results
+    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2025_2012_Maria       # Root directory for the config files and for saving the results
   raw_data:
-    C:/Users/lutzbueno_v/Documents/Analysis/data/microfluidics/2022_2358_MF_8mm_rest/raw_data        # Source of HDF files
+    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2025_2012_Maria\raw_data # Source of HDF files
   scripts_dir:
     C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS                             # Location of source code = git repository
   dry_run: false         # If true = Check path availability without listing
@@ -18,7 +18,7 @@ instrument_setup:
   _desc: |
     INSTRUMENT SETUP
     Defines the physical conditions of your neutron scattering experiment.
-  which_instrument: SANS-I # Backend selector ofr instrument: SANS-I or SANS-LLB
+  which_instrument: SANS-LLB # Backend selector ofr instrument: SANS-I or SANS-LLB
 
 rename_samples:
   _desc: |
@@ -32,7 +32,7 @@ plot_2d:
   _desc: |
     PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 83910         # Scans to visualize (e.g., 85776:89530, 89650)
+  list_scan: 1473          # Scans to visualize (e.g., 85776:89530, 89650)
   clim:                    # Intensity limits for colorbar [min, max]
   - 0
   - 5
@@ -47,10 +47,11 @@ beam_center_mask:
     Interactive tool for finding beam center and masking the beam stop.
   sample_name: 'AgBE' # sample used for the center
   scans:
-    6.0: 83896
-    18.0: 83879
-    1.6: 83910
+    8.0: 83896
+    18.3: 83879
+    2.0: 83910
   scan_nr: 83910
+
 pipeline_control:
   _desc: |
     PIPELINE CONTROL
@@ -62,7 +63,7 @@ transmission_setup:
   _desc: |
     TRANSMISSION CALCULATION
     Specific hardware settings for calculating sample attenuation.
-  transmission_dist: 18.0       # Distance (m) used specifically for transmission measurements
+  transmission_dist: -18.3       # Distance (m) used specifically for transmission measurements
 
 physics_corrections:
   _desc: |
@@ -74,7 +75,7 @@ physics_corrections:
   subtract_dark_current: true    # Subtract ambient noise and counts (Cadmium measurement)
   subtract_empty_cell: true      # Remove container scattering
   apply_flat_field: true         # Correct for detector pixel sensitivity (H2O)
-  apply_transmission: true       # Correct for sample attenuation
+  apply_transmission: false       # Correct for sample attenuation
   normalize_to_thickness: true   # Normalize by sample path length (cm)
   perform_absolute_scaling: true # Convert counts to absolute cross-section (cm-1)
   apply_resolution_smearing: true   # Toggle for calculating dq
@@ -87,8 +88,8 @@ resolution_settings:
   calculate_resolution: true    # true for calculating the experimental resolution
   # Source (A1) Settings - e.g., the neutron guide
   source_shape: 'rectangular'    # 'circular' or 'rectangular'
-  source_slit_width: 0.050       # W1 in meters (e.g., 50 mm)
-  source_slit_height: 0.050      # H1 in meters (e.g., 50 mm)
+  source_slit_width: 0.05        # W1 in meters (e.g., 50 mm)
+  source_slit_height: 0.05       # H1 in meters (e.g., 50 mm)
   source_aperture_radius: 0.009  # Fallback for circular
 
   # Sample (A2) Settings - e.g., the microfluidic channel
@@ -108,26 +109,24 @@ calibration_samples:
   empty_cell:
     default: EC    # Default container background for all samples
   thickness:       # Sample thickness (cm) per sample name
-    default: 0.3   # Default value if sample name is not listed
-    CTAB: 0.1
-
+    default: 0.1
 detector_geometry:
   _desc: |
     DETECTOR GEOMETRY
     Beam center (pixels) and beamstop coordinates per detector distance.
     Refresh the gui after the calculation with the iterative tool.
   beam_center_guess: # center  of the scattering pattern for a given detector distance in meters
-    6.0:
+    8.0:
     - 59.06
     - 64.03
-    18.0:
+    18.3:
     - 60.26
     - 63.84
-    1.6:
+    2.0:
     - 59.57
     - 64.17
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
-    6.0:
+    8.0:
       bs0:
       - 57
       - 70
@@ -143,7 +142,7 @@ detector_geometry:
       - 128
       - 124
       - 128
-    18.0:
+    18.3:
       bs0:
       - 57
       - 69
@@ -159,14 +158,14 @@ detector_geometry:
       - 128
       - 119
       - 128
-    1.6:
+    2.0:
       bs0:
       - 56
       - 72
       - 51
       - 67
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
-    1.65:
+    2.0:
     - 59
     - 68
     - 56
@@ -176,12 +175,17 @@ detector_geometry:
     - 67
     - 56
     - 69
+    18.3:
+    - 59
+    - 67
+    - 56
+    - 69
 analysis_flags:
   _desc: |
     ANALYSIS FLAGS
     Detailed integration settings.
-  exclude_files: '85776:89530' # Scans to skip (e.g., bad data or setup runs)
-  force_reintegrate: false    # True: Overwrite existing .dat files
+  exclude_files: [] # Scans to skip (e.g., bad data or setup runs)
+  force_reintegrate: true    # True: Overwrite existing .dat files
   save_plot_radial: false     # Export I(q) plots as PNG
   integration_points: 120     # Number of bins in q-space
   sectors_nr: 18              # Number of 'pizza slices' for azimuthal integration
@@ -199,13 +203,13 @@ merging_settings:
   run_step_3_interpolation: false # Interpolate to common q-grid
   run_step_4_incoherent: false    # Fit and subtract flat incoherent background
   skip_start: # Points to trim from low-q end per distance
-    18.0: 5
-    1.6: 15
-    6: 5
+    18.3: 5
+    2.0: 15
+    8.0: 5
   skip_end:   # Points to trim from high-q end (noisy regions) per distance
     18.0: 25
     1.6: 5
-    6: 25
+    8.0: 25
   interp_type: log    # Resampling spacing: 'log' or 'lin'
   interp_points: 150  # Total points in final merged curve
   last_points_to_fit: 50 # Points used for Porod/Background estimation

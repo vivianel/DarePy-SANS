@@ -11,6 +11,13 @@ parent_dir = os.path.dirname(current_script_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
+
+# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
+codes_dir = os.path.join(parent_dir, "darepy/codes")
+
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
+
 # 3. Import utilities and backend logic
 from utils import load_config, load_instrument_registry, create_analysis_folder, save_results
 import prepare_input as org
@@ -25,7 +32,7 @@ def run_transmission(configuration, class_files, result, ctrl):
         return result
 
     # Get the distance from the transmission_setup
-    t_dist = configuration['transmission_setup'].get('transmission_dist', 0)
+    t_dist = configuration['transmission_setup'].get('dist_trans_measurements', 0)
 
     # Validate distance and run calculation
     if isinstance(t_dist, (int, float)) and t_dist != 0:
@@ -48,7 +55,7 @@ if __name__ == "__main__":
     selected_inst = ext_cfg['instrument_setup']['which_instrument']
 
     # Extract the distance for transmission measurement
-    t_dist = ext_cfg.get('transmission_setup', {}).get('transmission_dist', 18)
+    t_dist = ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18)
 
     # --- STEP 2: CONSTRUCT CONFIGURATION OBJECT ---
     configuration = {
@@ -61,7 +68,7 @@ if __name__ == "__main__":
         },
         'physics_corrections': {
             **ext_cfg.get('physics_corrections', {}),
-            'transmission_dist': t_dist
+            'dist_trans_measurements': t_dist
         },
         'analysis': {
             'path_dir': str(Path(ext_cfg['analysis_paths']['project_base'])),
