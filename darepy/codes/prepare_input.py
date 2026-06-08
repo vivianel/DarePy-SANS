@@ -60,7 +60,7 @@ def list_files(config, result):
             class_files['temp_C'].append(load_hdf(path_hdf_raw, file, 'temp'))
             class_files['detx_m'].append(load_hdf(path_hdf_raw, file, 'detx'))
             class_files['dety_m'].append(load_hdf(path_hdf_raw, file, 'dety'))
-            class_files['wl_A'].append(load_hdf(path_hdf_raw, file, 'wl'))
+            class_files['wl_A'].append(round(load_hdf(path_hdf_raw, file, 'wl')))
 
             sample_name = load_hdf(path_hdf_raw, file, 'sample_name')
             class_files['sample_name'].append(sample_name)

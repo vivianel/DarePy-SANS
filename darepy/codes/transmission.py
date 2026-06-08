@@ -44,7 +44,6 @@ def trans_calc_reference(config, result, class_files):
     path_dir_an = create_analysis_folder(config)
     path_hdf_raw = config['analysis']['path_hdf_raw']
 
-    instrument = config['instrument']['name']
     coordinates = config['analysis']['transmission_coordinates']
 
     eb_block = config.get('transmission_setup', {}).get('empty_beam', 'EB')
@@ -171,11 +170,10 @@ def trans_calc_reference(config, result, class_files):
 def trans_calc_sample(config, result):
     path_dir_an = create_analysis_folder(config)
     path_hdf_raw = config['analysis']['path_hdf_raw']
-    instrument = config['instrument']['name']
     beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
 
     # =========================================================================
-    # CASE 1: Standard Single-Distance Transmission (SANS-I or SANS-LLB > 0)
+    # CASE 1: Standard Single-Distance Transmission for standard beamstop
     # =========================================================================
     if beamstop == 'standard':
         list_trans = []
@@ -265,7 +263,7 @@ def trans_calc_sample(config, result):
         return result
 
     # =========================================================================
-    # CASE 2: Multi-Distance Transmission (SANS-LLB with dist < 0)
+    # CASE 2: Multi-Distance Transmission for semi-transparent beamstop
     # =========================================================================
     elif beamstop == 'semitransparent':
         list_trans_all = []
@@ -303,6 +301,13 @@ def trans_calc_sample(config, result):
 
             eb_hdf = find_hdf_by_identifier(eb_id, class_dist)
 
+            # --- EXTRACT SCAN NUMBER OF THE MULTI-DISTANCE EMPTY BEAM ---
+            if eb_hdf is not None and eb_hdf in class_all['name_hdf']:
+                eb_idx = class_all['name_hdf'].index(eb_hdf)
+                eb_scan_log = str(class_all['scan'][eb_idx])
+            else:
+                eb_scan_log = "MISSING"
+
             # 2. Check if a valid reference was calculated for this distance
             if mask_key in result['transmission'] and eb_ref_key in result['transmission']:
                 mask = result['transmission'][mask_key]
@@ -314,7 +319,7 @@ def trans_calc_sample(config, result):
                 sum_counts = float(np.sum(np.multiply(img, mask)))
                 list_counts_all.append(sum_counts)
 
-                current_log = [scanNr, sample_name, det_m, eb_id, f"{sum_counts:.2e}"]
+                current_log = [scanNr, sample_name, det_m, eb_scan_log, f"{sum_counts:.2e}"]
 
                 if hdf_name != eb_hdf:
                     # Protect against division by zero
@@ -328,7 +333,7 @@ def trans_calc_sample(config, result):
                 # Fallback if no empty beam was computed for this specific distance
                 list_counts_all.append('--')
                 list_trans_all.append('--')
-                current_log = [scanNr, sample_name, det_m, eb_id, "--", "NO_REF_FOUND"]
+                current_log = [scanNr, sample_name, det_m, eb_scan_log, "--", "NO_REF_FOUND"]
 
             trans_log.append(current_log)
             list_thick_all.append(thickness_map.get(sample_name, default_t))
@@ -337,6 +342,8 @@ def trans_calc_sample(config, result):
         class_all['transmission'] = list_trans_all
         class_all['counts'] = list_counts_all
         class_all['thickness_cm'] = list_thick_all
+        
+        result['transmission']['calc'] = list_trans_all
 
         print("\n" + "="*80)
         print("TRANSMISSION LOG (MULTI-DISTANCE)")

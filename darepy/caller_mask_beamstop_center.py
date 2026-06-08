@@ -16,7 +16,11 @@ parent_dir = os.path.dirname(current_script_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
+# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
+codes_dir = os.path.join(parent_dir, "darepy/codes")
 
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
 # ==========================================
 # %% STANDARD IMPORTS
 # ==========================================
@@ -389,7 +393,7 @@ class ClickManager:
 
         self.ai_final = pyFAI_ai.AzimuthalIntegrator(dist=self.detector_distance, poni1=poni1, poni2=poni2, rot1=0,
                                                      rot2=0, rot3=0, pixel1=self.pixel_size_x, pixel2=self.pixel_size_y,
-                                                     splinefile=None, detector=None, wavelength=self.wavelength)
+                                                     detector=None, wavelength=self.wavelength)
         self.ai_final.setChiDiscAtZero()
 
         sectors_nr = 16

@@ -173,7 +173,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             # 3: Transmission (Sample)
             if physics.get('apply_transmission', False):
                 idx_all = list(result['overview']['all_files']['name_hdf']).index(hdf_name)
-                trans = result['overview']['all_files']['transmission'][idx_all]
+                trans = result['transmission']['calc'][idx_all]
 
                 if isinstance(trans, (float, int, np.float64)) and trans > 0:
                     img = norm.normalize_transmission(config, hdf_name, result, img)

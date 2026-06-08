@@ -281,16 +281,14 @@ class DarePyGUI:
             var = tk.BooleanVar(master=self.root, value=value)
             tk.Checkbutton(f, text="", variable=var, bg=bg).pack(anchor="w")
             self.entries[config_key][path] = var
-        elif label in ["which_instrument", "integration_direction", "beamstop", "plot_scale", "source_shape", "aperture_shape"]:
+        elif label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", "source_shape", "aperture_shape"]:
             if label == "which_instrument":
                 opts = ["SANS-I", "SANS-LLB"]
             elif label == "integration_direction":
                 opts = ["horizontal", "vertical", "azimuthal"]
             elif label == "beamstop":
-                # NOTE: Make sure this matches your YAML value exactly!
-                # If your YAML uses 'semitransparent' (no hyphen), use "semitransparent" here.
                 opts = ["semitransparent", "standard"]
-            elif label == "plot_scale":
+            elif label in ["plot_scale", "interp_type"]:
                 opts = ["lin", "log"]
             elif label in ["aperture_shape", "source_shape"]:
                 opts = ["rectangular", "circular"]
@@ -438,13 +436,12 @@ class DarePyGUI:
 
         # --- TAB 7: MERGING CURVES ---
         s7, f7 = self.create_scrollable_tab(self.notebook, "7. Merging Curves")
-        # FIX: Added a SAVE button next to the RUN button for quick and easy saves from Tab 7
         tk.Button(f7, text="SAVE SETTINGS", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
                   command=self.save_data).pack(side="left", fill="x", expand=True, padx=2)
         tk.Button(f7, text="RUN DATA MERGING", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_merging.py")).pack(side="left", fill="x", expand=True, padx=2)
 
-        top_f = tk.LabelFrame(s7, text="Merging Control", padx=10, pady=10, bg=bg)
+        top_f = tk.LabelFrame(s7, text="Merging Pipeline Controls", padx=10, pady=10, bg=bg)
         top_f.pack(fill="x", padx=10, pady=5)
 
         m_data = self.config_dict.get('merging_settings', {})
@@ -456,8 +453,8 @@ class DarePyGUI:
                 if ca_items and key in ca_items:
                     for token in ca_items[key]:
                         if token and hasattr(token, 'value'):
-                            val = token.value.strip().lstrip('#').strip()
-                            if val: return f"  # {val}"
+                            # Strip out the '#' symbol so it doesn't get duplicated by _create_field
+                            return token.value.strip().lstrip('#').strip()
             except Exception: pass
             return ""
 
@@ -466,6 +463,7 @@ class DarePyGUI:
                       fg="#444", bg="#eef2f7", justify="left", anchor="w",
                       padx=10, pady=8, wraplength=800).pack(fill="x", pady=(0, 10))
 
+        # 1. Step Checkboxes
         for k in ['run_step_1_plotting', 'run_step_2_merging', 'run_step_3_interpolation', 'run_step_4_incoherent']:
             val = m_data.get(k, False)
             var = tk.BooleanVar(master=self.root, value=val)
@@ -477,22 +475,28 @@ class DarePyGUI:
 
             cmt = get_comment(k)
             if cmt:
-                tk.Label(row_f, text=cmt, font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
+                tk.Label(row_f, text=f"  # {cmt}", font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
 
             self.entries['merging_settings'][(k,)] = var
 
-        i_row = tk.Frame(top_f, bg=bg); i_row.pack(fill="x", pady=(10,0))
-        tk.Label(i_row, text="interp_type", font=("Arial", 9, "bold"), bg=bg).pack(side="left")
-
-        i_cmt = get_comment('interp_type')
-        if i_cmt:
-            tk.Label(i_row, text=i_cmt, font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
-
-        i_ent = tk.Entry(top_f); i_ent.insert(0, m_data.get('interp_type', 'log'))
-        i_ent.pack(fill="x", pady=(2, 5))
-        self.entries['merging_settings'][('interp_type',)] = i_ent
-
+        # 2. Skip Points Table
         self._build_merging_table(s7, "Data Clipping (Skip Points)", "merging_settings")
+
+        # 3. Interpolation & Fitting Frame (Leveraging _create_field for maximum consistency)
+        interp_f = tk.LabelFrame(s7, text="Interpolation & Background Settings", padx=10, pady=10, bg=bg)
+        interp_f.pack(fill="x", padx=10, pady=5)
+
+        for param_key in ['interp_type', 'interp_points', 'last_points_to_fit']:
+            if param_key in m_data:
+                cmt = get_comment(param_key)
+                self._create_field(
+                    parent=interp_f,
+                    label=param_key,
+                    value=m_data[param_key],
+                    config_key='merging_settings',
+                    path=(param_key,),
+                    comment=cmt
+                )
 
     def _build_merging_table(self, parent, title, m_key):
         bg = self.root.cget('bg')
