@@ -15,6 +15,9 @@ SANS-I:
   efficiency_map: 'flat_field_SANS-I.txt' # The filename of the flat-field matrix used to correct for uneven pixel sensitivity.
   monitor_path: '/entry1/SANS/monitor2/counts'                  # Which beam monitor should be read for flux normalization
 
+  # --- RESOLUTION OF NEUTRON VELOCITY SELECTOR  ---
+  wavelength_spread: 0.10            # Delta lambda / lambda FWHM (10% for SANS-I)
+
   # --- NEUTRON BEAM MODIFIERS ---
   # These map the integer index of the attenuator wheel/slider to its actual transmission factor.
   list_attenuation:

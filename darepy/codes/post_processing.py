@@ -16,6 +16,11 @@ def plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False):
     Skips plotting if the file already exists and force_replot is False.
     """
     import numpy as np
+    import matplotlib
+    try:
+        matplotlib.use('Qt5Agg')
+    except:
+        matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
     import os
     import pickle

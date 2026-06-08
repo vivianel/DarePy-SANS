@@ -1,39 +1,47 @@
 # -*- coding: utf-8 -*-
 import sys
 from pathlib import Path
+import os
 
-# ==========================================
-# %% DYNAMIC PATH INJECTION
-# ==========================================
-current_dir = Path(__file__).resolve().parent
-code_dir = current_dir / 'codes'
+# 1. Get the directory of the current script (darepy/codes/)
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Go up one level to find utils.py (in darepy/)
+parent_dir = os.path.dirname(current_script_dir)
 
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-from utils import load_config, load_instrument_registry
+
+# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
+codes_dir = os.path.join(parent_dir, "darepy/codes")
+
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
+
+# 3. Import utilities and backend logic
+from utils import load_config, load_instrument_registry, create_analysis_folder, save_results
 import prepare_input as org
 from transmission import trans_calc
 
 def run_transmission(configuration, class_files, result, ctrl):
     """Refined execution logic following your original pipeline."""
-    # 1. Check the master toggle
+    # Check the master toggle in pipeline_control
     run_trans = ctrl.get('run_transmission', True)
     if not run_trans:
         print("\n--- Transmission Calculation Skipped (Disabled in YAML) ---")
         return result
 
-    # 2. Get the distance from the new 'transmission_setup'
-    t_dist = configuration['transmission_setup'].get('transmission_dist', 0)
+    # Get the distance from the transmission_setup
+    t_dist = configuration['transmission_setup'].get('dist_trans_measurements', 0)
 
-    # 3. Your original logic: Check if dist > 0 or dist < 0 (LLB mode)
+    # Validate distance and run calculation
     if isinstance(t_dist, (int, float)) and t_dist != 0:
         print("\n" + "*"*50)
         print(f"🚀 STARTING: CALCULATING TRANSMISSIONS")
         print(f"Target Distance: {t_dist}m")
         print("*"*50 + "\n")
 
-        # This is the actual calculation call
+        # Capture the updated result dictionary from the backend
         result = trans_calc(configuration, class_files, result)
     else:
         print(f"\n--- Step 3: Skipped. No valid distance provided ({t_dist}m). ---")
@@ -41,14 +49,15 @@ def run_transmission(configuration, class_files, result, ctrl):
     return result
 
 if __name__ == "__main__":
+    # --- STEP 1: LOAD CONFIGURATIONS ---
     ext_cfg = load_config()
     INSTRUMENT_REGISTRY = load_instrument_registry()
     selected_inst = ext_cfg['instrument_setup']['which_instrument']
 
-    # Extract the distance from your new YAML field
-    t_dist = ext_cfg.get('transmission_setup', {}).get('transmission_dist', 18)
+    # Extract the distance for transmission measurement
+    t_dist = ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18)
 
-    # --- THE ROBUST CONFIGURATION ---
+    # --- STEP 2: CONSTRUCT CONFIGURATION OBJECT ---
     configuration = {
         'instrument': INSTRUMENT_REGISTRY[selected_inst],
         'transmission_setup': ext_cfg.get('transmission_setup', {}),
@@ -58,9 +67,8 @@ if __name__ == "__main__":
             'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {})
         },
         'physics_corrections': {
-            # We put it here too so the backend trans_calc() finds it!
             **ext_cfg.get('physics_corrections', {}),
-            'transmission_dist': t_dist
+            'dist_trans_measurements': t_dist
         },
         'analysis': {
             'path_dir': str(Path(ext_cfg['analysis_paths']['project_base'])),
@@ -73,28 +81,41 @@ if __name__ == "__main__":
         }
     }
 
+    # Initialize blank result container
     result = {
         'overview': {},
         'transmission': {},
         'integration': {'integration_points': 120, 'sectors_nr': 1}
     }
 
+    # --- STEP 3: SINGLE EXECUTION SEQUENCE ---
     print("Step 0: Indexing files (Required for Transmission)...")
     class_files = org.list_files(configuration, result)
+    # --- FIX: Map thickness to class_files before processing ---
+    thickness_map = configuration['experiment']['sample_thickness']
+    default_t = thickness_map.get('default', 0.1) # Fallback to 0.1 if default is missing
+
+    # Assign thickness based on sample name
+    t_list = []
+    for name in class_files['sample_name']:
+        # Get specific thickness or use default
+        t_list.append(thickness_map.get(name, default_t))
+
+    class_files['thickness_cm'] = t_list
+    # -----------------------------------------------------------
 
     if class_files:
-        run_transmission(configuration, class_files, result, ext_cfg.get('pipeline_control', {}))
+        ctrl = ext_cfg.get('pipeline_control', {})
 
-    # 4. Step 1: Index files
-    print("Step 0: Indexing files...")
-    class_files = org.list_files(configuration, result)
-    ctrl = ext_cfg.get('pipeline_control', {})
-    # 5. Step 3: Run the calculation
-    if class_files:
+        # Run calculation and update the result object
         result = run_transmission(configuration, class_files, result, ctrl)
 
-        # ENSURE DATA IS PERSISTED
-        from utils import create_analysis_folder, save_results
+        # --- STEP 4: PERSIST RESULTS FOR RADIAL INTEGRATION ---
+        # This creates the 'analysis' folder and saves result.npy
         analysis_folder = create_analysis_folder(configuration)
         save_results(analysis_folder, result)
-        print(f"✅ Transmission calculation complete. Results saved to {analysis_folder}")
+
+        print(f"\n✅ SUCCESS: Transmission calculation complete.")
+        print(f"📂 Results saved to: {analysis_folder}")
+    else:
+        print("❌ ERROR: No valid HDF5 files found in the raw data directory.")

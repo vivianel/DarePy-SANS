@@ -7,19 +7,22 @@ import sys
 import time
 import os
 import pickle
-from pathlib import Path
 
-# ==========================================
-# %% DYNAMIC PATH INJECTION
-# ==========================================
-try:
-    current_dir = Path(__file__).resolve().parent
-except NameError:
-    current_dir = Path(os.getcwd()).resolve()
 
-code_dir = current_dir / 'codes'
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
+# 1. Get the directory of the current script (darepy/codes/)
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Go up one level to find utils.py (in darepy/)
+parent_dir = os.path.dirname(current_script_dir)
+
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
+codes_dir = os.path.join(parent_dir, "darepy/codes")
+
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
+
 
 # ==========================================
 # STEP 0 & 1: LOAD MASTER CONFIGURATIONS
@@ -71,7 +74,7 @@ configuration = {
         'wl_input': ext_cfg['physics_corrections']['wavelength'],
         'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
         # FIX: Map the transmission distance to where the backend expects it
-        'trans_dist': ext_cfg.get('transmission_setup', {}).get('transmission_dist', 18)
+        'trans_dist': ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18)
     },
     'physics_corrections': ext_cfg.get('physics_corrections', {}),
     'analysis': {
@@ -93,7 +96,7 @@ configuration = {
         'beamstopper_coordinates': {
             # Mask coordinates MUST be integers for numpy array slicing
             k: {sk: ([int(float(x)) for x in str(sv).split(',')] if isinstance(sv, str) else [int(x) for x in sv])
-                for sk, sv in v.items()}
+                for sk, sv in (v.items() if isinstance(v, dict) else [('default', v)])}
             for k, v in ext_cfg['detector_geometry']['beamstopper_coordinates'].items()
         },
         'transmission_coordinates': ext_cfg['detector_geometry'].get('transmission_coordinates', {}),
@@ -119,16 +122,17 @@ while True:
     # --- THE CRITICAL FIX: INJECT TRANSMISSIONS INTO METADATA ---
     # --- METADATA INJECTION ---
     if os.path.exists(result_file):
-        with open(result_file, 'rb') as f:
-            saved_data = pickle.load(f)
-            saved_trans = saved_data.get('transmission', {})
-            result['transmission'].update(saved_trans)
+        if 'transmission' in result:
+            with open(result_file, 'rb') as f:
+                saved_data = pickle.load(f)
+                saved_trans = saved_data.get('transmission', {})
+                result['transmission'].update(saved_trans)
 
-            if class_files and saved_trans:
-                trans_column = [saved_trans.get(hdf, 1.0) for hdf in class_files['name_hdf']]
-                class_files['transmission'] = trans_column
-                result['overview']['transmission'] = trans_column
-                print(f"🔗 Linked saved transmissions to file list.")
+                if class_files and saved_trans:
+                    trans_column = [saved_trans.get(hdf, 1.0) for hdf in class_files['name_hdf']]
+                    class_files['transmission'] = trans_column
+                    result['overview']['transmission'] = trans_column
+                    print(f"🔗 Linked saved transmissions to file list.")
 
     # --- THE NEW VALIDATION GUARD ---
     apply_t = configuration['physics_corrections'].get('apply_transmission', False)

@@ -60,7 +60,7 @@ def list_files(config, result):
             class_files['temp_C'].append(load_hdf(path_hdf_raw, file, 'temp'))
             class_files['detx_m'].append(load_hdf(path_hdf_raw, file, 'detx'))
             class_files['dety_m'].append(load_hdf(path_hdf_raw, file, 'dety'))
-            class_files['wl_A'].append(load_hdf(path_hdf_raw, file, 'wl'))
+            class_files['wl_A'].append(round(load_hdf(path_hdf_raw, file, 'wl')))
 
             sample_name = load_hdf(path_hdf_raw, file, 'sample_name')
             class_files['sample_name'].append(sample_name)
@@ -143,20 +143,21 @@ def select_detector_distances(config, class_files, result):
         print(f'   For sample-detector distance: {string}m')
         print('%' * 50)
 
-        # --- NEW: Build the Calibration Map for this distance ---
-        calib_map = {}
+        if config.get('physics_corrections', {}).get('subtract_empty_cell', False) or config.get('physics_corrections', {}).get('perform_absolute_scaling', False) or config.get('physics_corrections', {}).get('subtract_dark_current', False):
+            # --- NEW: Build the Calibration Map for this distance ---
+            calib_map = {}
 
-        print('\n  --- Checking Calibration Dependencies ---')
-        for calib_key, sample_id in calibration.items():
-            # The checker will now return the exact HDF filename it found
-            mapped_hdf = check_calibration_dependency(calib_key, sample_id, class_det, config, string)
+            print('\n  --- Checking Calibration Dependencies ---')
+            for calib_key, sample_id in calibration.items():
+                # The checker will now return the exact HDF filename it found
+                mapped_hdf = check_calibration_dependency(calib_key, sample_id, class_det, config, string)
 
-            # If a file was successfully mapped, store it!
-            if mapped_hdf is not None:
-                calib_map[calib_key] = mapped_hdf
+                # If a file was successfully mapped, store it!
+                if mapped_hdf is not None:
+                    calib_map[calib_key] = mapped_hdf
 
-        # Save this definitive map directly into the results dictionary
-        result['overview'][f'calibration_map_{string}'] = calib_map
+            # Save this definitive map directly into the results dictionary
+            result['overview'][f'calibration_map_{string}'] = calib_map
 
         # This CSV file and the 'result' dictionary now act as our Single Source of Truth
         save_list_files(path_det, path_dir_an, class_det, f'det_files_{string}', result)

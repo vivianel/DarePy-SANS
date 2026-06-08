@@ -1,27 +1,34 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-conda activate spyder-env
-
-This script processes SANS HDF5 data to create a GIF animation or save individual frames.
-It automatically detects the year in filenames and supports background subtraction.
-"""
+import sys
+import os
 import numpy as np
 import matplotlib
-# Force an interactive backend BEFORE importing pyplot
+from pathlib import Path
+
+# ==========================================
+# %% 1. PATH INJECTION (Finds utils.py one level up)
+# ==========================================
+current_dir = Path(__file__).resolve().parent
+parent_dir = current_dir.parent  # This is the /darepy/ folder
+
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+
+from utils import load_hdf, find_hdf_filename, load_config, parse_scan_list
+
+# Catch the YAML path sent by the GUI (sys.argv[1])
+config = load_config()
+
+# --- REST OF THE IMPORTS ---
 try:
     matplotlib.use('Qt5Agg')
 except:
     matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt # Matplotlib imported for interactive use
-import os
+import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from PIL import Image # For saving GIFs from individual frames (fallback method)
-from utils import load_hdf, find_hdf_filename, load_config, parse_scan_list
+from PIL import Image
 
-# Automatically loads config_experiment.yaml using your utils file
-config = load_config()
+
 cfg_2d = config['plot_2d']
 
 LIST_SCAN = parse_scan_list(config['plot_2d']['list_scan'])

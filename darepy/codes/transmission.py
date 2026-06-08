@@ -1,0 +1,389 @@
+# -*- coding: utf-8 -*-
+"""
+DarePy-SANS: Transmission Calculation
+Calculates transmission scalars using the Virtual Referencing architecture.
+Saves logs directly to the analysis root.
+"""
+import numpy as np
+import os
+import sys
+import csv
+from tabulate import tabulate
+
+# Importing unified flexible logic directly from utils
+from utils import load_hdf, create_analysis_folder, save_results, get_flexible_value, find_hdf_by_identifier
+from prepare_input import save_list_files
+import normalize_counts as norm
+
+def trans_calc(config, class_files, result):
+
+    # ==========================================
+    # 1. MASTER KILL SWITCH
+    # ==========================================
+    # Check the YAML flag. (We use str().lower() to catch 'false', 'False', or boolean False safely!)
+    run_flag = config.get('pipeline_control', {}).get('run_transmission', True)
+    if str(run_flag).lower() == 'false' or run_flag is False:
+        print("\n[INFO] Skipping transmission calculation (run_transmission set to False in YAML).")
+        return result
+
+    # ==========================================
+    # 2. PROCEED WITH MATH
+    # ==========================================
+    beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
+
+    if beamstop == 'standard':
+        result = select_transmission(config, class_files, result)
+        result = trans_calc_reference(config, result, class_files)
+        result = trans_calc_sample(config, result)
+    if beamstop == 'semitransparent':
+        result = trans_calc_reference(config, result, class_files)
+        result = trans_calc_sample(config, result)
+    return result
+
+def trans_calc_reference(config, result, class_files):
+    path_dir_an = create_analysis_folder(config)
+    path_hdf_raw = config['analysis']['path_hdf_raw']
+
+    coordinates = config['analysis']['transmission_coordinates']
+
+    eb_block = config.get('transmission_setup', {}).get('empty_beam', 'EB')
+    eb_id = get_flexible_value(eb_block, 'default', default_fallback='EB')
+
+    beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
+
+
+    if beamstop == 'standard':
+
+        # Check if a valid transmission distance exists
+        trans_dist = config.get('physics_corrections', {}).get('dist_trans_measurements', 0)
+        if not trans_dist or float(trans_dist) <= 0:
+            print("\n[INFO] Skipping transmission calculation (No valid dist_trans_measurements provided).")
+            return result
+
+        class_trans = result['overview']['trans_files']
+        trans_dist = config['transmission_setup']['dist_trans_measurements']
+
+        eb_hdf = find_hdf_by_identifier(eb_id, class_trans)
+
+        if eb_hdf is not None:
+            idx = class_trans['name_hdf'].index(eb_hdf)
+            if class_trans['detx_m'][idx] == trans_dist:
+                counts = load_hdf(path_hdf_raw, eb_hdf, 'counts')
+                img_eb = normalize_trans(config, result, eb_hdf, counts)
+
+                # =========================================================
+                # SHAPE-BASED MASKING (Image Moments & Gaussian Spread)
+                # =========================================================
+                print(f"\n[AUTO-MASK] Calculating shape-based elliptical mask for {trans_dist}m...")
+
+                # 1. Isolate the core beam from detector noise
+                # The median of the detector is a great estimate of the dark noise floor
+                noise_floor = np.median(img_eb)
+                beam_only = img_eb - noise_floor
+                beam_only[beam_only < 0] = 0  # Zero out negative noise
+
+                # We use the top 10% of the beam purely to calculate its mathematical shape
+                # without being skewed by random hot pixels at the edges of the detector.
+                shape_threshold = beam_only.max() * 0.10
+                core_beam = np.where(beam_only > shape_threshold, beam_only, 0)
+
+                total_intensity = core_beam.sum()
+                mask = np.zeros_like(img_eb)
+
+                if total_intensity > 0:
+                    # Create coordinate grids
+                    y_indices, x_indices = np.indices(core_beam.shape)
+
+                    # 2. Calculate the Center of Mass (Weighted by Intensity)
+                    center_y = (y_indices * core_beam).sum() / total_intensity
+                    center_x = (x_indices * core_beam).sum() / total_intensity
+
+                    # 3. Calculate the Spatial Spread (Variance -> Standard Deviation)
+                    var_y = (((y_indices - center_y)**2) * core_beam).sum() / total_intensity
+                    var_x = (((x_indices - center_x)**2) * core_beam).sum() / total_intensity
+
+                    sigma_y = np.sqrt(var_y)
+                    sigma_x = np.sqrt(var_x)
+
+                    print(f" -> Beam Center: (X: {center_x:.1f}, Y: {center_y:.1f})")
+                    print(f" -> Beam Spread: (\u03C3_x: {sigma_x:.2f}, \u03C3_y: {sigma_y:.2f})")
+
+                    # 4. Draw the Elliptical Mask
+                    # A multiplier of 4 standard deviations captures >99.9% of a real neutron beam
+                    radius_multiplier = 4.0
+
+                    # Prevent division by zero if the beam is impossibly thin
+                    rx = max(radius_multiplier * sigma_x, 1.0)
+                    ry = max(radius_multiplier * sigma_y, 1.0)
+
+                    # Equation of an ellipse: ((x - xc)/rx)^2 + ((y - yc)/ry)^2 <= 1
+                    ellipse_eq = ((x_indices - center_x)**2) / (rx**2) + ((y_indices - center_y)**2) / (ry**2)
+                    mask[ellipse_eq <= 1.0] = 1
+
+                    print(f" -> Mask created: Ellipse spanning {radius_multiplier} \u03C3.")
+                else:
+                    print("\n[ERROR] Empty Beam has zero intensity! Cannot calculate mask.")
+                    sys.exit(1)
+                # =========================================================
+
+                Factor_correction = 1
+                EB_ref = float(np.sum(np.multiply(img_eb, mask))) * Factor_correction
+
+                result['transmission']['mask'] = mask
+                result['transmission']['mean_EB'] = EB_ref
+                result['transmission']['EB_counts'] = img_eb
+        else:
+            sys.exit(f'Please measure an empty beam ({eb_id}) for the same detector distance ({trans_dist}m).')
+
+    elif beamstop == 'semitransparent':
+        det_dist = list(set(class_files['detx_m']))
+        for jj in det_dist:
+            class_dist = {k: [] for k in class_files.keys()}
+            for ii in range(len(class_files['detx_m'])):
+                if class_files['detx_m'][ii] == jj:
+                    for k in class_files.keys():
+                        class_dist[k].append(class_files[k][ii])
+
+            eb_hdf = find_hdf_by_identifier(eb_id, class_dist)
+
+            if eb_hdf is not None:
+                counts = load_hdf(path_hdf_raw, eb_hdf, 'counts')
+                img = normalize_trans(config, result, eb_hdf, counts)
+
+                mask = np.zeros_like(img)
+                try:
+                    c = coordinates[jj]
+                except KeyError:
+                    sys.exit(f'Check coordinates for the semi-transparent beamstop transmission region ({eb_id}) at distance {jj}m. Zeros are a problem.')
+
+                mask[c[0]:c[1], c[2]:c[3]] = 1
+                Factor_correction = 1
+                EB_ref = float(np.sum(np.multiply(img,mask))) * Factor_correction
+
+                result['transmission']['mask_' + str(jj)] = mask
+                result['transmission']['mean_EB_' + str(jj)] = EB_ref
+                result['transmission']['counts_EB_' + str(jj)] = img
+
+    save_results(path_dir_an, result)
+    return result
+
+def trans_calc_sample(config, result):
+    path_dir_an = create_analysis_folder(config)
+    path_hdf_raw = config['analysis']['path_hdf_raw']
+    beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
+
+    # =========================================================================
+    # CASE 1: Standard Single-Distance Transmission for standard beamstop
+    # =========================================================================
+    if beamstop == 'standard':
+        list_trans = []
+        list_counts = []
+        mask = result['transmission']['mask']
+        EB_ref = result['transmission']['mean_EB']
+
+        class_trans = result['overview']['trans_files']
+        trans_dist = config['physics_corrections']['dist_trans_measurements']
+        eb_block = config.get('transmission_setup', {}).get('empty_beam', 'EB')
+
+        # --- LOG BOOK SETUP ---
+        trans_log = []
+        log_headers = ["Scan", "Sample", "Det_m", "EB_Used", "Trans_Counts", "Transmission"]
+
+        for ii in range(len(class_trans['sample_name'])):
+            hdf_name = class_trans['name_hdf'][ii]
+            sample_name = class_trans['sample_name'][ii]
+            scanNr = class_trans['scan'][ii]
+            det_m = class_trans['detx_m'][ii]
+
+            counts = load_hdf(path_hdf_raw, hdf_name , 'counts')
+            img = normalize_trans(config, result, hdf_name, counts)
+
+            sum_counts = float(np.sum(np.multiply(img, mask)))
+            list_counts.append(sum_counts)
+
+            eb_id = get_flexible_value(eb_block, sample_name, default_fallback='EB')
+            eb_hdf = find_hdf_by_identifier(eb_id, class_trans)
+
+            current_log = [scanNr, sample_name, det_m, eb_id, f"{sum_counts:.2e}"]
+
+            if class_trans['detx_m'][ii] == trans_dist and hdf_name != eb_hdf:
+                trans = np.divide(sum_counts, EB_ref)
+                list_trans.append(round(trans, 3))
+                current_log.append(f"{trans:.3f}")
+            else:
+                list_trans.append(1)
+                current_log.append("REF (1.000)" if hdf_name == eb_hdf else "1.000")
+
+            trans_log.append(current_log)
+
+        class_trans['transmission'] = list_trans
+        class_trans['counts'] = list_counts
+        result['overview']['trans_files']['transmission'] = list_trans
+        result['overview']['trans_files']['counts'] = list_counts
+
+        # --- PRINT AND SAVE LOG DIRECTLY IN ANALYSIS FOLDER ---
+        print("\n" + "="*80)
+        print("TRANSMISSION LOG")
+        print("="*80)
+        print(tabulate(trans_log, headers=log_headers, tablefmt="grid"))
+
+        log_file = os.path.join(path_dir_an, "transmission_log.csv")
+        with open(log_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(log_headers)
+            writer.writerows(trans_log)
+        print(f"\n[INFO] Transmission log saved to: {log_file}")
+
+        # Map back to all_files
+        list_trans_all = []
+        list_thick_all = []
+        class_all = result['overview']['all_files']
+
+        # Re-fetch thickness mapping from config
+        thickness_map = config['experiment']['sample_thickness']
+        default_t = thickness_map.get('default', 0.1)
+
+        for ii in range(len(class_all['sample_name'])):
+            s_name = str(class_all['sample_name'][ii])
+
+            # Update Transmission
+            if s_name in class_trans['sample_name']:
+                idx_trans = list(class_trans['sample_name']).index(s_name)
+                list_trans_all.append(class_trans['transmission'][idx_trans])
+            else:
+                list_trans_all.append('--')
+
+            # Update/Fix Thickness
+            list_thick_all.append(thickness_map.get(s_name, default_t))
+
+        class_all['transmission'] = list_trans_all
+        class_all['thickness_cm'] = list_thick_all
+        save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
+
+        return result
+
+    # =========================================================================
+    # CASE 2: Multi-Distance Transmission for semi-transparent beamstop
+    # =========================================================================
+    elif beamstop == 'semitransparent':
+        list_trans_all = []
+        list_counts_all = []
+        list_thick_all = []
+
+        # In the < 0 case, select_transmission is bypassed, so we use all_files directly.
+        class_all = result['overview']['all_files']
+        eb_block = config.get('transmission_setup', {}).get('empty_beam', 'EB')
+
+        trans_log = []
+        log_headers = ["Scan", "Sample", "Det_m", "EB_Used", "Trans_Counts", "Transmission"]
+
+        thickness_map = config['experiment']['sample_thickness']
+        default_t = thickness_map.get('default', 0.1)
+
+        for ii in range(len(class_all['sample_name'])):
+            hdf_name = class_all['name_hdf'][ii]
+            sample_name = class_all['sample_name'][ii]
+            scanNr = class_all['scan'][ii]
+            det_m = class_all['detx_m'][ii]
+
+            # 1. Search for the correct mask and EB reference based on this specific det_m
+            mask_key = 'mask_' + str(det_m)
+            eb_ref_key = 'mean_EB_' + str(det_m)
+
+            eb_id = get_flexible_value(eb_block, sample_name, default_fallback='EB')
+
+            # We need a subset of files at this distance to correctly identify if THIS file is the empty beam
+            class_dist = {k: [] for k in class_all.keys()}
+            for idx in range(len(class_all['detx_m'])):
+                if class_all['detx_m'][idx] == det_m:
+                    for k in class_all.keys():
+                        class_dist[k].append(class_all[k][idx])
+
+            eb_hdf = find_hdf_by_identifier(eb_id, class_dist)
+
+            # --- EXTRACT SCAN NUMBER OF THE MULTI-DISTANCE EMPTY BEAM ---
+            if eb_hdf is not None and eb_hdf in class_all['name_hdf']:
+                eb_idx = class_all['name_hdf'].index(eb_hdf)
+                eb_scan_log = str(class_all['scan'][eb_idx])
+            else:
+                eb_scan_log = "MISSING"
+
+            # 2. Check if a valid reference was calculated for this distance
+            if mask_key in result['transmission'] and eb_ref_key in result['transmission']:
+                mask = result['transmission'][mask_key]
+                EB_ref = result['transmission'][eb_ref_key]
+
+                counts = load_hdf(path_hdf_raw, hdf_name, 'counts')
+                img = normalize_trans(config, result, hdf_name, counts)
+
+                sum_counts = float(np.sum(np.multiply(img, mask)))
+                list_counts_all.append(sum_counts)
+
+                current_log = [scanNr, sample_name, det_m, eb_scan_log, f"{sum_counts:.2e}"]
+
+                if hdf_name != eb_hdf:
+                    # Protect against division by zero
+                    trans = np.divide(sum_counts, EB_ref) if EB_ref > 0 else 0
+                    list_trans_all.append(round(trans, 3))
+                    current_log.append(f"{trans:.3f}")
+                else:
+                    list_trans_all.append(1.000)
+                    current_log.append("REF (1.000)")
+            else:
+                # Fallback if no empty beam was computed for this specific distance
+                list_counts_all.append('--')
+                list_trans_all.append('--')
+                current_log = [scanNr, sample_name, det_m, eb_scan_log, "--", "NO_REF_FOUND"]
+
+            trans_log.append(current_log)
+            list_thick_all.append(thickness_map.get(sample_name, default_t))
+
+        # 3. Update the global file registry and print/save logs
+        class_all['transmission'] = list_trans_all
+        class_all['counts'] = list_counts_all
+        class_all['thickness_cm'] = list_thick_all
+        
+        result['transmission']['calc'] = list_trans_all
+
+        print("\n" + "="*80)
+        print("TRANSMISSION LOG (MULTI-DISTANCE)")
+        print("="*80)
+        print(tabulate(trans_log, headers=log_headers, tablefmt="grid"))
+
+        log_file = os.path.join(path_dir_an, "transmission_log_multidist.csv")
+        with open(log_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(log_headers)
+            writer.writerows(trans_log)
+        print(f"\n[INFO] Multi-distance transmission log saved to: {log_file}")
+
+        save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
+
+        return result
+
+def normalize_trans(config, result, hdf_name, counts):
+    counts = norm.normalize_deadtime(config, hdf_name, counts)
+    counts = norm.normalize_flux(config, hdf_name, counts)
+    counts = norm.normalize_attenuator(config, hdf_name, counts)
+    return counts
+
+def select_transmission(config, class_files, result):
+    trans_dist = config['physics_corrections']['dist_trans_measurements']
+
+    if not trans_dist or not isinstance(trans_dist, (int, float)):
+        return result
+
+    list_keys = list(class_files.keys())
+    class_trans = {key: [] for key in list_keys}
+
+    for ii in range(len(class_files['att'])):
+         if (class_files['att'][ii] > 0 and
+             class_files['detx_m'][ii] == trans_dist and
+             class_files['time_s'][ii] > 0 and
+             (class_files['beamstop_y'][ii] < -30 or class_files['beamstop_y'][ii] < 0)):
+             print('Im here')
+             for k in list_keys:
+                 class_trans[k].append(class_files[k][ii])
+
+    result['overview']['trans_files'] = class_trans
+    return result

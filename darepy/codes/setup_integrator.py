@@ -159,7 +159,7 @@ def setup_integration(config, result, det):
     ai = AzimuthalIntegrator(dist=dist, poni1=poni1, poni2=poni2,
                          rot1=0, rot2=0, rot3=0,
                          pixel1=pixel1, pixel2=pixel2,
-                         splinefile=None, detector=None, wavelength=wl)
+                         detector=None, wavelength=wl)
 
     ai.setChiDiscAtZero()
     result['integration']['ai'] = ai

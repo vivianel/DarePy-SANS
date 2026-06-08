@@ -7,38 +7,55 @@ Created on Wed Dec 6 10:52:03 2023
 
 import sys
 import os
-from pathlib import Path
 
-# ==========================================
-# %% DYNAMIC PATH INJECTION
-# ==========================================
-# Safely find the 'codes' folder even when running in Spyder's interactive console
-try:
-    current_dir = Path(__file__).resolve().parent
-except NameError:
-    current_dir = Path(os.getcwd()).resolve()
+# 1. Get the directory of the current script (darepy/codes/)
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Go up one level to find utils.py (in darepy/)
+parent_dir = os.path.dirname(current_script_dir)
 
-codes_dir = current_dir / 'codes'
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-if str(codes_dir) not in sys.path:
-    sys.path.insert(0, str(codes_dir))
+# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
+codes_dir = os.path.join(parent_dir, "darepy/codes")
 
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
 # ==========================================
 # %% STANDARD IMPORTS
 # ==========================================
 import numpy as np
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+
 import matplotlib.pyplot as plt
 import matplotlib
 import pyFAI.azimuthalIntegrator as pyFAI_ai
-from utils import load_hdf, find_hdf_filename, load_config
+from utils import load_hdf, find_hdf_filename, load_config, load_instrument_registry
 
 # ==========================================
 # %% Configuration
 # ==========================================
-
-
 config = load_config()
+# --- FIX: Retrieve the absolute path used by the loader ---
+import sys
+if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+    yaml_filepath = os.path.abspath(sys.argv[1])
+else:
+    # Fallback to the pointer logic if running manually in Spyder
+    from utils import CURRENT_DIR
+    pointer_file = os.path.join(CURRENT_DIR, ".active_experiment.txt")
+    if os.path.exists(pointer_file):
+        with open(pointer_file, 'r') as f:
+            exp_folder = f.read().strip()
+            yaml_filepath = os.path.join(exp_folder, "config_experiment.yaml")
+    else:
+        # Emergency fallback to current logic
+        yaml_filepath = os.path.join(config['analysis_paths']['scripts_dir'], 'config_experiment.yaml')
+
+print(f"Target YAML for saving: {yaml_filepath}")
+
 # Pull paths dynamically from YAML
 path_hdf_raw = config['analysis_paths']['raw_data']
 
@@ -47,8 +64,6 @@ instrument = config['instrument_setup']['which_instrument']
 # Assuming you move this down to where config = load_config() is called:
 scanNr = config['beam_center_mask']['scan_nr']
 
-yaml_filepath = config['analysis_paths']['scripts_dir']
-yaml_filepath = os.path.join(yaml_filepath, 'config_experiment.yaml')
 
 # ==========================================
 # %% Load Data
@@ -64,8 +79,7 @@ else:
     import sys; sys.exit(1) #to stop the script if the file is missing
 
 # Load the central instrument registry
-with open("instrument_registry.yaml", 'r') as f:
-    inst_reg = yaml.safe_load(f)
+inst_reg = load_instrument_registry()
 
 # Pull pixel size dynamically!
 pixel1 = inst_reg[instrument]['pixel_size']
@@ -379,7 +393,7 @@ class ClickManager:
 
         self.ai_final = pyFAI_ai.AzimuthalIntegrator(dist=self.detector_distance, poni1=poni1, poni2=poni2, rot1=0,
                                                      rot2=0, rot3=0, pixel1=self.pixel_size_x, pixel2=self.pixel_size_y,
-                                                     splinefile=None, detector=None, wavelength=self.wavelength)
+                                                     detector=None, wavelength=self.wavelength)
         self.ai_final.setChiDiscAtZero()
 
         sectors_nr = 16

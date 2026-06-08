@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-import numpy as np
 from pathlib import Path
 
-# ==========================================
-# %% DYNAMIC PATH INJECTION
-# ==========================================
-current_dir = Path(__file__).resolve().parent
-code_dir = current_dir / 'codes'
 
-if str(code_dir) not in sys.path:
-    sys.path.insert(0, str(code_dir))
+# 1. Get the directory of the current script (darepy/codes/)
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Go up one level to find utils.py (in darepy/)
+parent_dir = os.path.dirname(current_script_dir)
 
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# 3. Now you can safely import utils
 from utils import load_config, find_strict_calibration_file
 import prepare_input as org
 
@@ -31,8 +31,7 @@ def run_calibration_check(configuration, class_files):
     required_ids = {
         'Dark Current (Cd)': cal_setup.get('dark_current'),
         'Water Standard (H2O)': cal_setup.get('water'),
-        'Water Cell (EC)': cal_setup.get('water_cell'),
-        'Empty Beam (EB)': cal_setup.get('empty_beam')
+        'Water Cell (EC)': cal_setup.get('water_cell')
     }
 
     # Identify all unique detector distances present in the loaded data

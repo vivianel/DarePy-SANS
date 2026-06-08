@@ -31,9 +31,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
     """
     global _CACHED_CONFIG, _CACHED_REGISTRY
 
-    # 1. LAZY LOADING: Only read the YAML files from the hard drive ONCE.
+    # Inside load_hdf in utils.py
     if _CACHED_CONFIG is None or _CACHED_REGISTRY is None:
-        from utils import load_config, load_instrument_registry # Ensure imports match your structure
+        # Calling without arguments lets the functions check sys.argv[1]
         _CACHED_CONFIG = load_config()
         _CACHED_REGISTRY = load_instrument_registry()
 
@@ -357,39 +357,73 @@ import yaml
 
 # ==========================================
 # MASTER CONFIGURATION PATHS
-# Automatically dynamically detects the current directory.
 # ==========================================
 
-# 1. Find the exact folder where utils.py is physically located
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-#Go back one folder above it (e.g., /.../2022_2358_beamtime)
-CURRENT_DIR = os.path.dirname(CURRENT_DIR)
+CURRENT_DIR = os.path.dirname(CURRENT_DIR) # Go up to darepy/
 
-# 2. Attach the YAML filenames to that folder path
 DEFAULT_CONFIG_PATH = os.path.join(CURRENT_DIR, "config_experiment.yaml")
 DEFAULT_REGISTRY_PATH = os.path.join(CURRENT_DIR, "instrument_registry.yaml")
 
+# --- THE MEMORY CACHE ---
+ACTIVE_CONFIG_CACHE = os.path.join(CURRENT_DIR, ".active_config.txt")
 
-def load_config(filepath=DEFAULT_CONFIG_PATH):
-    """Loads the main experiment YAML configuration file."""
+# In utils.py
+def load_config(filepath=None):
+    """Loads the YAML, reading the folder path from the active pointer."""
+
+    # 1. Did the GUI pass a path directly?
+    if filepath is None and len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+        filepath = sys.argv[1]
+
+    # 2. If not, check the pointer file we made with set_experiment.py!
+    if filepath is None:
+        pointer_file = os.path.join(CURRENT_DIR, ".active_experiment.txt")
+        if os.path.exists(pointer_file):
+            with open(pointer_file, 'r') as f:
+                exp_folder = f.read().strip()
+                filepath = os.path.join(exp_folder, "config_experiment.yaml")
+
+    # 3. Load it
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"\n[ERROR] config_experiment.yaml not found at:\n{filepath}")
-        print("Please ensure the YAML file is in the same directory as utils.py")
+        print(f"\n[ERROR] Configuration file not found at: {filepath}")
         sys.exit(1)
+    # ... inside the function ...
+    print(f"DEBUG: Looking for registry in: {os.getcwd()}")
 
-def load_instrument_registry(filepath=DEFAULT_REGISTRY_PATH):
-    """Loads the instrument hardware registry YAML."""
+def load_instrument_registry(filepath=None):
+    """Loads the YAML, reading the folder path from the active pointer or GUI."""
+
+    # 1. Handle GUI Handoff: Get the DIR of the passed config file
+    if filepath is None and len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+        # Extract the folder from C:\...\config_experiment.yaml
+        config_dir = os.path.dirname(os.path.abspath(sys.argv[1]))
+        filepath = os.path.join(config_dir, "instrument_registry.yaml")
+
+    # 2. Fallback: Check the pointer file from set_experiment.py
+    if filepath is None:
+        # Assuming CURRENT_DIR is defined globally in your utils.py
+        pointer_file = os.path.join(CURRENT_DIR, ".active_experiment.txt")
+        if os.path.exists(pointer_file):
+            with open(pointer_file, 'r') as f:
+                exp_folder = f.read().strip()
+                filepath = os.path.join(exp_folder, "instrument_registry.yaml")
+
+    # 3. Last Resort Fallback: Check Current Working Directory
+    if filepath is None:
+        filepath = os.path.join(os.getcwd(), "instrument_registry.yaml")
+
+    # Load and process
     try:
-        with open(filepath, 'r') as f:
+        print(f"DEBUG: Attempting to load registry from: {filepath}")
+        with open(filepath, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"\n[ERROR] instrument_registry.yaml not found at:\n{filepath}")
-        print("Please ensure the YAML file is in the same directory as utils.py")
+        print(f"\n[ERROR] Instrument Registry NOT FOUND at: {filepath}")
         sys.exit(1)
-
 
 def parse_scan_list(input_data):
     """

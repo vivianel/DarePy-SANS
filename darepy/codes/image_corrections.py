@@ -16,11 +16,10 @@ def load_standards(config, result, det):
     class_det_files = result['overview']['det_files_' + det]
     physics = config.get('physics_corrections', {})
 
-    # --- THE SINGLE SOURCE OF TRUTH ---
     calib_map = result['overview'].get(f'calibration_map_{det}')
 
     if not calib_map:
-        print(f"\n  [FATAL ERROR] Calibration map for {det}m is missing! Run prepare_input first.")
+        print(f"\n  [FATAL ERROR] Standards are missing for {det}m! double check your calibration samples.")
         sys.exit(1)
 
     standard_requirements = {
@@ -118,7 +117,7 @@ def correct_flat_field(config, I):
         return I
 
     base_path = Path(config['analysis']['scripts_dir']).resolve()
-    full_path = base_path / "codes" / eff_file_name
+    full_path = base_path / "darepy/codes" / eff_file_name
 
     if not full_path.exists():
         print(f"[DEBUG] Looking for Flat Field here: {full_path}")
