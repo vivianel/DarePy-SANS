@@ -253,31 +253,12 @@ class CenterDeterminationManager:
                 return
 
             plt.close(self.fig)
-            self.process_beam_center()
+            self._integrate_and_display_final()
+            save_center_to_yaml(yaml_filepath, Detector_distance, self)
+
 
     def handle_close(self, event):
         self.fig.canvas.stop_event_loop()
-
-    def _refine_center_of_mass(self, guess_x, guess_y, search_mask):
-        y_grid, x_grid = np.indices(self.img_data.shape)
-        valid_pixels = np.isfinite(img) & (img > 0) & search_mask
-        total_intensity = np.sum(img[valid_pixels])
-        if total_intensity > 0:
-            return np.sum(x_grid[valid_pixels] * img[valid_pixels]) / total_intensity, np.sum(y_grid[valid_pixels] * img[valid_pixels]) / total_intensity
-        return guess_x, guess_y
-
-    def process_beam_center(self):
-        y_grid, x_grid = np.indices(self.img_data.shape)
-        print(f"Refining profile centers using center-of-mass limits...")
-
-        search_width = 15
-        r_grid = np.sqrt((x_grid - self.center_x)**2 + (y_grid - self.center_y)**2)
-        search_mask = (r_grid >= (self.circle_radius - search_width)) & (r_grid <= (self.circle_radius + search_width))
-        guess_x, guess_y = self.center_x, self.center_y
-
-        self.center_x, self.center_y = self._refine_center_of_mass(guess_x, guess_y, search_mask)
-        self._integrate_and_display_final()
-        save_center_to_yaml(yaml_filepath, Detector_distance, self)
 
     def _integrate_and_display_final(self):
         fig_results, axes_results = plt.subplots(1, 1, figsize=(8, 7))
