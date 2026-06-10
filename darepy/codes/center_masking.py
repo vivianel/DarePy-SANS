@@ -1,130 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Dec 6 10:52:03 2023
+Created on Tue Jun  9 16:02:35 2026
 
 @author: lutzbueno_v
 """
 
-import sys
+# -*- coding: utf-8 -*-
+"""
+Core interactive and plotting utilities for SANS Beam Center Analysis.
+"""
+
 import os
-
-# 1. Get the directory of the current script (darepy/codes/)
-current_script_dir = os.path.dirname(os.path.abspath(__file__))
-# 2. Go up one level to find utils.py (in darepy/)
-parent_dir = os.path.dirname(current_script_dir)
-
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-
-# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
-codes_dir = os.path.join(parent_dir, "darepy/codes")
-
-if codes_dir not in sys.path:
-    sys.path.insert(0, codes_dir)
-# ==========================================
-# %% STANDARD IMPORTS
-# ==========================================
 import numpy as np
-from ruamel.yaml import YAML
-yaml = YAML()
-yaml.preserve_quotes = True
-
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 import pyFAI.azimuthalIntegrator as pyFAI_ai
-from utils import load_hdf, find_hdf_filename, load_config, load_instrument_registry
-
-# ==========================================
-# %% Configuration
-# ==========================================
-config = load_config()
-# --- FIX: Retrieve the absolute path used by the loader ---
-import sys
-if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
-    yaml_filepath = os.path.abspath(sys.argv[1])
-else:
-    # Fallback to the pointer logic if running manually in Spyder
-    from utils import CURRENT_DIR
-    pointer_file = os.path.join(CURRENT_DIR, ".active_experiment.txt")
-    if os.path.exists(pointer_file):
-        with open(pointer_file, 'r') as f:
-            exp_folder = f.read().strip()
-            yaml_filepath = os.path.join(exp_folder, "config_experiment.yaml")
-    else:
-        # Emergency fallback to current logic
-        yaml_filepath = os.path.join(config['analysis_paths']['scripts_dir'], 'config_experiment.yaml')
-
-print(f"Target YAML for saving: {yaml_filepath}")
-
-# Pull paths dynamically from YAML
-path_hdf_raw = config['analysis_paths']['raw_data']
-
-instrument = config['instrument_setup']['which_instrument']
-
-# Assuming you move this down to where config = load_config() is called:
-scanNr = config['beam_center_mask']['scan_nr']
-
-
-# ==========================================
-# %% Load Data
-# ==========================================
-
-# --- 1. AUTOMATIC FILENAME DISCOVERY ---
-name_hdf = find_hdf_filename(path_hdf_raw, scanNr)
-
-if name_hdf:
-    print(f"Automatically found: {name_hdf}")
-else:
-    print(f"[ERROR] Could not find any HDF file ending in {scanNr}.hdf in the raw_data folder.")
-    import sys; sys.exit(1) #to stop the script if the file is missing
-
-# Load the central instrument registry
-inst_reg = load_instrument_registry()
-
-# Pull pixel size dynamically!
-pixel1 = inst_reg[instrument]['pixel_size']
-pixel2 = inst_reg[instrument]['pixel_size']
-
-
-plt.close('all')
-try:
-    img = load_hdf(path_hdf_raw, name_hdf, 'counts')
-    Detector_distance = load_hdf(path_hdf_raw, name_hdf, 'detx')
-    wl = load_hdf(path_hdf_raw, name_hdf, 'wl')
-except Exception as e:
-    print(f"Error loading HDF data: {e}")
-
-# %% Safe Log Calculation
-# We use np.clip to ensure the minimum value is slightly above 0 to avoid -inf
-def safe_log(data):
-    return np.log(np.clip(data, a_min=1e-6, a_max=None))
-
-try:
-    if img.ndim == 2:
-        img_log = safe_log(img)
-    else:
-        img_mean = np.mean(img, axis=0)
-        img_log = safe_log(img_mean)
-        img = img_mean
-except Exception as e:
-    print(f"Error processing dimensions: {e}")
-
-# %% Automate Color bar limits for image display (clim)
-finite_log_values = img_log[np.isfinite(img_log)]
-
-if finite_log_values.size > 0:
-    p_low = 1
-    p_high = 99.5
-    auto_clim_min = np.percentile(finite_log_values, p_low)
-    auto_clim_max = np.percentile(finite_log_values, p_high)
-    clim = [max(0.0, auto_clim_min), auto_clim_max]
-    print(f"Automated clim set to: {clim}")
-else:
-    print("Warning: No finite log values found. Using fallback [0, 7].")
-    clim = [0, 7]
 
 # ----------------------------------------------------------------------
-# %% Function to plot the final results in a new figure
+# %% Plotting Function
 def plot_final_results_figure(
     original_img_log,
     masked_img_bs,
@@ -195,18 +88,19 @@ def plot_final_results_figure(
     fig_results.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
 
+
 # ----------------------------------------------------------------------
-# %% Interactive Click Handler
+# %% Interactive Click Handler Class
 class ClickManager:
-    # Force an interactive backend BEFORE importing pyplot
     try:
         matplotlib.use('Qt5Agg')
     except:
         matplotlib.use('TkAgg')
 
-    plt.ion() # Turn on interactive mode for immediate plot updates
-    def __init__(self, img_data, clim, detector_distance, wavelength, pixel_size_x, pixel_size_y, initial_fig, initial_ax, instrument):
-        self.img_data = img_data
+    plt.ion()
+    def __init__(self, img_data, img_raw, clim, detector_distance, wavelength, pixel_size_x, pixel_size_y, initial_fig, initial_ax, instrument):
+        self.img_data = img_data       # Log image for visual display
+        self.img_raw = img_raw         # Original raw counts for integration
         self.clim = clim
         self.detector_distance = detector_distance
         self.wavelength = wavelength
@@ -319,25 +213,10 @@ class ClickManager:
         self.connect()
 
     def _refine_center_of_mass(self, guess_x, guess_y, guess_r, search_width=15):
-        """
-        Helper method: Refines the beam center by finding the intensity-weighted
-        center of mass within a narrow annulus (donut) around the guessed ring.
-        """
-        import numpy as np
-
-        # Create an X and Y coordinate grid for the whole image
         y_grid, x_grid = np.indices(self.img_data.shape)
-
-        # Calculate how far every pixel is from the guessed center
         r_grid = np.sqrt((x_grid - guess_x)**2 + (y_grid - guess_y)**2)
-
-        # Create a donut mask: only look at pixels near the guessed radius
         annulus_mask = (r_grid >= (guess_r - search_width)) & (r_grid <= (guess_r + search_width))
-
-        # Only use valid, positive intensity pixels inside the donut
         valid_pixels = np.isfinite(self.img_data) & (self.img_data > 0) & annulus_mask
-
-        # Calculate the Center of Mass (weighted by actual neutron counts)
         total_intensity = np.sum(self.img_data[valid_pixels])
 
         if total_intensity > 0:
@@ -353,7 +232,6 @@ class ClickManager:
         all_x_clicks = [click[0] for click in self.clicks]
         all_y_clicks = [click[1] for click in self.clicks]
 
-        # 1. Calculate the Rough Guess from human clicks
         guess_x = np.mean(all_x_clicks)
         guess_y = np.mean(all_y_clicks)
 
@@ -362,15 +240,13 @@ class ClickManager:
         guess_r = np.mean([span_x_clicks, span_y_clicks]) / 2
 
         print(f'  Initial Manual Guess: X={np.round(guess_x, 2)}, Y={np.round(guess_y, 2)}, R={np.round(guess_r, 2)}')
-
-        # 2. Apply Mathematical Refinement
         print("  Refining center using intensity-weighted annulus...")
+
         self.center_x, self.center_y = self._refine_center_of_mass(guess_x, guess_y, guess_r, search_width=15)
-        self.circle_radius = guess_r # Keep the visual circle the same size as the clicks
+        self.circle_radius = guess_r
 
         print(f'  Refined Beam Center: X={np.round(self.center_x, 2)}, Y={np.round(self.center_y, 2)}')
 
-        # DECISION POINT based on Instrument
         if self.instrument == 'SANS-LLB':
             self.current_state = 'transmission'
             plt.close(self.fig)
@@ -403,7 +279,7 @@ class ClickManager:
             azim_end = (rr + 1) * (360 / sectors_nr)
             npt_azim_ranges.append([azim_start, azim_end])
 
-        img_for_integration = img.copy()
+        img_for_integration = self.img_raw.copy()
 
         for _, coords in self.bs_masks_dict.items():
             Ymin, Ymax, Xmin, Xmax = coords
@@ -435,43 +311,28 @@ class ClickManager:
             self.trans_area_coords
         )
 
-# ==========================================
-# %% AUTOMATED YAML UPDATE WITH CONFIRMATION
-# ==========================================
-def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
-    """
-    Reads the YAML, compares old vs new coordinates for the specific distance,
-    and asks for user confirmation before overwriting inside 'detector_geometry'.
-    Preserves all comments using ruamel.yaml.
-    """
-    import os
-    import numpy as np
 
-    # Try to import ruamel.yaml to preserve comments
+# ----------------------------------------------------------------------
+# %% YAML Saving Handler
+def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
     try:
         from ruamel.yaml import YAML
+        yaml_parser = 'ruamel'
     except ImportError:
-        print("\n[ERROR] ruamel.yaml is not installed. Please run 'pip install ruamel.yaml'.")
-        print("Falling back to standard yaml (WARNING: Comments will be lost!)")
+        print("\n[ERROR] ruamel.yaml is not installed. Falling back to standard yaml.")
         import yaml
         yaml_parser = 'standard'
-    else:
-        yaml_parser = 'ruamel'
 
     if not os.path.exists(yaml_path):
-        print(f"\n[ERROR] '{yaml_path}' not found in the current directory.")
+        print(f"\n[ERROR] '{yaml_path}' not found.")
         return
 
     dist_key = float(distance_val)
 
-    new_bs = {}
-    for i, (key, coords) in enumerate(manager.bs_masks_dict.items()):
-        new_bs[f'bs{i}'] = coords
-
+    new_bs = {f'bs{i}': coords for i, (key, coords) in enumerate(manager.bs_masks_dict.items())}
     new_trans = manager.trans_area_coords
     new_center = [float(np.round(manager.center_x, 2)), float(np.round(manager.center_y, 2))]
 
-    # Load the YAML file
     with open(yaml_path, 'r') as f:
         if yaml_parser == 'ruamel':
             ryaml = YAML()
@@ -494,91 +355,27 @@ def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
     print("\n" + "="*60)
     print(f"YAML UPDATE CONFIRMATION (Detector Distance: {dist_key}m)")
     print("="*60)
-
-    print(f"\n--- Beamstopper Coordinates ---")
-    print(f"  OLD: {old_bs}")
-    print(f"  NEW: {new_bs}")
-
-    print(f"\n--- Transmission Area [Ymin, Ymax, Xmin, Xmax] ---")
-    print(f"  OLD: {old_trans}")
-    if new_trans is not None:
-        print(f"  NEW: {new_trans}")
-    else:
-        print(f"  NEW: Skipped (Not required for {manager.instrument})")
-
-    print(f"\n--- Beam Center [X, Y] ---")
-    print(f"  OLD: {old_center}")
-    print(f"  NEW: {new_center}\n")
+    print(f"\n--- Beamstopper Coordinates ---\n  OLD: {old_bs}\n  NEW: {new_bs}")
+    print(f"\n--- Transmission Area ---\n  OLD: {old_trans}\n  NEW: {new_trans if new_trans is not None else 'Skipped'}")
+    print(f"\n--- Beam Center ---\n  OLD: {old_center}\n  NEW: {new_center}\n")
 
     while True:
         choice = input("Overwrite these values in config_experiment.yaml? (y/n): ").strip().lower()
         if choice in ['y', 'yes']:
-
-            # Update the configuration dictionary
             config['detector_geometry']['beamstopper_coordinates'][dist_key] = new_bs
             if new_trans is not None:
                 config['detector_geometry']['transmission_coordinates'][dist_key] = new_trans
             config['detector_geometry']['beam_center_guess'][dist_key] = new_center
 
-            # Save it back out
             with open(yaml_path, 'w') as f:
                 if yaml_parser == 'ruamel':
                     ryaml.dump(config, f)
                 else:
                     yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-
-            print("\n[SUCCESS] YAML file successfully updated with comments preserved!")
+            print("\n[SUCCESS] YAML file successfully updated!")
             break
         elif choice in ['n', 'no']:
-            print("\n[CANCELLED] Update aborted. YAML file remains unchanged.")
+            print("\n[CANCELLED] Update aborted.")
             break
         else:
             print("Invalid input. Please type 'y' or 'n'.")
-
-# ==========================================
-# %% Main Execution
-# ==========================================
-interactive_fig, interactive_ax = plt.subplots(figsize=(8, 7))
-
-click_manager = ClickManager(
-    img_log,
-    clim,
-    Detector_distance,
-    wl,
-    pixel1,
-    pixel2,
-    interactive_fig,
-    interactive_ax,
-    instrument # Passing instrument into the class here
-)
-
-click_manager.connect()
-
-print("\nInteractive mode active. If the window does not appear, check your Python backend settings.")
-
-# Main loop to keep the script running while interactive figures are open
-while click_manager.current_state != 'done':
-    try:
-        if plt.fignum_exists(interactive_fig.number):
-            plt.pause(0.1)
-        else:
-            if click_manager.current_state == 'bs_collect':
-                print("\nMoving to Step 2: Beam Center.")
-                interactive_fig, interactive_ax = plt.subplots(figsize=(8, 7))
-                click_manager.fig, click_manager.ax = interactive_fig, interactive_ax
-                click_manager.current_state = 'beam_center'
-                click_manager.connect()
-            elif click_manager.current_state == 'transmission':
-                 interactive_fig, interactive_ax = plt.subplots(figsize=(8, 7))
-                 click_manager.fig, click_manager.ax = interactive_fig, interactive_ax
-                 click_manager.connect()
-            else:
-                break
-    except Exception as e:
-        print(f"Interactive loop error: {e}")
-        break
-
-print("\nAll interactive analysis steps completed.")
-
-# Trigger the confirmation prompt using the path defined at the top
-confirm_and_save_to_yaml(yaml_filepath, Detector_distance, click_manager)

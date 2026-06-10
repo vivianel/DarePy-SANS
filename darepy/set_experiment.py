@@ -8,7 +8,7 @@ Created on Wed Apr 15 17:45:41 2026
 import os
 
 # 1. Paste the path to your current experiment folder here
-EXPERIMENT_FOLDER = r"C:\Users\gac-sansllb\Documents\DarePy-SANS_codes\DarePy-SANS\experiments\20260915_LLB"
+EXPERIMENT_FOLDER = r'C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2026_0915_Coffee'
 
 # 2. Save it to a hidden pointer file
 pointer_file = os.path.join(os.path.dirname(__file__), ".active_experiment.txt")
