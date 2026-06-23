@@ -6,6 +6,7 @@ import sys
 import math
 import shutil
 from pathlib import Path
+import re
 
 # ==========================================
 # %% DYNAMIC PATH INJECTION
@@ -24,6 +25,7 @@ config = load_config()
 # %% USER INPUT PARAMETERS
 path_hdf_raw = config['analysis_paths']['raw_data']
 cfg_rename = config['rename_samples']
+instrument = config['instrument_setup']['which_instrument']
 
 files_change = parse_scan_list(cfg_rename['files_change'])
 subscript = cfg_rename['subscript']
@@ -84,11 +86,11 @@ processed_count = 0
 
 for ii in range(0, len(files)):
     file_name = files[ii]
-    scan_nr_str = file_name[9:-4]
-
-    try:
-        current_scan_nr = int(scan_nr_str)
-    except ValueError:
+    # Matches any sequence of digits right before the .hdf extension
+    match = re.search(r'(\d+)\.hdf$', file_name)
+    if match:
+        current_scan_nr = int(match.group(1))
+    else:
         print(f"Warning: Could not extract integer scan number from file '{file_name}'. Skipping.")
         continue
 
@@ -121,8 +123,10 @@ for ii in range(0, len(files)):
         try:
             # Open the NEW COPY in read/write mode
             file_hdf = h5py.File(new_hdf_path, 'r+')
-
-            current_sample_name = _load_hdf_string(file_hdf, '/entry1/sample/name')
+            if instrument == 'SANS-I':
+                current_sample_name = _load_hdf_string(file_hdf, '/entry1/sample/name')
+            elif instrument == 'SANS-LLB':
+                current_sample_name = _load_hdf_string(file_hdf, '/entry0/sample/name')
             if current_sample_name is None:
                 print(f"Warning: Could not retrieve original sample name for scan {current_scan_nr}.")
                 continue
@@ -131,7 +135,12 @@ for ii in range(0, len(files)):
 
             if subscript == 'temp':
                 try:
-                    temp_data = file_hdf['/entry1/sample/temperature'][0]
+                    if instrument == 'SANS-I':
+                        temp_data = file_hdf['/entry1/sample/temperature'][0]
+                    elif instrument == 'SANS-LLB':
+                        # probably not working yet
+                        temp_data = file_hdf['/entry0/sample/temperature'][0]
+                    
                     if not math.isnan(temp_data):
                         temp_int = int(np.round(temp_data, 0))
                         new_sample_name = f"{new_sample_name}_{temp_int}"
@@ -148,7 +157,11 @@ for ii in range(0, len(files)):
                 new_sample_name = str(replace_with)
 
             # --- OVERWRITE THE ORIGINAL NAME FIELD ---
-            dataset_path = '/entry1/sample/name'
+            if instrument == 'SANS-I':
+                dataset_path = '/entry1/sample/name'
+            elif instrument == 'SANS-LLB':
+                dataset_path = '/entry0/sample/name'
+            
             if dataset_path in file_hdf:
                 del file_hdf[dataset_path] # Delete the old one safely
 
