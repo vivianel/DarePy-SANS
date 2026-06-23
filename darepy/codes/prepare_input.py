@@ -34,6 +34,14 @@ def list_files(config, result):
         f.sort()
         for file in f:
             if file.endswith('.hdf'):
+                # Full absolute path to check the file size
+                file_path = os.path.join(r, file)
+                
+                # If the file size is less than 2 KB (2048 bytes), skip it entirely
+                if os.path.getsize(file_path) < 2048:
+                    print('SKIPPING: file ' + file + ' is too small - probaly stopped before Nexus formatting!')
+                    continue
+                
                 scan_match = re.findall(r"\D(\d{6})\D", file)
                 if not scan_match:
                     continue
@@ -66,6 +74,7 @@ def list_files(config, result):
 
             sample_name = load_hdf(path_hdf_raw, file, 'sample_name')
             class_files['sample_name'].append(sample_name)
+            
             if config['experiment']['sample_environment'] == 'electromagnet':
                 class_files['B_T'].append(load_hdf(path_hdf_raw, file, 'mag_field'))
             elif config['experiment']['sample_environment'] == 'water_bath':

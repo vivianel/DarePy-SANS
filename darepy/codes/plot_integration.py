@@ -83,7 +83,7 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
     bc_x = result['integration']['beam_center_x']
     bc_y = result['integration']['beam_center_y']
     mask = result['integration']['int_mask']
-    integration_points = result['integration']['integration_points']
+    integration_points = result['integration'].get('integration_points')
 
     # ==============================================================
     # START FIGURE GENERATION
