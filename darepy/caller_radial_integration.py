@@ -47,6 +47,7 @@ analysis_folder = create_analysis_folder({
 # STEP 2: LOAD PREVIOUS RESULTS (Step 3 Output)
 # ==========================================
 result_file = os.path.join(analysis_folder, 'result.npy')
+sample_environment = ext_cfg['instrument_setup']['sample_environment']
 
 if os.path.exists(result_file):
     print(f"📦 Loading previously calculated results (Transmissions) from: {result_file}")
@@ -74,7 +75,8 @@ configuration = {
         'wl_input': ext_cfg['physics_corrections']['wavelength'],
         'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
         # FIX: Map the transmission distance to where the backend expects it
-        'trans_dist': ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18)
+        'trans_dist': ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18),
+        'sample_environment': sample_environment
     },
     'physics_corrections': ext_cfg.get('physics_corrections', {}),
     'analysis': {
