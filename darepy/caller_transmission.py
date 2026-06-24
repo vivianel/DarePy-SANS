@@ -85,10 +85,13 @@ if __name__ == "__main__":
 
     # Initialize blank result container
     result = {
-        'overview': {},
         'transmission': {},
-        'integration': {'integration_points': 120, 'sectors_nr': 1}
-    }
+        'overview': {},
+        'integration': {
+            'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
+            'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
+            'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
+        }}
 
     # --- STEP 3: SINGLE EXECUTION SEQUENCE ---
     print("Step 0: Indexing files (Required for Transmission)...")

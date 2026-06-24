@@ -2,6 +2,7 @@ import numpy as np
 import os
 import sys
 import csv
+from pathlib import Path
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 from utils import load_hdf, create_analysis_folder, get_flexible_value
@@ -54,13 +55,14 @@ def set_integration(config, result, det_str):
     generate_beamstop_mask(config, result, det_str)
     setup_integration(config, result, det_str)
     result = load_standards(config, result, det_str)
+    
 
     # ==============================================================
     # 1D ABSOLUTE CALIBRATION
     # Calculates the scaling factor independently per detector distance
     # ==============================================================
     if config.get('physics_corrections', {}).get('perform_absolute_scaling', False):
-
+       
         water_img, water_var = process_water_standard(config, result)
         permanent_mask = result['integration'].get('int_mask')
 
@@ -119,12 +121,17 @@ def integrate(config, result, det_str, path_rad_int, path_det):
         preset = load_hdf(path_hdf_raw, hdf_name, 'moni')
 
         if force_reintegrate == 0:
+            # is the measurement finished?
             if flux_monit == preset * 1e4 or time_s == preset:
-                print(f"  -> Skip: Scan {scanNr} ('{sample_name}') already integrated.")
-                continue
-
+                #check the folder
+                path_det_save = path_det + '/integration/'
+                file_name_1 = make_file_name(path_det_save, 'radial_integ', 'dat', sample_name, det_str, scanNr, 0)
+                file_path = Path(file_name_1)
+                if file_path.is_file():
+                    print(f"  -> Skip: Scan {scanNr} ('{sample_name}') already integrated or incomplete.")
+                    continue
+           
         print(f"\n--- Reducing Scan {scanNr} ({sample_name}) ---")
-
         for ff in range(frame_nr_total):
             current_log = [scanNr, sample_name, ff]
 

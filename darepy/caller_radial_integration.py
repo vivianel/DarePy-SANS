@@ -54,7 +54,7 @@ if os.path.exists(result_file):
     with open(result_file, 'rb') as f:
         result = pickle.load(f)
 else:
-    print("⚠️ No existing results found. Initializing blank results container.")
+    print("⚠️ [ERROR] No existing results found. Initializing blank results container.")
     result = {
         'transmission': {},
         'overview': {},
@@ -62,8 +62,8 @@ else:
             'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
             'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
             'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
-        }
-    }
+        }}
+    
 
 # ==========================================
 # STEP 3: CONSTRUCT CONFIGURATION OBJECT
