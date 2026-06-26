@@ -256,6 +256,8 @@ def trans_calc_sample(config, result):
             # Update/Fix Thickness
             list_thick_all.append(thickness_map.get(s_name, default_t))
 
+        result['transmission']['calc'] = list_trans_all
+
         class_all['transmission'] = list_trans_all
         class_all['thickness_cm'] = list_thick_all
         save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
@@ -342,7 +344,7 @@ def trans_calc_sample(config, result):
         class_all['transmission'] = list_trans_all
         class_all['counts'] = list_counts_all
         class_all['thickness_cm'] = list_thick_all
-        
+
         result['transmission']['calc'] = list_trans_all
 
         print("\n" + "="*80)

@@ -19,7 +19,7 @@ class DarePyGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("DarePy-SANS Control Panel")
-        self.root.geometry("1000x850")
+        self.root.geometry("1100x850") # Slightly widened to comfortably hold dual buttons
 
         self.config_file = None
 
@@ -330,34 +330,68 @@ class DarePyGUI:
 
         # --- TAB 4: MASK & CENTER ---
         s4, f4 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
+
+        # Upper Layout Setup Box: sample_name
         setup_f = tk.LabelFrame(s4, text="Masking Setup", padx=10, pady=10, bg=bg)
         setup_f.pack(fill="x", padx=10, pady=5)
+
         tk.Label(setup_f, text="sample_name", font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
         s_ent = tk.Entry(setup_f)
         s_ent.insert(0, self.config_dict.get('beam_center_mask', {}).get('sample_name', 'AgBE'))
         s_ent.pack(fill="x", ipady=3)
-        if 'beam_center_mask' not in self.entries: self.entries['beam_center_mask'] = {}
+
+        if 'beam_center_mask' not in self.entries:
+            self.entries['beam_center_mask'] = {}
         self.entries['beam_center_mask'][('sample_name',)] = s_ent
 
-        act_f = tk.LabelFrame(s4, text="Distance-Specific Masking", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
+        # Middle Layout Setup Box: Distance list loops
+        act_f = tk.LabelFrame(s4, text="Distance-Specific Masking & Alignment", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
         act_f.pack(fill="x", padx=10, pady=5)
-        add_r = tk.Frame(act_f, bg=bg); add_r.pack(fill="x", pady=(0,10))
+
+        add_r = tk.Frame(act_f, bg=bg)
+        add_r.pack(fill="x", pady=(0,10))
         tk.Label(add_r, text="New Dist:", font=("Arial", 8, "italic"), bg=bg).pack(side="left")
-        self.new_dist_entry = tk.Entry(add_r, width=8); self.new_dist_entry.pack(side="left", padx=5)
+        self.new_dist_entry = tk.Entry(add_r, width=8)
+        self.new_dist_entry.pack(side="left", padx=5)
         tk.Button(add_r, text=" + ", bg="#4CAF50", fg="white", font=("Arial", 8, "bold"), command=self.add_new_distance).pack(side="left")
 
         scans_dict = self.config_dict.get('beam_center_mask', {}).get('scans', {})
         if isinstance(scans_dict, dict):
             for d in sorted(scans_dict.keys(), key=float):
-                r = tk.Frame(act_f, bg=bg); r.pack(fill="x", pady=2)
+                r = tk.Frame(act_f, bg=bg)
+                r.pack(fill="x", pady=2)
                 tk.Label(r, text=f"{d} m:", width=8, font=("Arial", 9, "bold"), bg=bg, anchor="w").pack(side="left")
-                e = tk.Entry(r, width=12); e.insert(0, str(scans_dict[d])); e.pack(side="left", padx=5)
+                e = tk.Entry(r, width=12)
+                e.insert(0, str(scans_dict[d]))
+                e.pack(side="left", padx=5)
                 self.entries['beam_center_mask'][('scans', d)] = e
-                tk.Button(r, text="RUN MASKING TOOL", bg="#2196F3", fg="white", font=("Arial", 8, "bold"),
-                          command=lambda dist=d: self.run_mask_for_dist(dist)).pack(side="left", fill="x", expand=True, padx=5)
-                tk.Button(r, text=" 🗑️ ", bg="#f44336", fg="white", font=("Arial", 8, "bold"),
-                          command=lambda dist=d: self.remove_distance(dist)).pack(side="right")
 
+                tk.Button(r, text="MASKING", bg="#2196F3", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.run_mask_trans_for_dist(dist)).pack(side="left", fill="x", expand=True, padx=2)
+                tk.Button(r, text="BEAM CENTER", bg="#4CAF50", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.run_beam_center_for_dist(dist)).pack(side="left", fill="x", expand=True, padx=2)
+                tk.Button(r, text=" 🗑️ ", bg="#f44336", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.remove_distance(dist)).pack(side="right", padx=(5, 0))
+
+        # Bottom Additional Box: clim & plot_scale (Added here into Tab 4)
+        options_f = tk.LabelFrame(s4, text="Display & Intensity Options", padx=10, pady=10, bg=bg)
+        options_f.pack(fill="x", padx=10, pady=5)
+
+        # clim Field Setup
+        tk.Label(options_f, text="clim", font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
+        clim_val = self.config_dict.get('beam_center_mask', {}).get('clim', [0, 100])
+        clim_disp = ", ".join(map(str, clim_val)) if isinstance(clim_val, list) else str(clim_val)
+        clim_ent = tk.Entry(options_f)
+        clim_ent.insert(0, clim_disp)
+        clim_ent.pack(fill="x", ipady=3, pady=(0, 10))
+        self.entries['beam_center_mask'][('clim',)] = clim_ent
+
+        # plot_scale Dropdown Selection Menu Setup
+        tk.Label(options_f, text="plot_scale", font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
+        scale_val = self.config_dict.get('beam_center_mask', {}).get('plot_scale', 'lin')
+        scale_cmb = ttk.Combobox(options_f, values=["lin", "log"], state="readonly")
+        scale_cmb.set(scale_val)
+        scale_cmb.pack(anchor="w", ipady=2)
+        self.entries['beam_center_mask'][('plot_scale',)] = scale_cmb
+
+        # Detector Geometry configuration subsection area binding
         self.build_config_area(s4, "Detector Geometry", "detector_geometry")
         tk.Button(f4, text="REFRESH FROM YAML", bg="#FF9800", fg="white", font=("Arial", 10, "bold"), pady=8, command=self.refresh_ui).pack(fill="x")
 
@@ -593,12 +627,25 @@ class DarePyGUI:
                       command=lambda mk=m_key, sk=s_key, item=k: self.remove_dict_item(mk, sk, item)).pack(side="right")
 
     # --- ACTION METHODS ---
-    def run_mask_for_dist(self, dist):
+    def run_mask_trans_for_dist(self, dist):
+        """Saves current state and executes the Mask and Transmission setup script."""
         if self.save_data():
             scan = self.entries['beam_center_mask'][('scans', dist)].get()
             self.config_dict['beam_center_mask']['scan_nr'] = int(scan)
-            with open(self.config_file, 'w', encoding='utf-8') as f: yaml.dump(self.config_dict, f)
-            self.run_script("caller_mask_beamstop_center.py")
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                yaml.dump(self.config_dict, f)
+            self.run_script("caller_mask_beamstop.py")
+            self.refresh_ui()
+
+    def run_beam_center_for_dist(self, dist):
+        """Saves current state and executes the Beam Center refinement script."""
+        if self.save_data():
+            scan = self.entries['beam_center_mask'][('scans', dist)].get()
+            self.config_dict['beam_center_mask']['scan_nr'] = int(scan)
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                yaml.dump(self.config_dict, f)
+            self.run_script("caller_beam_center.py")
+            self.refresh_ui()
 
     # --- FIX: FULLY SYNCHRONIZED DISTANCE REMOVAL PIPELINE ---
     def remove_distance(self, dist):
@@ -691,7 +738,7 @@ class DarePyGUI:
             self.refresh_ui()
 
     def run_script(self, name):
-        """Runs the script in the active Spyder console."""
+        """Runs scripts safely using Spyder's native workspace context runner."""
         if self.save_data():
             script_path = os.path.normpath(os.path.join(script_dir, "codes", name))
             if not os.path.exists(script_path):
@@ -703,14 +750,16 @@ class DarePyGUI:
                     from IPython import get_ipython
                     ipy = get_ipython()
                     if ipy:
-                        ipy.run_line_magic('run', f'"{script_path}" "{self.config_file}"')
+                        # Runs inside Spyder's console context cleanly
+                        ipy.run_line_magic('run', f'\"{script_path}\" \"{self.config_file}\"')
                         return
                 except:
                     pass
+
                 import subprocess
                 subprocess.Popen([sys.executable, script_path, self.config_file])
             else:
-                self.log_to_console(f"❌ ERROR: {name} not found.")
+                messagebox.showerror("Error", f"Target execution path module not found:\n{script_path}")
 
 if __name__ == "__main__":
     root = tk.Tk()

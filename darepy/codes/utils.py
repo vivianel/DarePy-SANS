@@ -84,6 +84,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'counts':      'entry0/central_data/data',
             'counts_left': 'entry0/left_data/data',
             'counts_bottom':'entry0/bottom_data/data',
+            'mag_field':'entry0/sample/magnetic_field_log/value',
             'flux_monit':  registry_monitor_path  # read from instrument_registry
         }
     }
@@ -103,6 +104,8 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
 
             if which_property in ['time', 'moni', 'temp', 'counts', 'counts_left', 'counts_bottom']:
                 prop = np.asarray(raw_data)
+            elif which_property == 'mag_field':
+                prop = np.asarray(raw_data)[1:]
             else:
                 prop = raw_data[0]
 
@@ -125,6 +128,10 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 prop = prop * 10.0
             elif which_property == 'moni':
                 prop = prop / 1e4
+            elif which_property == 'mag_field':
+                prop = round(prop, 2)
+            elif which_property == 'beamstop_y':
+                prop = round(prop, 2)
             return prop
 
     except FileNotFoundError:
