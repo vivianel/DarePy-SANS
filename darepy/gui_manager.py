@@ -757,7 +757,12 @@ class DarePyGUI:
                     pass
 
                 import subprocess
-                subprocess.Popen([sys.executable, script_path, self.config_file])
+                experiment_dir = os.path.dirname(os.path.abspath(self.config_file))
+                subprocess.Popen(
+                    [sys.executable, script_path, self.config_file],
+                    cwd=experiment_dir,
+                    env=os.environ.copy()
+                )
             else:
                 messagebox.showerror("Error", f"Target execution path module not found:\n{script_path}")
 

@@ -70,24 +70,6 @@ except Exception as e:
 if img.ndim != 2:
     img = np.mean(img, axis=0)
 
-# %% Apply Scaling Modes Dynamically (Fixed with Native Matplotlib Norms)
-img_display = img.copy()
-finite_vals = img_display[np.isfinite(img_display) & (img_display > 0)]
-
-if config_clim is not None:
-    vmin, vmax = float(config_clim[0]), float(config_clim[1])
-else:
-    vmin = np.percentile(finite_vals, 1) if finite_vals.size > 0 else 0.1
-    vmax = np.percentile(finite_vals, 99.5) if finite_vals.size > 0 else 100.0
-
-if plot_scale == 'log':
-    print(f"Plotting in LOGARITHMIC scale. Range: [{vmin} to {vmax}]")
-    vmin = max(1e-6, vmin)
-    plot_norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
-else:
-    print(f"Plotting in LINEAR scale. Range: [{vmin} to {vmax}]")
-    plot_norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
-
 dist_key = float(Detector_distance)
 
 # ----------------------------------------------------------------------
@@ -98,9 +80,10 @@ class CenterDeterminationManager:
     except:
         matplotlib.use('TkAgg')
 
-    def __init__(self, img_data, plot_norm, initial_fig, initial_ax):
-        self.img_data = img_data
-        self.norm = plot_norm
+    def __init__(self, raw_img, clim, scale_mode, initial_fig, initial_ax):
+        self.raw_img = raw_img
+        self.clim = clim
+        self.scale_mode = scale_mode
 
         self.fig = initial_fig
         self.ax = initial_ax
@@ -143,30 +126,47 @@ class CenterDeterminationManager:
         self.center_x = None
         self.center_y = None
         self.circle_radius = None
-        if self.overlay_patch:
-            self.overlay_patch.remove()
-            self.overlay_patch = None
-        if self.center_marker:
-            for marker in self.center_marker:
-                marker.remove()
-            self.center_marker = None
+        self.overlay_patch = None
+        self.center_marker = None
         self.redraw_axes()
 
     def redraw_axes(self):
+        """Re-renders canvas frame updates smoothly."""
         self.ax.clear()
-        self.fig.suptitle('SANS Center Calibration', fontsize=14, color='darkgreen')
 
-        msg = '1st Click: Set Center | 2nd Click: Set Radius\nAfterward: Drag inside to move, drag outer ring to resize!\nPress [ENTER] to confirm.'
-        self.ax.set_title(msg, fontsize=9)
+        # Prevent log(0) warnings by clipping zeros natively
+        safe_img = np.where(self.raw_img <= 0, 1e-4, self.raw_img)
 
-        # Display main matrix mapping
-        im = self.ax.imshow(self.img_data, origin='lower', cmap='jet', norm=self.norm)
-        self.ax.grid(True, color='w', linestyle='--')
+        if self.scale_mode == 'lin':
+            self.im = self.ax.imshow(self.raw_img, origin='lower', cmap='jet', clim=self.clim)
+        elif self.scale_mode == 'log':
+            self.im = self.ax.imshow(np.log(safe_img), origin='lower', cmap='jet', clim=self.clim)
 
-        # Draw colorbar only if it doesn't already exist to prevent duplicate stacking
+        # --- COLORBAR ADDED HERE ---
+        # Generate it on the first draw, update it seamlessly on redraws to prevent glitches
         if self.colorbar is None:
-            self.colorbar = self.fig.colorbar(im, ax=self.ax, fraction=0.046, pad=0.04)
+            cax = self.fig.add_axes([0.87, 0.11, 0.03, 0.77])  # Fixed position in the right margin
+            self.colorbar = self.fig.colorbar(self.im, cax=cax)
             self.colorbar.set_label('Intensity (Counts)', rotation=270, labelpad=15)
+        else:
+            self.colorbar.update_normal(self.im)
+        # ---------------------------
+
+        # Safely format titles when center is not yet defined
+        cx_str = f"{self.center_x:.2f}" if self.center_x is not None else "N/A"
+        cy_str = f"{self.center_y:.2f}" if self.center_y is not None else "N/A"
+
+        self.ax.set_title(f"Interactive Beam Center Alignment\nDistance: {dist_key}m | Position: [{cx_str}, {cy_str}]")
+        self.ax.set_xlabel("Detector Matrix Width (X)")
+        self.ax.set_ylabel("Detector Matrix Height (Y)")
+
+        # Re-verify and stitch patch layers if they are active
+        if self.center_x is not None and self.circle_radius is not None:
+            self.ax.axhline(self.center_y, color='magenta', linestyle=':', alpha=0.6)
+            self.ax.axvline(self.center_x, color='magenta', linestyle=':', alpha=0.6)
+            self.update_circle_patch()
+        elif self.center_x is not None:
+            self.center_marker = self.ax.plot(self.center_x, self.center_y, 'ro', markersize=6)
 
         self.fig.canvas.draw_idle()
 
@@ -206,7 +206,7 @@ class CenterDeterminationManager:
                 dx = event.xdata - self.center_x
                 dy = event.ydata - self.center_y
                 self.circle_radius = np.sqrt(dx**2 + dy**2)
-                self.update_circle_patch()
+                self.redraw_axes() # Renders crosshairs and patches properly
 
         self.fig.canvas.draw_idle()
 
@@ -243,8 +243,11 @@ class CenterDeterminationManager:
                                         color='white', fill=False, linestyle='--', linewidth=2)
         self.ax.add_patch(self.overlay_patch)
 
-        if self.center_marker:
+        if self.center_marker and len(self.center_marker) > 0:
             self.center_marker[0].set_data([self.center_x], [self.center_y])
+
+        # Update title text safely dynamically
+        self.ax.set_title(f"Interactive Beam Center Alignment\nDistance: {dist_key}m | Position: [{self.center_x:.2f}, {self.center_y:.2f}]")
 
     def on_key(self, event):
         if event.key == 'enter':
@@ -264,9 +267,13 @@ class CenterDeterminationManager:
         fig_results, axes_results = plt.subplots(1, 1, figsize=(8, 7))
         fig_results.suptitle('SANS Beam Center Analysis Results', fontsize=16)
 
-        im = axes_results.imshow(self.img_data, origin='lower', cmap='jet', norm=self.norm)
-        axes_results.plot(self.center_x, self.center_y, 'wx', markersize=15, mew=2)
+        safe_img = np.where(self.raw_img <= 0, 1e-4, self.raw_img)
+        if self.scale_mode == 'lin':
+            im = axes_results.imshow(self.raw_img, origin='lower', cmap='jet', clim=self.clim)
+        elif self.scale_mode == 'log':
+            im = axes_results.imshow(np.log(safe_img), origin='lower', cmap='jet', clim=self.clim)
 
+        axes_results.plot(self.center_x, self.center_y, 'wx', markersize=15, mew=2)
         axes_results.add_patch(plt.Circle((self.center_x, self.center_y), self.circle_radius, color='white', fill=False, linestyle='--', linewidth=2))
         axes_results.set_title(f'Calculated Center (CIRCLE): X={np.round(self.center_x,2)}, Y={np.round(self.center_y,2)}')
 
@@ -323,7 +330,7 @@ if not matplotlib.get_backend().startswith('Tk') and not 'IPython' in sys.module
     matplotlib.use('TkAgg')
 
 interactive_fig, interactive_ax = plt.subplots(figsize=(9, 7))
-center_manager = CenterDeterminationManager(img_display, plot_norm, interactive_fig, interactive_ax)
+center_manager = CenterDeterminationManager(img, config_clim, plot_scale, interactive_fig, interactive_ax)
 center_manager.connect()
 
 print("\n[INFO] Beam Center Window is active. Modify your alignment, then press [ENTER] to save coordinates.")
