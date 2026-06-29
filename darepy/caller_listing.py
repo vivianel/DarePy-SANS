@@ -93,7 +93,7 @@ if __name__ == "__main__":
     # Define the project path
     p_base = ext_cfg['analysis_paths']['project_base']
     path_dir = Path(p_base)
-    sample_environment = ext_cfg['instrument_setup']['sample_environment']
+    sample_environment = ext_cfg.get('sample_environment', {})
     # --- THE ROBUST CONFIGURATION ---
     configuration = {
         'experiment': {

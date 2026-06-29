@@ -78,7 +78,7 @@ def run_calibration_check(configuration, class_files):
 if __name__ == "__main__":
     ext_cfg = load_config()
     p_base = ext_cfg['analysis_paths']['project_base']
-    sample_environment = ext_cfg['instrument_setup']['sample_environment']
+    sample_environment = ext_cfg.get('sample_environment', {})
 
     configuration = {
         'experiment': {

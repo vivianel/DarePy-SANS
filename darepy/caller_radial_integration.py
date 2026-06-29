@@ -34,7 +34,7 @@ import integration as ri
 
 ext_cfg = load_config()
 INSTRUMENT_REGISTRY = load_instrument_registry()
-sample_environment = ext_cfg['instrument_setup']['sample_environment']
+sample_environment = ext_cfg.get('sample_environment', {})
 
 selected_inst = ext_cfg['instrument_setup']['which_instrument']
 # Identify the analysis folder to find saved results

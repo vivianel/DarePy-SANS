@@ -53,7 +53,7 @@ if __name__ == "__main__":
     ext_cfg = load_config()
     INSTRUMENT_REGISTRY = load_instrument_registry()
     selected_inst = ext_cfg['instrument_setup']['which_instrument']
-    sample_environment = ext_cfg['instrument_setup']['sample_environment']
+    sample_environment = ext_cfg.get('sample_environment', {})
 
     # Extract the distance for transmission measurement
     t_dist = ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18)

@@ -17,6 +17,7 @@ import os
 import pickle
 import sys # Added for sys.exit in case of critical errors
 
+
 # ==========================================
 # GLOBAL CACHE (Prevents severe pipeline slowdowns)
 # ==========================================
@@ -98,6 +99,8 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             hdf_internal_path = PATHS[instrument][which_property]
 
             if which_property == 'temp' and hdf_internal_path not in file_hdf:
+                return ''
+            if which_property == 'mag_field' and hdf_internal_path not in file_hdf:
                 return ''
 
             raw_data = file_hdf[hdf_internal_path]
@@ -425,7 +428,7 @@ def load_instrument_registry(filepath=None):
 
     # Load and process
     try:
-        print(f"DEBUG: Attempting to load registry from: {filepath}")
+        print(f"Loading registry from: {filepath}")
         with open(filepath, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except FileNotFoundError:

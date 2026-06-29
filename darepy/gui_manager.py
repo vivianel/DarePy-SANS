@@ -19,7 +19,7 @@ class DarePyGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("DarePy-SANS Control Panel")
-        self.root.geometry("1100x850") # Slightly widened to comfortably hold dual buttons
+        self.root.geometry("1000x900") # Slightly widened to comfortably hold dual buttons
 
         self.config_file = None
 
@@ -271,38 +271,44 @@ class DarePyGUI:
         label_frame = tk.Frame(f, bg=bg)
         label_frame.pack(fill="x", anchor="w")
 
+        # FIX: If it is a boolean value, pack the checkbox inside the label row FIRST
+        if isinstance(value, bool):
+            var = tk.BooleanVar(master=self.root, value=value)
+            tk.Checkbutton(label_frame, text="", variable=var, bg=bg).pack(side="left", padx=(0, 5))
+            self.entries[config_key][path] = var
+
+        # Pack the word/label next to the checkbox
         tk.Label(label_frame, text=label, font=("Arial", 9, "bold"), bg=bg).pack(side="left")
 
+        # Pack the comment safely next to the label
         if comment:
             tk.Label(label_frame, text=f"  # {comment}", font=("Arial", 8, "italic"),
                      fg="#888", bg=bg).pack(side="left")
 
-        if isinstance(value, bool):
-            var = tk.BooleanVar(master=self.root, value=value)
-            tk.Checkbutton(f, text="", variable=var, bg=bg).pack(anchor="w")
-            self.entries[config_key][path] = var
-        elif label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", "source_shape", "aperture_shape"]:
-            if label == "which_instrument":
-                opts = ["SANS-I", "SANS-LLB"]
-            elif label == "integration_direction":
-                opts = ["horizontal", "vertical", "azimuthal"]
-            elif label == "beamstop":
-                opts = ["semitransparent", "standard"]
-            elif label in ["plot_scale", "interp_type"]:
-                opts = ["lin", "log"]
-            elif label in ["aperture_shape", "source_shape"]:
-                opts = ["rectangular", "circular"]
+        # Handle options or entries only if it is NOT a boolean setup
+        if not isinstance(value, bool):
+            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", "source_shape", "aperture_shape"]:
+                if label == "which_instrument":
+                    opts = ["SANS-I", "SANS-LLB"]
+                elif label == "integration_direction":
+                    opts = ["horizontal", "vertical", "azimuthal"]
+                elif label == "beamstop":
+                    opts = ["semitransparent", "standard"]
+                elif label in ["plot_scale", "interp_type"]:
+                    opts = ["lin", "log"]
+                elif label in ["aperture_shape", "source_shape"]:
+                    opts = ["rectangular", "circular"]
 
-            w = ttk.Combobox(f, values=opts, state="readonly")
-            w.set(value)
-            w.pack(anchor="w", ipady=2)
-            self.entries[config_key][path] = w
-        else:
-            w = tk.Entry(f)
-            disp = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
-            w.insert(0, disp)
-            w.pack(fill="x", padx=(0, 40), ipady=3)
-            self.entries[config_key][path] = w
+                w = ttk.Combobox(f, values=opts, state="readonly")
+                w.set(value)
+                w.pack(anchor="w", ipady=2)
+                self.entries[config_key][path] = w
+            else:
+                w = tk.Entry(f)
+                disp = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
+                w.insert(0, disp)
+                w.pack(fill="x", padx=(0, 40), ipady=3)
+                self.entries[config_key][path] = w
 
     def fill_notebook(self):
         bg = self.root.cget('bg')
@@ -315,6 +321,7 @@ class DarePyGUI:
                   command=lambda: self.run_script("caller_listing.py")).pack(side="left", fill="x", expand=True, padx=2)
         self.build_config_area(s1, "Analysis Paths", "analysis_paths")
         self.build_config_area(s1, "Instrument", "instrument_setup")
+        self.build_config_area(s1, "Sample Environment", "sample_environment")
 
         # --- TAB 2: RENAME SAMPLES ---
         s2, f2 = self.create_scrollable_tab(self.notebook, "2. Rename Samples")
