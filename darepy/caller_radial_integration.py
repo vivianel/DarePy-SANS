@@ -7,6 +7,7 @@ import sys
 import time
 import os
 import pickle
+import subprocess
 
 
 # 1. Get the directory of the current script (darepy/codes/)
@@ -33,6 +34,7 @@ import integration as ri
 
 ext_cfg = load_config()
 INSTRUMENT_REGISTRY = load_instrument_registry()
+sample_environment = ext_cfg['instrument_setup']['sample_environment']
 
 selected_inst = ext_cfg['instrument_setup']['which_instrument']
 # Identify the analysis folder to find saved results
@@ -43,27 +45,41 @@ analysis_folder = create_analysis_folder({
     }
 })
 
+# ==========================================================
+# %% Pre-requisite: Automatically run the Transmission script
+# ==========================================================
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+transmission_script = os.path.join(current_script_dir, "caller_transmission.py")
+
+if os.path.exists(transmission_script):
+    print("\n🚀 [AUTOMATION] Running Transmission pipeline before Radial Integration...")
+    try:
+        # Build command and pass the .yaml config argument forward if it was provided
+        cmd = [sys.executable, transmission_script]
+        if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+            cmd.append(os.path.abspath(sys.argv[1]))
+
+        # check=True will halt execution here if caller_transmission crashes
+        subprocess.run(cmd, check=True)
+        print("✅ [AUTOMATION] Transmission completed successfully. Continuing to integration.\n")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ [CRITICAL ERROR] Transmission run failed (Exit Code: {e.returncode}). Radial Integration aborted.")
+        sys.exit(1)
+else:
+    print(f"⚠️ [WARNING] '{transmission_script}' not found. Falling back to existing cached results.")
+
 # ==========================================
 # STEP 2: LOAD PREVIOUS RESULTS (Step 3 Output)
 # ==========================================
 result_file = os.path.join(analysis_folder, 'result.npy')
-sample_environment = ext_cfg['instrument_setup']['sample_environment']
-
 if os.path.exists(result_file):
     print(f"📦 Loading previously calculated results (Transmissions) from: {result_file}")
     with open(result_file, 'rb') as f:
         result = pickle.load(f)
 else:
     print("⚠️ [ERROR] No existing results found. Initializing blank results container.")
-    result = {
-        'transmission': {},
-        'overview': {},
-        'integration': {
-            'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
-            'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
-            'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
-        }}
-    
+    sys.exit(1)
+
 
 # ==========================================
 # STEP 3: CONSTRUCT CONFIGURATION OBJECT
