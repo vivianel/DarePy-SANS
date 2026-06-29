@@ -6,12 +6,12 @@ analysis_paths:
   _desc: |
     ANALYSIS PATHS
     Tells the reduction pipeline where to find the raw data and save the results.
-  project_base:
-    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2026_0915_LLB1        # Root directory for the config files and for saving the results
-  raw_data:
-    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2026_0915_LLB1\raw_data  # Source of HDF files
-  scripts_dir:
-    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS                             # Location of source code = git repository
+  project_base: 
+    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2026_0915_coffee2     # Root directory for the config files and for saving the results
+  raw_data: 
+    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2026_0915_coffee2/raw_data # Source of HDF files
+  scripts_dir: 
+    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS                             # Location of source code = git repository
   dry_run: false         # If true = Check path availability without listing
 
 instrument_setup:
@@ -19,12 +19,13 @@ instrument_setup:
     INSTRUMENT SETUP
     Defines the physical conditions of your neutron scattering experiment.
   which_instrument: SANS-LLB # Backend selector ofr instrument: SANS-I or SANS-LLB
+  sample_environment: water_bath #select which sample environment
 
 rename_samples:
   _desc: |
     RENAME SAMPLES
     Standardize sample names in metadata for correct downstream matching, especially for merging files.
-  files_change: 83864   # Scan numbers to fix (e.g., 85776:89530, 89650)
+  files_change: 1436    # Scan numbers to fix (e.g., 85776:89530, 89650)
   subscript: ''         # Append text. Write 'temp' for adding the auto-recorded temperature to the file name
   replace_with: 'test_name' # New label to overwrite the metadata name
 
@@ -32,24 +33,29 @@ plot_2d:
   _desc: |
     PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 1473          # Scans to visualize (e.g., 85776:89530, 89650)
+  list_scan: 1436          # Scans to visualize (e.g., 85776:89530, 89650)
   clim:                    # Intensity limits for colorbar [min, max]
   - 0
-  - 5
-  plot_scale: 'log'        # Color mapping: 'log' or 'lin'
+  - 100
+  plot_scale: 'lin'        # Color mapping: 'log' or 'lin'
   enable_bg_subtraction: false # Preview data minus a specific background scan
   background_scan_nr: 23088    # Scan number to subtract for 2D preview
   output_mode: 'frames'    # Export as animated 'gif' or individual 'frames'
 
 beam_center_mask:
   _desc: |
-    BEAM CENTER MASK
+    MASKING & BEAM CENTER
     Interactive tool for finding beam center and masking the beam stop.
   sample_name: 'AgBE' # sample used for the center
   scans:
-    1.7: 753
-    6: 0
-  scan_nr: 783
+    8: 1446
+    17.5: 1450
+    2: 1433
+  scan_nr: 1446
+  clim:                    # Intensity limits for colorbar [min, max]
+  - 0
+  - 400
+  plot_scale: 'lin'        # Color mapping: 'log' or 'lin'
 
 pipeline_control:
   _desc: |
@@ -62,9 +68,9 @@ transmission_setup:
   _desc: |
     TRANSMISSION CALCULATION
     Specific hardware settings for calculating sample attenuation.
-  beamstop: standard # select the type of beamstop used. Options: semitransparent or standard
-  empty_beam: EC   # Name or scan number of direct beam reference for Transmission calculation (needed for standard beamstop)
-  dist_trans_measurements: 1.7    # Distance (m) used for transmission measurements (needed for standard beamstop)
+  beamstop: semitransparent # select the type of beamstop used. Options: semitransparent or standard
+  empty_beam: EB   # Name or scan number of direct beam reference for Transmission calculation (needed for standard beamstop)
+  dist_trans_measurements: 17.5   # Distance (m) used for transmission measurements (needed for standard beamstop)
 
 
 
@@ -74,13 +80,13 @@ physics_corrections:
     Toggles for standard SANS mathematical corrections.
   wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
   target_detector_distances: all # Filter by distance (m): 'all' or list 1.6, 6.0
-  normalize_to_monitor: false    # Account for primary beam flux fluctuations
-  subtract_dark_current: false   # Subtract ambient noise and counts (Cadmium measurement)
-  subtract_empty_cell: false     # Remove container scattering
-  apply_flat_field: false        # Correct for detector pixel sensitivity (H2O)
-  apply_transmission: false       # Correct for sample attenuation
-  normalize_to_thickness: false  # Normalize by sample path length (cm)
-  perform_absolute_scaling: false # Convert counts to absolute cross-section (cm-1)
+  normalize_to_monitor: true     # Account for primary beam flux fluctuations
+  subtract_dark_current: true    # Subtract ambient noise and counts (Cadmium measurement)
+  subtract_empty_cell: true      # Remove container scattering
+  apply_flat_field: true         # Correct for detector pixel sensitivity (H2O)
+  apply_transmission: true        # Correct for sample attenuation
+  normalize_to_thickness: true   # Normalize by sample path length (cm)
+  perform_absolute_scaling: true  # Convert counts to absolute cross-section (cm-1)
   apply_resolution_smearing: false   # Toggle for calculating dq
 
 resolution_settings:
@@ -105,8 +111,8 @@ calibration_samples:
   _desc: |
     CALIBRATION SAMPLES
     Keywords in raw data used to identify standard measurements.
-  dark_current: EC # Background noise run (Cadmium)
-  water: EC        # Standard used for absolute calibration (H2O)
+  dark_current: Cd # Background noise run (Cadmium)
+  water: H2O       # Standard used for absolute calibration (H2O)
   water_cell: EC   # Empty container for the water used as a standard for absolutre calibration
   empty_cell:
     default: EC    # Default container background for all samples
@@ -118,64 +124,75 @@ detector_geometry:
     Beam center (pixels) and beamstop coordinates per detector distance.
     Refresh the gui after the calculation with the iterative tool.
   beam_center_guess: # center  of the scattering pattern for a given detector distance in meters
-    1.7:
-    - 60.26
-    - 63.84
-    6:
-    - 0.0
-    - 0.0
+    8:
+    - 62.91
+    - 62.43
     17.5:
-    - 59.37
-    - 59.22
+    - 62.43
+    - 61.48
+    2:
+    - 62.77
+    - 62.74
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
-    1.7:
+    8:
       bs0:
-      - 57
+      - 55
+      - 71
+      - 56
+      - 70
+    17.5:
+      bs0:
+      - 55
       - 69
-      - 52
-      - 65
+      - 55
+      - 69
       bs1:
-      - 57
+      - 55
       - 69
-      - 61
-      - 66
-      bs2:
+      - 64
+      - 70
+    2:
+      bs0:
+      - 54
+      - 70
+      - 54
+      - 70
+      bs1:
+      - 0
+      - 6
       - 0
       - 128
-      - 119
+      bs2:
+      - 54
+      - 89
+      - 125
       - 128
-    6:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 0.0
-    17.5:
-      bs0:
-      - 47
-      - 72
-      - 50
-      - 68
+      bs3:
+      - 4
+      - 128
+      - 0
+      - 2
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
-    1.7:
-    - 59
-    - 67
+    8:
+    - 57
+    - 65
     - 56
-    - 69
-    6:
-    - 59
-    - 67
-    - 56
-    - 69
+    - 71
     17.5:
-    - 56
+    - 59
     - 64
-    - 50
+    - 56
+    - 68
+    2:
+    - 59
+    - 66
+    - 55
     - 69
 analysis_flags:
   _desc: |
     ANALYSIS FLAGS
     Detailed integration settings.
-  exclude_files: '' # Scans to skip (e.g., bad data or setup runs)
+  exclude_files: '1457:1600' # Scans to skip (e.g., bad data or setup runs)
   force_reintegrate: true    # True: Overwrite existing .dat files
   save_plot_radial: false     # Export I(q) plots as PNG
   integration_points: 120     # Number of bins in q-space
@@ -190,13 +207,17 @@ merging_settings:
     MERGING SETTINGS
     Parameters for stitching multiple detector distances into one I(q) curve.
   run_step_1_plotting: true      # Preview individual curves before stitching
-  run_step_2_merging: false       # Merge overlapping regions
+  run_step_2_merging: true        # Merge overlapping regions
   run_step_3_interpolation: false # Interpolate to common q-grid
-  run_step_4_incoherent: false    # Fit and subtract flat incoherent background
+  run_step_4_incoherent: true     # Fit and subtract flat incoherent background
   skip_start: # Points to trim from low-q end per distance
-    6: 0
+    8: 20
+    17.5: 3
+    2: 0
   skip_end:   # Points to trim from high-q end (noisy regions) per distance
-    6: 0
+    8: 5
+    17.5: 40
+    2: 5
   interp_type: log    # Resampling spacing: 'log' or 'lin'
   interp_points: 150  # Total points in final merged curve
-  last_points_to_fit: 50 # Points used for Porod/Background estimation
+  last_points_to_fit: 5 # Points used for Porod/Background estimation
