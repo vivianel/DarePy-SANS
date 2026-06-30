@@ -3,7 +3,6 @@ import h5py
 import numpy as np
 import os
 import sys
-import math
 import shutil
 from pathlib import Path
 import re
@@ -28,7 +27,7 @@ cfg_rename = config['rename_samples']
 instrument = config['instrument_setup']['which_instrument']
 
 files_change = parse_scan_list(cfg_rename['files_change'])
-subscript = cfg_rename['subscript']
+subscript = cfg_rename['add_subscript']
 replace_with = cfg_rename['replace_with']
 copy_suffix = '_mod'
 
@@ -133,35 +132,36 @@ for ii in range(0, len(files)):
 
             new_sample_name = current_sample_name
 
-            if subscript == 'temp':
-                try:
-                    if instrument == 'SANS-I':
-                        temp_data = file_hdf['/entry1/sample/temperature'][0]
-                    elif instrument == 'SANS-LLB':
-                        # probably not working yet
-                        temp_data = file_hdf['/entry0/sample/temperature'][0]
-                    
-                    if not math.isnan(temp_data):
-                        temp_int = int(np.round(temp_data, 0))
-                        new_sample_name = f"{new_sample_name}_{temp_int}"
-                    else:
-                        print(f"Warning: Temperature is NaN for scan {current_scan_nr}.")
-                except Exception as e:
-                    print(f"Warning: Error reading temperature for scan {current_scan_nr}: {e}.")
-            elif isinstance(subscript, str) and subscript != '':
-                new_sample_name = f"{new_sample_name}{subscript}"
+            #if subscript == 'temp':
+            #    try:
+            #        if instrument == 'SANS-I':
+            #            temp_data = file_hdf['/entry1/sample/temperature'][0]
+            #        elif instrument == 'SANS-LLB':
+            #            # probably not working yet
+            #            temp_data = file_hdf['/entry0/sample/temperature'][0]
+            #
+            #        if not math.isnan(temp_data):
+            #            temp_int = int(np.round(temp_data, 0))
+            #            new_sample_name = f"{new_sample_name}_{temp_int}"
+            #        else:
+            #            print(f"Warning: Temperature is NaN for scan {current_scan_nr}.")
+            #    except Exception as e:
+             #       print(f"Warning: Error reading temperature for scan {current_scan_nr}: {e}.")
 
             if isinstance(replace_with, str) and replace_with != '':
                 new_sample_name = replace_with
             elif isinstance(replace_with, int) and replace_with != 0:
                 new_sample_name = str(replace_with)
+            elif isinstance(subscript, str) and subscript != '':
+                copy_suffix = subscript
+                new_sample_name = f"{new_sample_name}_{subscript}"
 
             # --- OVERWRITE THE ORIGINAL NAME FIELD ---
             if instrument == 'SANS-I':
                 dataset_path = '/entry1/sample/name'
             elif instrument == 'SANS-LLB':
                 dataset_path = '/entry0/sample/name'
-            
+
             if dataset_path in file_hdf:
                 del file_hdf[dataset_path] # Delete the old one safely
 

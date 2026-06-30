@@ -19,15 +19,23 @@ instrument_setup:
     INSTRUMENT SETUP
     Defines the physical conditions of your neutron scattering experiment.
   which_instrument: SANS-LLB # Backend selector ofr instrument: SANS-I or SANS-LLB
-  sample_environment: water_bath #select which sample environment
+
+sample_environment:
+  _desc: |
+    SAMPLE ENVIRONMENT
+    Defines additional values to save, depening on sample environment.
+  water_bath: false # For saving the temperature (T_c) in the tables
+  electromagnet: false # For saving the magnetic field (B_T) in the tables
+  syringe_pumps: false # NOT IMPLEMENTED: For saving the flow rate (Q_mlps) in the tables
+  rheometer: false # NOT IMPLEMENTED: For saving parameters of rheometer in the tables
 
 rename_samples:
   _desc: |
     RENAME SAMPLES
     Standardize sample names in metadata for correct downstream matching, especially for merging files.
-  files_change: 1436    # Scan numbers to fix (e.g., 85776:89530, 89650)
-  subscript: ''         # Append text. Write 'temp' for adding the auto-recorded temperature to the file name
-  replace_with: 'test_name' # New label to overwrite the metadata name
+  files_change: 1436:1439 # Scan numbers to change name - Ex. 85776:89530, 89650
+  add_subscript: 'test'     # Append text to the current name. Useful to add temperature or magnetic field, if forgotten during the measuments - Ex: '_25C'
+  replace_with: 'NEW'       # Overwrites the name given during the measurements - Ex. 'CTAB_NaSal'
 
 plot_2d:
   _desc: |
@@ -38,8 +46,8 @@ plot_2d:
   - 0
   - 100
   plot_scale: 'lin'        # Color mapping: 'log' or 'lin'
-  enable_bg_subtraction: false # Preview data minus a specific background scan
-  background_scan_nr: 23088    # Scan number to subtract for 2D preview
+  enable_bg_subtraction: true  # Preview data minus a specific background scan
+  background_scan_nr: 1438     # Scan number to subtract for 2D preview
   output_mode: 'frames'    # Export as animated 'gif' or individual 'frames'
 
 beam_center_mask:
@@ -51,7 +59,7 @@ beam_center_mask:
     8: 1446
     17.5: 1450
     2: 1433
-  scan_nr: 1446
+  scan_nr: 1450
   clim:                    # Intensity limits for colorbar [min, max]
   - 0
   - 400
