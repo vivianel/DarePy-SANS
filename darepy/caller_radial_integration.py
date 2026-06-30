@@ -175,8 +175,15 @@ while True:
             processed_det_distances = [
                 k.replace('det_files_', '') for k in result['overview'].keys() if k.startswith('det_files_')
             ]
+        elif isinstance(target_dist, int) or (isinstance(target_dist, float) and target_dist.is_integer()):
+            target_str = str(float(target_dist)).replace('.', 'p')
+            processed_det_distances = [k.replace('det_files_', '') for k in result['overview'].keys()
+                                       if k.startswith('det_files_') and k.endswith(target_str)]
         else:
-            processed_det_distances = [str(d).replace('.', 'p') for d in target_dist]
+            target_strings = [str(float(d)) for d in target_dist]
+            processed_det_distances = [ k.replace('det_files_', '') for k in result['overview'].keys()
+    if k.startswith('det_files_') and str(float(k.replace('det_files_', '').replace('p', '.'))) in target_strings]
+
 
         for det_str in processed_det_distances:
             print(f" -> Processing Distance: {det_str.replace('p', '.')}m")

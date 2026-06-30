@@ -33,12 +33,14 @@ pipeline_control:
   _desc: |
     PIPELINE CONTROL
     Master execution toggles for the DarePy-SANS.py script.
+  force_reintegrate: true    # True: Overwrite existing .dat files
+  wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
+  target_detector_distances:     # Filter by distance (m): 'all' or list 1.6, 6.0
+  - 2
+  - 8
+  exclude_files: '1457:1465' # Scans to skip (e.g., bad data or setup runs)
   live_monitoring: false # Auto-process new files as they appear at the beamline
   monitor_interval: 10   # Delay (sec) between checks for new raw data
-  wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
-  target_detector_distances: all # Filter by distance (m): 'all' or list 1.6, 6.0
-  exclude_files: '1457:1465' # Scans to skip (e.g., bad data or setup runs)
-  force_reintegrate: true    # True: Overwrite existing .dat files
 
 rename_samples:
   _desc: |
@@ -203,7 +205,7 @@ analysis_flags:
   _desc: |
     ANALYSIS FLAGS
     Detailed integration settings.
-  save_plot_radial: true      # Export I(q) plots as PNG
+  save_plot_radial: false     # Export I(q) plots as PNG
   integration_points: 100     # Number of bins in q-space
   save_plot_azimuthal: false  # Export I(phi) plots
   save_data_azimuthal: false  # Export I(phi) as text
@@ -226,10 +228,10 @@ merging_settings:
     17.5: 40
     2: 5
 
-  run_step_2_merging: true        # Merge overlapping regions
-  run_step_3_interpolation: true  # Interpolate to common q-grid
+  run_step_2_merging: false       # Merge overlapping regions
+  run_step_3_interpolation: false # Interpolate to common q-grid
 
   interp_type: log    # Resampling spacing: 'log' or 'lin'
   interp_points: 150  # Total points in final merged curve
-  run_step_4_incoherent: true     # Fit and subtract flat incoherent background
+  run_step_4_incoherent: false    # Fit and subtract flat incoherent background
   last_points_to_fit: 10 # Points used for Porod/Background estimation
