@@ -105,7 +105,7 @@ if __name__ == "__main__":
             'path_hdf_raw': ext_cfg['analysis_paths']['raw_data'],
             'scripts_dir': ext_cfg['analysis_paths']['scripts_dir'],
             'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
-            'exclude_files': ext_cfg['analysis_flags'].get('exclude_files', []),
+            'exclude_files': ext_cfg['pipeline_control'].get('exclude_files', []),
             'force_reintegrate': ext_cfg['analysis_flags'].get('force_reintegrate', 0),
         }
     }

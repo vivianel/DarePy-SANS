@@ -19,7 +19,7 @@ class DarePyGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("DarePy-SANS Control Panel")
-        self.root.geometry("1000x900") # Slightly widened to comfortably hold dual buttons
+        self.root.geometry("1100x1000") # Slightly widened to comfortably hold dual buttons
 
         self.config_file = None
 
@@ -325,23 +325,27 @@ class DarePyGUI:
         self.build_config_area(s1, "Instrument", "instrument_setup")
         self.build_config_area(s1, "Sample Environment", "sample_environment")
 
+        s2, f2 = self.create_scrollable_tab(self.notebook, "2. Pipeline control")
+        #self.build_config_area(s_combined, "Physics Corrections", "physics_corrections")
+        self.build_config_area(s2, "Pipeline Control", "pipeline_control")
+
         # --- TAB 2: RENAME SAMPLES ---
-        s2, f2 = self.create_scrollable_tab(self.notebook, "2. Rename Samples")
-        tk.Button(f2, text="RENAME SAMPLES", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        s3, f3 = self.create_scrollable_tab(self.notebook, "2. Rename Samples")
+        tk.Button(f3, text="RENAME SAMPLES", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_rename_samples.py")).pack(fill="x")
-        self.build_config_area(s2, "Rename Settings", "rename_samples")
+        self.build_config_area(s3, "Rename Settings", "rename_samples")
 
         # --- TAB 3: 2D VISUALIZATION ---
-        s3, f3 = self.create_scrollable_tab(self.notebook, "3. 2D Visualization")
-        tk.Button(f3, text="GENERATE 2D PLOTS/GIF", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        s4, f4 = self.create_scrollable_tab(self.notebook, "3. 2D Visualization")
+        tk.Button(f4, text="GENERATE 2D PLOTS/GIF", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_plot_2Dpattern.py")).pack(fill="x")
-        self.build_config_area(s3, "Plot 2D Settings", "plot_2d")
+        self.build_config_area(s4, "Plot 2D Settings", "plot_2d")
 
         # --- TAB 4: MASK & CENTER ---
-        s4, f4 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
+        s5, f5 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
 
         # Middle Layout Setup Box: Distance list loops & Semitransparent Toggle
-        act_f = tk.LabelFrame(s4, text="Distance-Specific Masking & Alignment", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
+        act_f = tk.LabelFrame(s5, text="Distance-Specific Masking & Alignment", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
         act_f.pack(fill="x", padx=10, pady=5)
 
         add_r = tk.Frame(act_f, bg=bg)
@@ -381,7 +385,7 @@ class DarePyGUI:
                 tk.Button(r, text=" 🗑️ ", bg="#f44336", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.remove_distance(dist)).pack(side="right", padx=(5, 0))
 
         # Bottom Additional Box: clim & plot_scale
-        options_f = tk.LabelFrame(s4, text="Display & Intensity Options", padx=10, pady=10, bg=bg)
+        options_f = tk.LabelFrame(s5, text="Display & Intensity Options", padx=10, pady=10, bg=bg)
         options_f.pack(fill="x", padx=10, pady=5)
 
         # clim Field Setup
@@ -402,29 +406,28 @@ class DarePyGUI:
         self.entries['beam_center_mask'][('plot_scale',)] = scale_cmb
 
         # Detector Geometry configuration subsection area binding
-        self.build_config_area(s4, "Detector Geometry", "detector_geometry")
-        tk.Button(f4, text="REFRESH FROM YAML", bg="#FF9800", fg="white", font=("Arial", 10, "bold"), pady=8, command=self.refresh_ui).pack(fill="x")
+        self.build_config_area(s5, "Detector Geometry", "detector_geometry")
+        tk.Button(f5, text="REFRESH FROM YAML", bg="#FF9800", fg="white", font=("Arial", 10, "bold"), pady=8, command=self.refresh_ui).pack(fill="x")
 
         # --- TAB 5: TRANSMISSION ---
-        s5, f5 = self.create_scrollable_tab(self.notebook, "5. Transmission")
-        tk.Button(f5, text="RUN TRANSMISSION CALCULATION", bg="#03A9F4", fg="white",
+        s6, f6 = self.create_scrollable_tab(self.notebook, "5. Transmission")
+        tk.Button(f6, text="RUN TRANSMISSION CALCULATION", bg="#03A9F4", fg="white",
                   font=("Arial", 10, "bold"), pady=12,
                   command=lambda: self.run_script("caller_transmission.py")).pack(fill="x")
-        self.build_config_area(s5, "Transmission Physics", "transmission_setup")
-        self._build_dict_editor(s5, "Sample Thickness (cm)", "calibration_samples", "thickness")
+        self.build_config_area(s6, "Transmission Physics", "transmission_setup")
+        self._build_dict_editor(s6, "Sample Thickness (cm)", "calibration_samples", "thickness")
 
         # --- TAB 6: RADIAL INTEGRATION ---
-        t6_main = ttk.Frame(self.notebook); self.notebook.add(t6_main, text="6. Radial Integration")
-        f6 = tk.Frame(t6_main, bg=bg); f6.pack(side="bottom", fill="x", padx=20, pady=15)
-        tk.Button(f6, text="RUN FULL INTEGRATION PIPELINE", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        t7_main = ttk.Frame(self.notebook); self.notebook.add(t7_main, text="6. Radial Integration")
+        f7 = tk.Frame(t7_main, bg=bg); f7.pack(side="bottom", fill="x", padx=20, pady=15)
+        tk.Button(f7, text="RUN FULL INTEGRATION PIPELINE", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   pady=10, command=lambda: self.run_script("caller_radial_integration.py")).pack(fill="x")
 
-        self.sub_nb = ttk.Notebook(t6_main); self.sub_nb.pack(expand=True, fill="both", padx=10, pady=5)
+        self.sub_nb = ttk.Notebook(t7_main); self.sub_nb.pack(expand=True, fill="both", padx=10, pady=5)
 
         sc, _ = self.create_scrollable_tab(self.sub_nb, "Calibration Samples")
         if 'calibration_samples' not in self.entries: self.entries['calibration_samples'] = {}
-        tk.Button(sc, text="🔍 CHECK EXISTENCE OF ALL CALIBRATION FILES", bg="#2196F3", fg="white",
-                  font=("Arial", 9, "bold"), pady=8, command=lambda: self.run_script("caller_check_calibration.py")).pack(fill="x", pady=10)
+
 
         cal_data = self.config_dict.get('calibration_samples', {})
 
@@ -465,12 +468,17 @@ class DarePyGUI:
             e.pack(fill="x", pady=(2, 5))
             self.entries['calibration_samples'][(field,)] = e
 
+        tk.Button(sc, text="🔍 CHECK EXISTENCE OF ALL CALIBRATION FILES", bg="#2196F3", fg="white",
+                  font=("Arial", 9, "bold"), pady=8, command=lambda: self.run_script("caller_check_calibration.py")).pack(fill="x", pady=10)
+
         self._build_dict_editor(sc, "Empty Cell Mapping", "calibration_samples", "empty_cell")
         self._build_dict_editor(sc, "Sample Thickness (cm)", "calibration_samples", "thickness")
 
-        s_combined, _ = self.create_scrollable_tab(self.sub_nb, "Physics Settings & Pipeline Control")
+
+
+        s_combined, _ = self.create_scrollable_tab(self.sub_nb, "Physics Settings")
         self.build_config_area(s_combined, "Physics Corrections", "physics_corrections")
-        self.build_config_area(s_combined, "Pipeline Control", "pipeline_control")
+        #self.build_config_area(s_combined, "Pipeline Control", "pipeline_control")
 
         sd, _ = self.create_scrollable_tab(self.sub_nb, "Analysis Flags")
         self.build_config_area(sd, "Flags", "analysis_flags")
@@ -479,13 +487,13 @@ class DarePyGUI:
         self.build_config_area(sr, "Resolution Geometry (dq)", "resolution_settings")
 
         # --- TAB 7: MERGING CURVES ---
-        s7, f7 = self.create_scrollable_tab(self.notebook, "7. Merging Curves")
-        tk.Button(f7, text="SAVE SETTINGS", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
+        s8, f8 = self.create_scrollable_tab(self.notebook, "7. Merging Curves")
+        tk.Button(f8, text="SAVE SETTINGS", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
                   command=self.save_data).pack(side="left", fill="x", expand=True, padx=2)
-        tk.Button(f7, text="RUN DATA MERGING", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        tk.Button(f8, text="RUN DATA MERGING", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_merging.py")).pack(side="left", fill="x", expand=True, padx=2)
 
-        top_f = tk.LabelFrame(s7, text="Merging Pipeline Controls", padx=10, pady=10, bg=bg)
+        top_f = tk.LabelFrame(s8, text="Merging Pipeline Controls", padx=10, pady=10, bg=bg)
         top_f.pack(fill="x", padx=10, pady=5)
 
         m_data = self.config_dict.get('merging_settings', {})
@@ -814,4 +822,16 @@ class DarePyGUI:
 if __name__ == "__main__":
     root = tk.Tk()
     app = DarePyGUI(root)
-    root.mainloop()
+
+    # 1. Define a clear exit routine
+    def safe_exit():
+        root.quit()     # This explicitly breaks root.mainloop() so the script stops
+        root.destroy()  # This safely clears the window components out of memory
+
+    # 2. Bind the window closing event to our clean routine
+    root.protocol("WM_DELETE_WINDOW", safe_exit)
+
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        pass

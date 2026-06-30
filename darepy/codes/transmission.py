@@ -133,7 +133,7 @@ def trans_calc_reference(config, result, class_files):
                 result['transmission']['mean_EB'] = EB_ref
                 result['transmission']['EB_counts'] = img_eb
         else:
-            sys.exit(f'Please measure an empty beam ({eb_id}) for the same detector distance ({trans_dist}m).')
+            sys.exit(f'For standand beamtop, measure an empty beam ({eb_id}) without the beamstop for the transmission detector distance ({trans_dist}m).')
 
     elif beamstop == 'semitransparent':
         det_dist = list(set(class_files['detx_m']))

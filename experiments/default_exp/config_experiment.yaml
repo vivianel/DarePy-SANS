@@ -29,11 +29,22 @@ sample_environment:
   syringe_pumps: false # NOT IMPLEMENTED: For saving the flow rate (Q_mlps) in the tables
   rheometer: false # NOT IMPLEMENTED: For saving parameters of rheometer in the tables
 
+pipeline_control:
+  _desc: |
+    PIPELINE CONTROL
+    Master execution toggles for the DarePy-SANS.py script.
+  live_monitoring: false # Auto-process new files as they appear at the beamline
+  monitor_interval: 10   # Delay (sec) between checks for new raw data
+  wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
+  target_detector_distances: all # Filter by distance (m): 'all' or list 1.6, 6.0
+  exclude_files: '1457:1465' # Scans to skip (e.g., bad data or setup runs)
+  force_reintegrate: true    # True: Overwrite existing .dat files
+
 rename_samples:
   _desc: |
     RENAME SAMPLES
     Standardize sample names in metadata for correct downstream matching, especially for merging files.
-  files_change: 1436:1439 # Scan numbers to change name - Ex. 85776:89530, 89650
+  files_change: 1434      # Scan numbers to change name - Ex. 85776:89530, 89650
   add_subscript: 'test'     # Append text to the current name. Useful to add temperature or magnetic field, if forgotten during the measuments - Ex: '_25C'
   replace_with: 'NEW'       # Overwrites the name given during the measurements - Ex. 'CTAB_NaSal'
 
@@ -58,22 +69,18 @@ beam_center_mask:
     MASKING & BEAM CENTER
     Interactive tool for finding beam center and masking the beam stop.
   scans:
-    8: 1446
-    17.5: 1450
+    8: 1444
+    17.5: 1453
     2: 1433
-  semitransparent: false
+  semitransparent: true
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
-  - 400
+  - 1000
   plot_scale: 'lin'        # Color mapping: 'log' or 'lin'
+
   scan_nr: 1433
 
-pipeline_control:
-  _desc: |
-    PIPELINE CONTROL
-    Master execution toggles for the DarePy-SANS.py script.
-  live_monitoring: false # Auto-process new files as they appear at the beamline
-  monitor_interval: 10   # Delay (sec) between checks for new raw data
+
 
 transmission_setup:
   _desc: |
@@ -89,11 +96,9 @@ physics_corrections:
   _desc: |
     PHYSICS CORRECTIONS FOR REDUCTION
     Toggles for standard SANS mathematical corrections.
-  wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
-  target_detector_distances: all # Filter by distance (m): 'all' or list 1.6, 6.0
   normalize_to_monitor: true     # Account for primary beam flux fluctuations
   subtract_dark_current: true    # Subtract ambient noise and counts (Cadmium measurement)
-  subtract_empty_cell: true      # Remove container scattering
+  subtract_empty_cell: false     # Remove container scattering
   apply_flat_field: true         # Correct for detector pixel sensitivity (H2O)
   apply_transmission: true        # Correct for sample attenuation
   normalize_to_thickness: true   # Normalize by sample path length (cm)
@@ -105,7 +110,7 @@ resolution_settings:
     RESOLUTION SETTINGS
     Geometric parameters for dq smearing. Automatically handles
     anisotropic smearing for azimuthal sector cuts.
-  calculate_resolution: true    # true for calculating the experimental resolution
+  calculate_resolution: false   # true for calculating the experimental resolution
   # Source (A1) Settings - e.g., the neutron guide
   source_shape: 'rectangular'    # 'circular' or 'rectangular'
   source_slit_width: 0.05        # W1 in meters (e.g., 50 mm)
@@ -136,32 +141,37 @@ detector_geometry:
     Refresh the gui after the calculation with the iterative tool.
   beam_center_guess: # center  of the scattering pattern for a given detector distance in meters
     8:
-    - 62.91
-    - 62.43
+    - 63.12
+    - 62.37
     17.5:
-    - 62.43
-    - 61.48
+    - 62.27
+    - 61.18
     2:
-    - 62.77
-    - 62.74
+    - 61.96
+    - 62.43
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
     8:
       bs0:
       - 55
       - 71
       - 56
-      - 70
-    17.5:
-      bs0:
-      - 55
-      - 69
-      - 55
       - 69
       bs1:
       - 55
-      - 69
+      - 71
       - 64
       - 70
+    17.5:
+      bs0:
+      - 55
+      - 71
+      - 55
+      - 69
+      bs1:
+      - 55
+      - 71
+      - 66
+      - 70
     2:
       bs0:
       - 54
@@ -170,43 +180,31 @@ detector_geometry:
       - 70
       bs1:
       - 0
-      - 6
+      - 5
       - 0
       - 128
-      bs2:
-      - 54
-      - 89
-      - 125
-      - 128
-      bs3:
-      - 4
-      - 128
-      - 0
-      - 2
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
     8:
-    - 57
+    - 58
+    - 65
+    - 55
+    - 70
+    17.5:
+    - 58
     - 65
     - 56
-    - 71
-    17.5:
-    - 59
-    - 64
-    - 56
-    - 68
+    - 69
     2:
     - 59
-    - 66
-    - 55
+    - 65
+    - 54
     - 69
 analysis_flags:
   _desc: |
     ANALYSIS FLAGS
     Detailed integration settings.
-  exclude_files: '1457:1600' # Scans to skip (e.g., bad data or setup runs)
-  force_reintegrate: true    # True: Overwrite existing .dat files
-  save_plot_radial: false     # Export I(q) plots as PNG
-  integration_points: 120     # Number of bins in q-space
+  save_plot_radial: true      # Export I(q) plots as PNG
+  integration_points: 100     # Number of bins in q-space
   save_plot_azimuthal: false  # Export I(phi) plots
   save_data_azimuthal: false  # Export I(phi) as text
   sectors_nr: 18              # Number of 'pizza slices' for azimuthal integration
@@ -229,9 +227,9 @@ merging_settings:
     2: 5
 
   run_step_2_merging: true        # Merge overlapping regions
-  run_step_3_interpolation: false # Interpolate to common q-grid
+  run_step_3_interpolation: true  # Interpolate to common q-grid
 
   interp_type: log    # Resampling spacing: 'log' or 'lin'
   interp_points: 150  # Total points in final merged curve
   run_step_4_incoherent: true     # Fit and subtract flat incoherent background
-  last_points_to_fit: 5 # Points used for Porod/Background estimation
+  last_points_to_fit: 10 # Points used for Porod/Background estimation

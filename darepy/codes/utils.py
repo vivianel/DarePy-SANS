@@ -86,6 +86,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'counts_left': 'entry0/left_data/data',
             'counts_bottom':'entry0/bottom_data/data',
             'mag_field':'entry0/sample/magnetic_field_log/value',
+            'thickness': '/entry0/sample/thickness',
             'flux_monit':  registry_monitor_path  # read from instrument_registry
         }
     }
@@ -99,9 +100,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             hdf_internal_path = PATHS[instrument][which_property]
 
             if which_property == 'temp' and hdf_internal_path not in file_hdf:
-                return ''
+                return 'unknown'
             if which_property == 'mag_field' and hdf_internal_path not in file_hdf:
-                return ''
+                return 'unknown'
 
             raw_data = file_hdf[hdf_internal_path]
 
@@ -135,6 +136,8 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
                 prop = round(prop, 2)
             elif which_property == 'beamstop_y':
                 prop = round(prop, 2)
+            elif which_property == 'thickness':
+                prop = round(prop, 2) # given in mm, but used later in cm
             return prop
 
     except FileNotFoundError:

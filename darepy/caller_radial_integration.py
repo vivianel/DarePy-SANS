@@ -28,7 +28,7 @@ if codes_dir not in sys.path:
 # ==========================================
 # STEP 0 & 1: LOAD MASTER CONFIGURATIONS
 # ==========================================
-from utils import load_config, load_instrument_registry, create_analysis_folder
+from utils import load_config, load_instrument_registry, create_analysis_folder, save_results
 import prepare_input as org
 import integration as ri
 
@@ -88,7 +88,7 @@ configuration = {
     'instrument': INSTRUMENT_REGISTRY[selected_inst],
     'experiment': {
         'calibration': ext_cfg['calibration_samples'],
-        'wl_input': ext_cfg['physics_corrections']['wavelength'],
+        'wl_input': ext_cfg['pipeline_control']['wavelength'],
         'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
         # FIX: Map the transmission distance to where the backend expects it
         'trans_dist': ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18),
@@ -100,8 +100,8 @@ configuration = {
         'path_hdf_raw': ext_cfg['analysis_paths']['raw_data'],
         'scripts_dir': ext_cfg['analysis_paths']['scripts_dir'],
         'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
-        'exclude_files': ext_cfg['analysis_flags'].get('exclude_files', []),
-        'force_reintegrate': ext_cfg['analysis_flags']['force_reintegrate'],
+        'exclude_files': ext_cfg['pipeline_control'].get('exclude_files', []),
+        'force_reintegrate': ext_cfg['pipeline_control']['force_reintegrate'],
         'save_plot_azimuthal': ext_cfg['analysis_flags']['save_plot_azimuthal'],
         'save_plot_radial': ext_cfg['analysis_flags']['save_plot_radial'],
         'save_data_azimuthal': ext_cfg['analysis_flags']['save_data_azimuthal'],
@@ -118,7 +118,7 @@ configuration = {
             for k, v in ext_cfg['detector_geometry']['beamstopper_coordinates'].items()
         },
         'transmission_coordinates': ext_cfg['detector_geometry'].get('transmission_coordinates', {}),
-        'target_detector_distances': ext_cfg['physics_corrections']['target_detector_distances']
+        'target_detector_distances': ext_cfg['pipeline_control']['target_detector_distances']
     }
 }
 
@@ -182,6 +182,11 @@ while True:
             print(f" -> Processing Distance: {det_str.replace('p', '.')}m")
             # This will now find the loaded transmission values in 'result'
             result = ri.set_integration(configuration, result, det_str)
+
+    # --- STEP 4: PERSIST RESULTS FOR RADIAL INTEGRATION ---
+    # This creates the 'analysis' folder and saves result.npy
+    analysis_folder = create_analysis_folder(configuration)
+    save_results(analysis_folder, result)
 
     elapsed_time = time.time() - pipeline_start_time
     print(f"\nIteration {iteration} finished in {elapsed_time:.2f} seconds.")
