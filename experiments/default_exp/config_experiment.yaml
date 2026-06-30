@@ -57,17 +57,16 @@ beam_center_mask:
   _desc: |
     MASKING & BEAM CENTER
     Interactive tool for finding beam center and masking the beam stop.
-  sample_name: 'AgBE' # sample used for the center
   scans:
     8: 1446
     17.5: 1450
     2: 1433
-  scan_nr: 1433
   semitransparent: false
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
   - 400
   plot_scale: 'lin'        # Color mapping: 'log' or 'lin'
+  scan_nr: 1433
 
 pipeline_control:
   _desc: |

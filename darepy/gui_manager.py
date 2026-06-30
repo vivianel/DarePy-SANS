@@ -340,19 +340,6 @@ class DarePyGUI:
         # --- TAB 4: MASK & CENTER ---
         s4, f4 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
 
-        # Upper Layout Setup Box: sample_name
-        setup_f = tk.LabelFrame(s4, text="Masking Setup", padx=10, pady=10, bg=bg)
-        setup_f.pack(fill="x", padx=10, pady=5)
-
-        tk.Label(setup_f, text="sample_name", font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
-        s_ent = tk.Entry(setup_f)
-        s_ent.insert(0, self.config_dict.get('beam_center_mask', {}).get('sample_name', 'AgBE'))
-        s_ent.pack(fill="x", ipady=3)
-
-        if 'beam_center_mask' not in self.entries:
-            self.entries['beam_center_mask'] = {}
-        self.entries['beam_center_mask'][('sample_name',)] = s_ent
-
         # Middle Layout Setup Box: Distance list loops & Semitransparent Toggle
         act_f = tk.LabelFrame(s4, text="Distance-Specific Masking & Alignment", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
         act_f.pack(fill="x", padx=10, pady=5)
@@ -364,7 +351,11 @@ class DarePyGUI:
         self.new_dist_entry.pack(side="left", padx=5)
         tk.Button(add_r, text=" + ", bg="#4CAF50", fg="white", font=("Arial", 8, "bold"), command=self.add_new_distance).pack(side="left")
 
-        # semitransparent Boolean Checkbutton Setup (Moved here with detector distances)
+        # Initialize tracking sub-dictionary registry if not present
+        if 'beam_center_mask' not in self.entries:
+            self.entries['beam_center_mask'] = {}
+
+        # semitransparent Boolean Checkbutton Setup
         semi_val = self.config_dict.get('beam_center_mask', {}).get('semitransparent', True)
         self.semi_var = tk.BooleanVar(value=semi_val)
 
