@@ -44,7 +44,7 @@ else:
 path_hdf_raw = config['analysis_paths']['raw_data']
 instrument = config['instrument_setup']['which_instrument']
 scanNr = config['beam_center_mask']['scan_nr']
-beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
+beamstop = config['beam_center_mask']['semitransparent']
 
 # --- FETCH CLIM & SCALE FROM CONFIG ---
 config_clim = config['beam_center_mask'].get('clim', None)
@@ -328,14 +328,14 @@ while manager.current_state != 'done':
             plt.pause(0.1)
         else:
             if manager.current_state == 'bs_collect':
-                if beamstop == 'semitransparent':
+                if beamstop == True:
                     print("\nMoving to Step 2: Transmission Area Selection.")
                     interactive_fig, interactive_ax = plt.subplots(figsize=(8, 7))
                     manager.fig, manager.ax = interactive_fig, interactive_ax
                     manager.current_state = 'transmission'
                     manager.connect()
                 else:
-                    print(f"Skipping transmission step because beamstop setup is '{beamstop}'.")
+                    print("Skipping transmission area because beamstop setup is the standard.")
                     break
             else:
                 break

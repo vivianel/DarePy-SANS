@@ -353,16 +353,26 @@ class DarePyGUI:
             self.entries['beam_center_mask'] = {}
         self.entries['beam_center_mask'][('sample_name',)] = s_ent
 
-        # Middle Layout Setup Box: Distance list loops
+        # Middle Layout Setup Box: Distance list loops & Semitransparent Toggle
         act_f = tk.LabelFrame(s4, text="Distance-Specific Masking & Alignment", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
         act_f.pack(fill="x", padx=10, pady=5)
 
         add_r = tk.Frame(act_f, bg=bg)
-        add_r.pack(fill="x", pady=(0,10))
+        add_r.pack(fill="x", pady=(0, 10))
         tk.Label(add_r, text="New Dist:", font=("Arial", 8, "italic"), bg=bg).pack(side="left")
         self.new_dist_entry = tk.Entry(add_r, width=8)
         self.new_dist_entry.pack(side="left", padx=5)
         tk.Button(add_r, text=" + ", bg="#4CAF50", fg="white", font=("Arial", 8, "bold"), command=self.add_new_distance).pack(side="left")
+
+        # semitransparent Boolean Checkbutton Setup (Moved here with detector distances)
+        semi_val = self.config_dict.get('beam_center_mask', {}).get('semitransparent', True)
+        self.semi_var = tk.BooleanVar(value=semi_val)
+
+        semi_chk = tk.Checkbutton(act_f, text="Run Semitransparent Beamstop Masking",
+                                  variable=self.semi_var, font=("Arial", 9, "bold"),
+                                  bg=bg, activebackground=bg, anchor="w")
+        semi_chk.pack(anchor="w", pady=(5, 10))
+        self.entries['beam_center_mask'][('semitransparent',)] = self.semi_var
 
         scans_dict = self.config_dict.get('beam_center_mask', {}).get('scans', {})
         if isinstance(scans_dict, dict):
@@ -379,7 +389,7 @@ class DarePyGUI:
                 tk.Button(r, text="BEAM CENTER", bg="#4CAF50", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.run_beam_center_for_dist(dist)).pack(side="left", fill="x", expand=True, padx=2)
                 tk.Button(r, text=" 🗑️ ", bg="#f44336", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.remove_distance(dist)).pack(side="right", padx=(5, 0))
 
-        # Bottom Additional Box: clim & plot_scale (Added here into Tab 4)
+        # Bottom Additional Box: clim & plot_scale
         options_f = tk.LabelFrame(s4, text="Display & Intensity Options", padx=10, pady=10, bg=bg)
         options_f.pack(fill="x", padx=10, pady=5)
 
@@ -496,7 +506,6 @@ class DarePyGUI:
                 if ca_items and key in ca_items:
                     for token in ca_items[key]:
                         if token and hasattr(token, 'value'):
-                            # Strip out the '#' symbol so it doesn't get duplicated by _create_field
                             return token.value.strip().lstrip('#').strip()
             except Exception: pass
             return ""
@@ -506,40 +515,76 @@ class DarePyGUI:
                       fg="#444", bg="#eef2f7", justify="left", anchor="w",
                       padx=10, pady=8, wraplength=800).pack(fill="x", pady=(0, 10))
 
-        # 1. Step Checkboxes
-        for k in ['run_step_1_plotting', 'run_step_2_merging', 'run_step_3_interpolation', 'run_step_4_incoherent']:
-            val = m_data.get(k, False)
+        # Helper function to generate a consistent checkbox row for a step
+        def create_step_checkbox(parent_frame, step_key):
+            val = m_data.get(step_key, False)
             var = tk.BooleanVar(master=self.root, value=val)
 
-            row_f = tk.Frame(top_f, bg=bg)
-            row_f.pack(fill="x", anchor="w", pady=2)
+            row_f = tk.Frame(parent_frame, bg=bg)
+            row_f.pack(fill="x", anchor="w", pady=(8, 4))
 
-            tk.Checkbutton(row_f, text=k, variable=var, bg=bg, font=("Arial", 9, "bold")).pack(side="left")
+            tk.Checkbutton(row_f, text=step_key, variable=var, bg=bg, font=("Arial", 9, "bold")).pack(side="left")
 
-            cmt = get_comment(k)
+            cmt = get_comment(step_key)
             if cmt:
-                tk.Label(row_f, text=f"  # {cmt}", font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
+                tk.Label(row_f, text=f"   # {cmt}", font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
 
-            self.entries['merging_settings'][(k,)] = var
+            self.entries['merging_settings'][(step_key,)] = var
 
-        # 2. Skip Points Table
-        self._build_merging_table(s7, "Data Clipping (Skip Points)", "merging_settings")
+        # ==========================================
+        # STAGE 1: PLOTTING & CLIPPING
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_1_plotting')
 
-        # 3. Interpolation & Fitting Frame (Leveraging _create_field for maximum consistency)
-        interp_f = tk.LabelFrame(s7, text="Interpolation & Background Settings", padx=10, pady=10, bg=bg)
-        interp_f.pack(fill="x", padx=10, pady=5)
+        # Build the data clipping skip table right below Step 1
+        self._build_merging_table(top_f, "Data Clipping (Skip Points)", "merging_settings")
 
-        for param_key in ['interp_type', 'interp_points', 'last_points_to_fit']:
+        # ==========================================
+        # STAGE 2: MERGING
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_2_merging')
+
+        # ==========================================
+        # STAGE 3: INTERPOLATION & RESAMPLING
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_3_interpolation')
+
+        # Subsection frame for interpolation options
+        interp_options_f = tk.Frame(top_f, bg=bg, padx=15)
+        interp_options_f.pack(fill="x", pady=(2, 5))
+
+        for param_key in ['interp_type', 'interp_points']:
             if param_key in m_data:
                 cmt = get_comment(param_key)
                 self._create_field(
-                    parent=interp_f,
+                    parent=interp_options_f,
                     label=param_key,
                     value=m_data[param_key],
                     config_key='merging_settings',
                     path=(param_key,),
                     comment=cmt
                 )
+
+        # ==========================================
+        # STAGE 4: INCOHERENT BACKGROUND FIT
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_4_incoherent')
+
+        # Subsection frame for background parameters
+        incoherent_options_f = tk.Frame(top_f, bg=bg, padx=15)
+        incoherent_options_f.pack(fill="x", pady=(2, 5))
+
+        if 'last_points_to_fit' in m_data:
+            cmt = get_comment('last_points_to_fit')
+            self._create_field(
+                parent=incoherent_options_f,
+                label='last_points_to_fit',
+                value=m_data['last_points_to_fit'],
+                config_key='merging_settings',
+                path=('last_points_to_fit',),
+                comment=cmt
+            )
+
 
     def _build_merging_table(self, parent, title, m_key):
         bg = self.root.cget('bg')
