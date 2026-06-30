@@ -271,7 +271,7 @@ class DarePyGUI:
         label_frame = tk.Frame(f, bg=bg)
         label_frame.pack(fill="x", anchor="w")
 
-        # FIX: If it is a boolean value, pack the checkbox inside the label row FIRST
+        # If it is a boolean value, pack the checkbox inside the label row FIRST
         if isinstance(value, bool):
             var = tk.BooleanVar(master=self.root, value=value)
             tk.Checkbutton(label_frame, text="", variable=var, bg=bg).pack(side="left", padx=(0, 5))
@@ -287,7 +287,7 @@ class DarePyGUI:
 
         # Handle options or entries only if it is NOT a boolean setup
         if not isinstance(value, bool):
-            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", "source_shape", "aperture_shape"]:
+            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_shape", "aperture_shape"]:
                 if label == "which_instrument":
                     opts = ["SANS-I", "SANS-LLB"]
                 elif label == "integration_direction":
@@ -298,6 +298,8 @@ class DarePyGUI:
                     opts = ["lin", "log"]
                 elif label in ["aperture_shape", "source_shape"]:
                     opts = ["rectangular", "circular"]
+                elif label in ['output_mode']:
+                    opts = ['individual_frames', 'gif_animation']
 
                 w = ttk.Combobox(f, values=opts, state="readonly")
                 w.set(value)
