@@ -93,7 +93,7 @@ if __name__ == "__main__":
     # Define the project path
     p_base = ext_cfg['analysis_paths']['project_base']
     path_dir = Path(p_base)
-    sample_environment = ext_cfg['instrument_setup']['sample_environment']
+    sample_environment = ext_cfg.get('sample_environment', {})
     # --- THE ROBUST CONFIGURATION ---
     configuration = {
         'experiment': {
@@ -105,7 +105,7 @@ if __name__ == "__main__":
             'path_hdf_raw': ext_cfg['analysis_paths']['raw_data'],
             'scripts_dir': ext_cfg['analysis_paths']['scripts_dir'],
             'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
-            'exclude_files': ext_cfg['analysis_flags'].get('exclude_files', []),
+            'exclude_files': ext_cfg['pipeline_control'].get('exclude_files', []),
             'force_reintegrate': ext_cfg['analysis_flags'].get('force_reintegrate', 0),
         }
     }

@@ -400,7 +400,7 @@ def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_thres
                 bounds=(0, np.max(f_I)*1.5)
             )
             # Apply slight 3% correction factor as per your preference
-            incoherent_fit = params[0] * 0.97
+            incoherent_fit = params[0] * 0.95
 
             subtracted_I = I_pos - incoherent_fit
 

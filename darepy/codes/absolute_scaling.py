@@ -68,7 +68,7 @@ def process_water_standard(config, result):
                 var_out = var + scaled_dark_var
                 return img_out, var_out
 
-            # Apply identical dark correction to both standard runs
+            # Apply identical dark correction to both standard runs (water and water cell)
             img_w, var_w = apply_dark(img_w, var_w, hdf_w)
             img_wc, var_wc = apply_dark(img_wc, var_wc, hdf_wc)
 
@@ -99,7 +99,6 @@ def process_water_standard(config, result):
 
     # 5. Safeguard against negative pixels before absolute scaling integration
     img_h2o[img_h2o <= 0] = 1e-6
-
     return img_h2o, img_h2o_var
 
 def calculate_1D_absolute_scalar(config, result, det_str, water_img, water_var=None):
@@ -134,8 +133,8 @@ def calculate_1D_absolute_scalar(config, result, det_str, water_img, water_var=N
         # ---------------------------------------------------------
         # Define the flat plateau in pixels
         # ---------------------------------------------------------
-        pixel_min = 20  # Safely outside the beamstop shadow
-        pixel_max = 80  # Safely inside the detector edges
+        pixel_min = 10  # Safely outside the beamstop shadow
+        pixel_max = len(r_mm)-10  # Safely inside the detector edges
 
         # ai.pixel1 is the pixel size in meters. Convert to mm.
         pixel_size_mm = ai.pixel1 * 1000

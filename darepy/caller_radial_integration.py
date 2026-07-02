@@ -7,6 +7,7 @@ import sys
 import time
 import os
 import pickle
+import subprocess
 
 
 # 1. Get the directory of the current script (darepy/codes/)
@@ -27,12 +28,13 @@ if codes_dir not in sys.path:
 # ==========================================
 # STEP 0 & 1: LOAD MASTER CONFIGURATIONS
 # ==========================================
-from utils import load_config, load_instrument_registry, create_analysis_folder
+from utils import load_config, load_instrument_registry, create_analysis_folder, save_results
 import prepare_input as org
 import integration as ri
 
 ext_cfg = load_config()
 INSTRUMENT_REGISTRY = load_instrument_registry()
+sample_environment = ext_cfg.get('sample_environment', {})
 
 selected_inst = ext_cfg['instrument_setup']['which_instrument']
 # Identify the analysis folder to find saved results
@@ -43,27 +45,41 @@ analysis_folder = create_analysis_folder({
     }
 })
 
+# ==========================================================
+# %% Pre-requisite: Automatically run the Transmission script
+# ==========================================================
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+transmission_script = os.path.join(current_script_dir, "caller_transmission.py")
+
+if os.path.exists(transmission_script):
+    print("\n🚀 [AUTOMATION] Running Transmission pipeline before Radial Integration...")
+    try:
+        # Build command and pass the .yaml config argument forward if it was provided
+        cmd = [sys.executable, transmission_script]
+        if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+            cmd.append(os.path.abspath(sys.argv[1]))
+
+        # check=True will halt execution here if caller_transmission crashes
+        subprocess.run(cmd, check=True)
+        print("✅ [AUTOMATION] Transmission completed successfully. Continuing to integration.\n")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ [CRITICAL ERROR] Transmission run failed (Exit Code: {e.returncode}). Radial Integration aborted.")
+        sys.exit(1)
+else:
+    print(f"⚠️ [WARNING] '{transmission_script}' not found. Falling back to existing cached results.")
+
 # ==========================================
 # STEP 2: LOAD PREVIOUS RESULTS (Step 3 Output)
 # ==========================================
 result_file = os.path.join(analysis_folder, 'result.npy')
-sample_environment = ext_cfg['instrument_setup']['sample_environment']
-
 if os.path.exists(result_file):
     print(f"📦 Loading previously calculated results (Transmissions) from: {result_file}")
     with open(result_file, 'rb') as f:
         result = pickle.load(f)
 else:
     print("⚠️ [ERROR] No existing results found. Initializing blank results container.")
-    result = {
-        'transmission': {},
-        'overview': {},
-        'integration': {
-            'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
-            'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
-            'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
-        }}
-    
+    sys.exit(1)
+
 
 # ==========================================
 # STEP 3: CONSTRUCT CONFIGURATION OBJECT
@@ -72,7 +88,7 @@ configuration = {
     'instrument': INSTRUMENT_REGISTRY[selected_inst],
     'experiment': {
         'calibration': ext_cfg['calibration_samples'],
-        'wl_input': ext_cfg['physics_corrections']['wavelength'],
+        'wl_input': ext_cfg['pipeline_control']['wavelength'],
         'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
         # FIX: Map the transmission distance to where the backend expects it
         'trans_dist': ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18),
@@ -84,8 +100,8 @@ configuration = {
         'path_hdf_raw': ext_cfg['analysis_paths']['raw_data'],
         'scripts_dir': ext_cfg['analysis_paths']['scripts_dir'],
         'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
-        'exclude_files': ext_cfg['analysis_flags'].get('exclude_files', []),
-        'force_reintegrate': ext_cfg['analysis_flags']['force_reintegrate'],
+        'exclude_files': ext_cfg['pipeline_control'].get('exclude_files', []),
+        'force_reintegrate': ext_cfg['pipeline_control']['force_reintegrate'],
         'save_plot_azimuthal': ext_cfg['analysis_flags']['save_plot_azimuthal'],
         'save_plot_radial': ext_cfg['analysis_flags']['save_plot_radial'],
         'save_data_azimuthal': ext_cfg['analysis_flags']['save_data_azimuthal'],
@@ -102,7 +118,7 @@ configuration = {
             for k, v in ext_cfg['detector_geometry']['beamstopper_coordinates'].items()
         },
         'transmission_coordinates': ext_cfg['detector_geometry'].get('transmission_coordinates', {}),
-        'target_detector_distances': ext_cfg['physics_corrections']['target_detector_distances']
+        'target_detector_distances': ext_cfg['pipeline_control']['target_detector_distances']
     }
 }
 
@@ -155,17 +171,29 @@ while True:
         result = org.select_detector_distances(configuration, class_files, result)
         target_dist = configuration['analysis']['target_detector_distances']
 
-        if target_dist == 'all':
+        if target_dist == 'all' or target_dist == '':
             processed_det_distances = [
                 k.replace('det_files_', '') for k in result['overview'].keys() if k.startswith('det_files_')
             ]
+        elif isinstance(target_dist, int) or isinstance(target_dist, float):
+            target_str = str(float(target_dist)).replace('.', 'p')
+            processed_det_distances = [k.replace('det_files_', '') for k in result['overview'].keys()
+                                       if k.startswith('det_files_') and k.endswith(target_str)]
         else:
-            processed_det_distances = [str(d).replace('.', 'p') for d in target_dist]
+            target_strings = [str(float(d)) for d in target_dist]
+            processed_det_distances = [ k.replace('det_files_', '') for k in result['overview'].keys()
+    if k.startswith('det_files_') and str(float(k.replace('det_files_', '').replace('p', '.'))) in target_strings]
+
 
         for det_str in processed_det_distances:
             print(f" -> Processing Distance: {det_str.replace('p', '.')}m")
             # This will now find the loaded transmission values in 'result'
             result = ri.set_integration(configuration, result, det_str)
+
+    # --- STEP 4: PERSIST RESULTS FOR RADIAL INTEGRATION ---
+    # This creates the 'analysis' folder and saves result.npy
+    analysis_folder = create_analysis_folder(configuration)
+    save_results(analysis_folder, result)
 
     elapsed_time = time.time() - pipeline_start_time
     print(f"\nIteration {iteration} finished in {elapsed_time:.2f} seconds.")

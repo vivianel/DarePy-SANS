@@ -19,11 +19,11 @@ def list_files(config, result):
         'beamstop_y': [], 'coll_m': [], 'wl_A': [], 'detx_m': [],
         'dety_m': [],  'moni_e4': [], 'time_s': [], 'thickness_cm': [],
         'frame_nr': []}
-    if config['experiment']['sample_environment'] == 'electromagnet':
+    if config['experiment']['sample_environment']['electromagnet']:
         class_files['B_T'] = []
-    elif config['experiment']['sample_environment'] == 'water_bath':
+    if config['experiment']['sample_environment']['water_bath']:
         class_files['temp_C'] = []
- 
+
     path_hdf_raw = config['analysis']['path_hdf_raw']
     raw_exclude = config['analysis'].get('exclude_files', [])
     exclude_files = parse_scan_list(raw_exclude)
@@ -36,12 +36,12 @@ def list_files(config, result):
             if file.endswith('.hdf'):
                 # Full absolute path to check the file size
                 file_path = os.path.join(r, file)
-                
+
                 # If the file size is less than 2 KB (2048 bytes), skip it entirely
                 if os.path.getsize(file_path) < 2048:
                     print('SKIPPING: file ' + file + ' is too small - probaly stopped before Nexus formatting!')
                     continue
-                
+
                 scan_match = re.findall(r"\D(\d{6})\D", file)
                 if not scan_match:
                     continue
@@ -70,16 +70,16 @@ def list_files(config, result):
             class_files['detx_m'].append(load_hdf(path_hdf_raw, file, 'detx'))
             class_files['dety_m'].append(load_hdf(path_hdf_raw, file, 'dety'))
             class_files['wl_A'].append(round(load_hdf(path_hdf_raw, file, 'wl')))
-            
+
 
             sample_name = load_hdf(path_hdf_raw, file, 'sample_name')
             class_files['sample_name'].append(sample_name)
-            
-            if config['experiment']['sample_environment'] == 'electromagnet':
+
+            if config['experiment']['sample_environment']['electromagnet']:
                 class_files['B_T'].append(load_hdf(path_hdf_raw, file, 'mag_field'))
-            elif config['experiment']['sample_environment'] == 'water_bath':
+            if config['experiment']['sample_environment']['water_bath']:
                 class_files['temp_C'].append(load_hdf(path_hdf_raw, file, 'temp'))
-            
+
 
             res = load_hdf(path_hdf_raw, file, 'counts')
             class_files['frame_nr'].append(res.shape[0] if (res is not None and res.ndim > 2) else 1)

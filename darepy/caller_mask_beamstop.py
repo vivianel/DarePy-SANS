@@ -44,7 +44,7 @@ else:
 path_hdf_raw = config['analysis_paths']['raw_data']
 instrument = config['instrument_setup']['which_instrument']
 scanNr = config['beam_center_mask']['scan_nr']
-beamstop = config.get('transmission_setup', {}).get('beamstop', 'standard')
+beamstop = config['beam_center_mask']['semitransparent']
 
 # --- FETCH CLIM & SCALE FROM CONFIG ---
 config_clim = config['beam_center_mask'].get('clim', None)
@@ -122,24 +122,12 @@ class MaskTransmissionManager:
         self.switching_step = False
         self.user_aborted = False  # Soft abort tracking flag
 
-    def _get_norm(self):
-        if self.scale_mode == 'log':
-            return matplotlib.colors.LogNorm(vmin=self.clim[0], vmax=self.clim[1])
-        return matplotlib.colors.Normalize(vmin=self.clim[0], vmax=self.clim[1])
-
     def connect(self):
         self.disconnect_listeners()
         self.clicks = []
         self.pending_coords = None
         self.switching_step = False
         self.ax.clear()
-
-        if self.cbar is not None:
-            try:
-                self.cbar.remove()
-            except:
-                pass
-            self.cbar = None
 
         if self.current_state == 'bs_collect':
             self.fig.suptitle('SANS Masking Setup: Step 1 - Define Beam Stops', fontsize=14, color='darkblue')
@@ -153,12 +141,25 @@ class MaskTransmissionManager:
             return
 
         self.ax.set_title(title, fontsize=10)
-        norm_engine = self._get_norm()
-        im = self.ax.imshow(img_to_display, origin='lower', cmap='jet', norm=norm_engine)
 
-        divider = make_axes_locatable(self.ax)
-        cax = divider.append_axes("right", size="5%", pad=0.1)
-        self.cbar = self.fig.colorbar(im, cax=cax)
+        # --- UPDATED COLOR SCALING LOGIC (MATCHING SCRIPT 2) ---
+        with np.errstate(invalid='ignore', divide='ignore'):
+            if self.scale_mode == 'lin':
+                im = self.ax.imshow(img_to_display, origin='lower', cmap='jet', clim=self.clim)
+            elif self.scale_mode == 'log':
+                # Safely clip zeros while preserving active NaNs
+                safe_img = np.where(img_to_display <= 0, 1e-4, img_to_display)
+                im = self.ax.imshow(np.log(safe_img), origin='lower', cmap='jet', clim=self.clim)
+
+        # --- PERSISTENT COLORBAR AXIS ENGINE ---
+        # Ensures the colorbar axis is only generated once per unique figure window
+        if not hasattr(self, 'cax_bar') or self.cax_bar not in self.fig.axes:
+            divider = make_axes_locatable(self.ax)
+            self.cax_bar = divider.append_axes("right", size="5%", pad=0.1)
+        else:
+            self.cax_bar.clear()
+
+        self.cbar = self.fig.colorbar(im, cax=self.cax_bar)
 
         self.ax.grid(which='major', color='w', linestyle='--', linewidth=1)
         self.fig.canvas.draw_idle()
@@ -246,8 +247,13 @@ class MaskTransmissionManager:
 
     def _plot_final_results(self):
         fig_results, axes_results = plt.subplots(1, 1, figsize=(7, 7))
-        norm_engine = self._get_norm()
-        im = axes_results.imshow(self.img_masked_bs, origin='lower', cmap='jet', norm=norm_engine)
+
+        with np.errstate(invalid='ignore', divide='ignore'):
+            if self.scale_mode == 'lin':
+                im = axes_results.imshow(self.img_masked_bs, origin='lower', cmap='jet', clim=self.clim)
+            elif self.scale_mode == 'log':
+                safe_img = np.where(self.img_masked_bs <= 0, 1e-4, self.img_masked_bs)
+                im = axes_results.imshow(np.log(safe_img), origin='lower', cmap='jet', clim=self.clim)
 
         divider = make_axes_locatable(axes_results)
         cax = divider.append_axes("right", size="5%", pad=0.1)
@@ -322,14 +328,14 @@ while manager.current_state != 'done':
             plt.pause(0.1)
         else:
             if manager.current_state == 'bs_collect':
-                if beamstop == 'semitransparent':
+                if beamstop == True:
                     print("\nMoving to Step 2: Transmission Area Selection.")
                     interactive_fig, interactive_ax = plt.subplots(figsize=(8, 7))
                     manager.fig, manager.ax = interactive_fig, interactive_ax
                     manager.current_state = 'transmission'
                     manager.connect()
                 else:
-                    print(f"Skipping transmission step because beamstop setup is '{beamstop}'.")
+                    print("Skipping transmission area because beamstop setup is the standard.")
                     break
             else:
                 break

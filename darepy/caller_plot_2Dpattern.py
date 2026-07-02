@@ -38,12 +38,14 @@ ENABLE_BACKGROUND_SUBTRACTION = cfg_2d['enable_bg_subtraction']
 BACKGROUND_SCAN_NR = cfg_2d['background_scan_nr']
 OUTPUT_MODE = cfg_2d['output_mode']
 
-# --- Animation Options (Only used if OUTPUT_MODE is 'gif') ---
-ANIMATION_FPS = 5            # Frames per second
-ANIMATION_LOOP = 0           # 0 = loop infinitely, 1 = play once
+# --- Animation Options (Only used if OUTPUT_MODE is 'gif_animation') ---
+ANIMATION_FPS =  cfg_2d['gif_fps']            # Frames per second
+ANIMATION_LOOP = cfg_2d['play_once']           # 0 = loop infinitely, 1 = play once
+
+
 ANIMATION_QUALITY_DPI = 150  # DPI resolution for the animation
 
-# --- Frame Options (Only used if OUTPUT_MODE is 'frames') ---
+# --- Frame Options (Only used if OUTPUT_MODE is 'individual_frames') ---
 FRAME_OUTPUT_FORMAT = 'png'  # Options: 'png', 'jpeg', etc.
 FRAME_QUALITY_DPI = 150      # DPI resolution for individual images
 # --- Functions and Definitions ---
@@ -178,10 +180,10 @@ def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, outpu
         print(f"Attempting to save GIF animation to {animation_file_name} using Matplotlib's Pillow writer...")
 
         ani = FuncAnimation(fig, update_frame, frames=len(processed_data),
-                            interval=1000/fps, blit=False, # blit=False is safer for saving
-                            repeat=True if loop == 0 else False, repeat_delay=1000)
+                            interval=60/fps, blit=False, # blit=False is safer for saving
+                            repeat=True if loop == True else False, repeat_delay=1000)
 
-        ani.save(animation_file_name, writer=writer, dpi=dpi)
+        ani.save(animation_file_name, writer=writer, dpi=dpi, fps=fps, extra_args=['--loop', '0' if loop else '-1'])
         print(f"GIF animation saved successfully to: {animation_file_name}")
 
     except Exception as e:
@@ -246,22 +248,18 @@ if __name__ == '__main__':
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
     background_image = None
-    background_file_year = None
 
     if ENABLE_BACKGROUND_SUBTRACTION:
-        print(f"Determining year for background scan: {BACKGROUND_SCAN_NR}")
-        if background_file_year:
-            print(f"Loading background scan: sans{background_file_year}n0{BACKGROUND_SCAN_NR}.hdf from {PATH_HDF_RAW}")
-            # Load background, which may also be a list of images. We'll use the first one.
-            bg_imgs, _, _ = load_and_process_scan(BACKGROUND_SCAN_NR, PATH_HDF_RAW)
-            if bg_imgs is not None and len(bg_imgs) > 0:
-                background_image = np.where(bg_imgs[0] == 0, 1e-4, bg_imgs[0])
-                print("Background loaded successfully.")
-            else:
-                print("Could not load background image. Background subtraction will be skipped for all scans.")
-                ENABLE_BACKGROUND_SUBTRACTION = False
+        print(f"Loading background scan: {BACKGROUND_SCAN_NR} from {PATH_HDF_RAW}")
+        # Load background using the exact same robust function used for frames
+        bg_imgs, _, _ = load_and_process_scan(BACKGROUND_SCAN_NR, PATH_HDF_RAW)
+
+        if bg_imgs is not None and len(bg_imgs) > 0:
+            # Grab the first image frame from the background run
+            background_image = np.where(bg_imgs[0] == 0, 1e-4, bg_imgs[0])
+            print("Background loaded successfully.")
         else:
-            print("Could not determine year for background scan. Background subtraction will be skipped for all scans.")
+            print("Could not load background image. Background subtraction will be skipped for all scans.")
             ENABLE_BACKGROUND_SUBTRACTION = False
 
     processed_scan_data = []
@@ -287,14 +285,14 @@ if __name__ == '__main__':
 
     if not processed_scan_data:
         print("No valid scan data processed. Nothing to save/animate. Exiting.")
-    elif OUTPUT_MODE == 'gif':
+    elif OUTPUT_MODE == 'gif_animation':
         # For 'gif' output, we create a figure for the animation, which is then saved.
         create_and_save_gif_animation(processed_scan_data, raw_image_data_for_clim, OUTPUT_FOLDER,
-                                      LIST_SCAN, ANIMATION_FPS, ANIMATION_LOOP, ANIMATION_QUALITY_DPI)
+                                      LIST_SCAN, ANIMATION_FPS, ANIMATION_LOOP, ANIMATION_QUALITY_DPI, clim)
         # Even after saving, if other interactive figures were opened, plt.show()
         # at the end ensures they remain responsive (though for GIF, usually none are left).
 
-    elif OUTPUT_MODE == 'frames':
+    elif OUTPUT_MODE == 'individual_frames':
         # Calculate global clim once for consistency across individual frames
 
         save_individual_frames(processed_scan_data, OUTPUT_FOLDER,
@@ -305,6 +303,6 @@ if __name__ == '__main__':
         plt.show()
 
     else:
-        print(f"Error: Invalid OUTPUT_MODE '{OUTPUT_MODE}'. Please choose 'gif' or 'frames'.")
+        print(f"Error: Invalid OUTPUT_MODE '{OUTPUT_MODE}'. Please choose 'gif_animation' or 'individual_frames'.")
 
-    print("Script finished.")
+    plt.close('all')

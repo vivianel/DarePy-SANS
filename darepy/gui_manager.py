@@ -19,7 +19,7 @@ class DarePyGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("DarePy-SANS Control Panel")
-        self.root.geometry("1100x850") # Slightly widened to comfortably hold dual buttons
+        self.root.geometry("1100x1000") # Slightly widened to comfortably hold dual buttons
 
         self.config_file = None
 
@@ -271,38 +271,46 @@ class DarePyGUI:
         label_frame = tk.Frame(f, bg=bg)
         label_frame.pack(fill="x", anchor="w")
 
+        # If it is a boolean value, pack the checkbox inside the label row FIRST
+        if isinstance(value, bool):
+            var = tk.BooleanVar(master=self.root, value=value)
+            tk.Checkbutton(label_frame, text="", variable=var, bg=bg).pack(side="left", padx=(0, 5))
+            self.entries[config_key][path] = var
+
+        # Pack the word/label next to the checkbox
         tk.Label(label_frame, text=label, font=("Arial", 9, "bold"), bg=bg).pack(side="left")
 
+        # Pack the comment safely next to the label
         if comment:
             tk.Label(label_frame, text=f"  # {comment}", font=("Arial", 8, "italic"),
                      fg="#888", bg=bg).pack(side="left")
 
-        if isinstance(value, bool):
-            var = tk.BooleanVar(master=self.root, value=value)
-            tk.Checkbutton(f, text="", variable=var, bg=bg).pack(anchor="w")
-            self.entries[config_key][path] = var
-        elif label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", "source_shape", "aperture_shape"]:
-            if label == "which_instrument":
-                opts = ["SANS-I", "SANS-LLB"]
-            elif label == "integration_direction":
-                opts = ["horizontal", "vertical", "azimuthal"]
-            elif label == "beamstop":
-                opts = ["semitransparent", "standard"]
-            elif label in ["plot_scale", "interp_type"]:
-                opts = ["lin", "log"]
-            elif label in ["aperture_shape", "source_shape"]:
-                opts = ["rectangular", "circular"]
+        # Handle options or entries only if it is NOT a boolean setup
+        if not isinstance(value, bool):
+            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_shape", "aperture_shape"]:
+                if label == "which_instrument":
+                    opts = ["SANS-I", "SANS-LLB"]
+                elif label == "integration_direction":
+                    opts = ["horizontal", "vertical", "azimuthal"]
+                elif label == "beamstop":
+                    opts = ["semitransparent", "standard"]
+                elif label in ["plot_scale", "interp_type"]:
+                    opts = ["lin", "log"]
+                elif label in ["aperture_shape", "source_shape"]:
+                    opts = ["rectangular", "circular"]
+                elif label in ['output_mode']:
+                    opts = ['individual_frames', 'gif_animation']
 
-            w = ttk.Combobox(f, values=opts, state="readonly")
-            w.set(value)
-            w.pack(anchor="w", ipady=2)
-            self.entries[config_key][path] = w
-        else:
-            w = tk.Entry(f)
-            disp = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
-            w.insert(0, disp)
-            w.pack(fill="x", padx=(0, 40), ipady=3)
-            self.entries[config_key][path] = w
+                w = ttk.Combobox(f, values=opts, state="readonly")
+                w.set(value)
+                w.pack(anchor="w", ipady=2)
+                self.entries[config_key][path] = w
+            else:
+                w = tk.Entry(f)
+                disp = ", ".join(map(str, value)) if isinstance(value, list) else str(value)
+                w.insert(0, disp)
+                w.pack(fill="x", padx=(0, 40), ipady=3)
+                self.entries[config_key][path] = w
 
     def fill_notebook(self):
         bg = self.root.cget('bg')
@@ -315,45 +323,51 @@ class DarePyGUI:
                   command=lambda: self.run_script("caller_listing.py")).pack(side="left", fill="x", expand=True, padx=2)
         self.build_config_area(s1, "Analysis Paths", "analysis_paths")
         self.build_config_area(s1, "Instrument", "instrument_setup")
+        self.build_config_area(s1, "Sample Environment", "sample_environment")
+
+        s2, f2 = self.create_scrollable_tab(self.notebook, "2. Pipeline control")
+        #self.build_config_area(s_combined, "Physics Corrections", "physics_corrections")
+        self.build_config_area(s2, "Pipeline Control", "pipeline_control")
 
         # --- TAB 2: RENAME SAMPLES ---
-        s2, f2 = self.create_scrollable_tab(self.notebook, "2. Rename Samples")
-        tk.Button(f2, text="RENAME SAMPLES", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        s3, f3 = self.create_scrollable_tab(self.notebook, "2. Rename Samples")
+        tk.Button(f3, text="RENAME SAMPLES", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_rename_samples.py")).pack(fill="x")
-        self.build_config_area(s2, "Rename Settings", "rename_samples")
+        self.build_config_area(s3, "Rename Settings", "rename_samples")
 
         # --- TAB 3: 2D VISUALIZATION ---
-        s3, f3 = self.create_scrollable_tab(self.notebook, "3. 2D Visualization")
-        tk.Button(f3, text="GENERATE 2D PLOTS/GIF", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        s4, f4 = self.create_scrollable_tab(self.notebook, "3. 2D Visualization")
+        tk.Button(f4, text="GENERATE 2D PLOTS/GIF", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_plot_2Dpattern.py")).pack(fill="x")
-        self.build_config_area(s3, "Plot 2D Settings", "plot_2d")
+        self.build_config_area(s4, "Plot 2D Settings", "plot_2d")
 
         # --- TAB 4: MASK & CENTER ---
-        s4, f4 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
+        s5, f5 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
 
-        # Upper Layout Setup Box: sample_name
-        setup_f = tk.LabelFrame(s4, text="Masking Setup", padx=10, pady=10, bg=bg)
-        setup_f.pack(fill="x", padx=10, pady=5)
-
-        tk.Label(setup_f, text="sample_name", font=("Arial", 9, "bold"), bg=bg).pack(anchor="w")
-        s_ent = tk.Entry(setup_f)
-        s_ent.insert(0, self.config_dict.get('beam_center_mask', {}).get('sample_name', 'AgBE'))
-        s_ent.pack(fill="x", ipady=3)
-
-        if 'beam_center_mask' not in self.entries:
-            self.entries['beam_center_mask'] = {}
-        self.entries['beam_center_mask'][('sample_name',)] = s_ent
-
-        # Middle Layout Setup Box: Distance list loops
-        act_f = tk.LabelFrame(s4, text="Distance-Specific Masking & Alignment", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
+        # Middle Layout Setup Box: Distance list loops & Semitransparent Toggle
+        act_f = tk.LabelFrame(s5, text="Distance-Specific Masking & Alignment", padx=10, pady=10, bg=bg, fg="#2196F3", font=("Arial", 10, "bold"))
         act_f.pack(fill="x", padx=10, pady=5)
 
         add_r = tk.Frame(act_f, bg=bg)
-        add_r.pack(fill="x", pady=(0,10))
+        add_r.pack(fill="x", pady=(0, 10))
         tk.Label(add_r, text="New Dist:", font=("Arial", 8, "italic"), bg=bg).pack(side="left")
         self.new_dist_entry = tk.Entry(add_r, width=8)
         self.new_dist_entry.pack(side="left", padx=5)
         tk.Button(add_r, text=" + ", bg="#4CAF50", fg="white", font=("Arial", 8, "bold"), command=self.add_new_distance).pack(side="left")
+
+        # Initialize tracking sub-dictionary registry if not present
+        if 'beam_center_mask' not in self.entries:
+            self.entries['beam_center_mask'] = {}
+
+        # semitransparent Boolean Checkbutton Setup
+        semi_val = self.config_dict.get('beam_center_mask', {}).get('semitransparent', True)
+        self.semi_var = tk.BooleanVar(value=semi_val)
+
+        semi_chk = tk.Checkbutton(act_f, text="Run Semitransparent Beamstop Masking",
+                                  variable=self.semi_var, font=("Arial", 9, "bold"),
+                                  bg=bg, activebackground=bg, anchor="w")
+        semi_chk.pack(anchor="w", pady=(5, 10))
+        self.entries['beam_center_mask'][('semitransparent',)] = self.semi_var
 
         scans_dict = self.config_dict.get('beam_center_mask', {}).get('scans', {})
         if isinstance(scans_dict, dict):
@@ -370,8 +384,8 @@ class DarePyGUI:
                 tk.Button(r, text="BEAM CENTER", bg="#4CAF50", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.run_beam_center_for_dist(dist)).pack(side="left", fill="x", expand=True, padx=2)
                 tk.Button(r, text=" 🗑️ ", bg="#f44336", fg="white", font=("Arial", 8, "bold"), command=lambda dist=d: self.remove_distance(dist)).pack(side="right", padx=(5, 0))
 
-        # Bottom Additional Box: clim & plot_scale (Added here into Tab 4)
-        options_f = tk.LabelFrame(s4, text="Display & Intensity Options", padx=10, pady=10, bg=bg)
+        # Bottom Additional Box: clim & plot_scale
+        options_f = tk.LabelFrame(s5, text="Display & Intensity Options", padx=10, pady=10, bg=bg)
         options_f.pack(fill="x", padx=10, pady=5)
 
         # clim Field Setup
@@ -392,29 +406,28 @@ class DarePyGUI:
         self.entries['beam_center_mask'][('plot_scale',)] = scale_cmb
 
         # Detector Geometry configuration subsection area binding
-        self.build_config_area(s4, "Detector Geometry", "detector_geometry")
-        tk.Button(f4, text="REFRESH FROM YAML", bg="#FF9800", fg="white", font=("Arial", 10, "bold"), pady=8, command=self.refresh_ui).pack(fill="x")
+        self.build_config_area(s5, "Detector Geometry", "detector_geometry")
+        tk.Button(f5, text="REFRESH FROM YAML", bg="#FF9800", fg="white", font=("Arial", 10, "bold"), pady=8, command=self.refresh_ui).pack(fill="x")
 
         # --- TAB 5: TRANSMISSION ---
-        s5, f5 = self.create_scrollable_tab(self.notebook, "5. Transmission")
-        tk.Button(f5, text="RUN TRANSMISSION CALCULATION", bg="#03A9F4", fg="white",
+        s6, f6 = self.create_scrollable_tab(self.notebook, "5. Transmission")
+        tk.Button(f6, text="RUN TRANSMISSION CALCULATION", bg="#03A9F4", fg="white",
                   font=("Arial", 10, "bold"), pady=12,
                   command=lambda: self.run_script("caller_transmission.py")).pack(fill="x")
-        self.build_config_area(s5, "Transmission Physics", "transmission_setup")
-        self._build_dict_editor(s5, "Sample Thickness (cm)", "calibration_samples", "thickness")
+        self.build_config_area(s6, "Transmission Physics", "transmission_setup")
+        self._build_dict_editor(s6, "Sample Thickness (cm)", "calibration_samples", "thickness")
 
         # --- TAB 6: RADIAL INTEGRATION ---
-        t6_main = ttk.Frame(self.notebook); self.notebook.add(t6_main, text="6. Radial Integration")
-        f6 = tk.Frame(t6_main, bg=bg); f6.pack(side="bottom", fill="x", padx=20, pady=15)
-        tk.Button(f6, text="RUN FULL INTEGRATION PIPELINE", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        t7_main = ttk.Frame(self.notebook); self.notebook.add(t7_main, text="6. Radial Integration")
+        f7 = tk.Frame(t7_main, bg=bg); f7.pack(side="bottom", fill="x", padx=20, pady=15)
+        tk.Button(f7, text="RUN FULL INTEGRATION PIPELINE", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   pady=10, command=lambda: self.run_script("caller_radial_integration.py")).pack(fill="x")
 
-        self.sub_nb = ttk.Notebook(t6_main); self.sub_nb.pack(expand=True, fill="both", padx=10, pady=5)
+        self.sub_nb = ttk.Notebook(t7_main); self.sub_nb.pack(expand=True, fill="both", padx=10, pady=5)
 
         sc, _ = self.create_scrollable_tab(self.sub_nb, "Calibration Samples")
         if 'calibration_samples' not in self.entries: self.entries['calibration_samples'] = {}
-        tk.Button(sc, text="🔍 CHECK EXISTENCE OF ALL CALIBRATION FILES", bg="#2196F3", fg="white",
-                  font=("Arial", 9, "bold"), pady=8, command=lambda: self.run_script("caller_check_calibration.py")).pack(fill="x", pady=10)
+
 
         cal_data = self.config_dict.get('calibration_samples', {})
 
@@ -455,12 +468,17 @@ class DarePyGUI:
             e.pack(fill="x", pady=(2, 5))
             self.entries['calibration_samples'][(field,)] = e
 
+        tk.Button(sc, text="🔍 CHECK EXISTENCE OF ALL CALIBRATION FILES", bg="#2196F3", fg="white",
+                  font=("Arial", 9, "bold"), pady=8, command=lambda: self.run_script("caller_check_calibration.py")).pack(fill="x", pady=10)
+
         self._build_dict_editor(sc, "Empty Cell Mapping", "calibration_samples", "empty_cell")
         self._build_dict_editor(sc, "Sample Thickness (cm)", "calibration_samples", "thickness")
 
-        s_combined, _ = self.create_scrollable_tab(self.sub_nb, "Physics Settings & Pipeline Control")
+
+
+        s_combined, _ = self.create_scrollable_tab(self.sub_nb, "Physics Settings")
         self.build_config_area(s_combined, "Physics Corrections", "physics_corrections")
-        self.build_config_area(s_combined, "Pipeline Control", "pipeline_control")
+        #self.build_config_area(s_combined, "Pipeline Control", "pipeline_control")
 
         sd, _ = self.create_scrollable_tab(self.sub_nb, "Analysis Flags")
         self.build_config_area(sd, "Flags", "analysis_flags")
@@ -469,13 +487,13 @@ class DarePyGUI:
         self.build_config_area(sr, "Resolution Geometry (dq)", "resolution_settings")
 
         # --- TAB 7: MERGING CURVES ---
-        s7, f7 = self.create_scrollable_tab(self.notebook, "7. Merging Curves")
-        tk.Button(f7, text="SAVE SETTINGS", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
+        s8, f8 = self.create_scrollable_tab(self.notebook, "7. Merging Curves")
+        tk.Button(f8, text="SAVE SETTINGS", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
                   command=self.save_data).pack(side="left", fill="x", expand=True, padx=2)
-        tk.Button(f7, text="RUN DATA MERGING", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+        tk.Button(f8, text="RUN DATA MERGING", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
                   command=lambda: self.run_script("caller_merging.py")).pack(side="left", fill="x", expand=True, padx=2)
 
-        top_f = tk.LabelFrame(s7, text="Merging Pipeline Controls", padx=10, pady=10, bg=bg)
+        top_f = tk.LabelFrame(s8, text="Merging Pipeline Controls", padx=10, pady=10, bg=bg)
         top_f.pack(fill="x", padx=10, pady=5)
 
         m_data = self.config_dict.get('merging_settings', {})
@@ -487,7 +505,6 @@ class DarePyGUI:
                 if ca_items and key in ca_items:
                     for token in ca_items[key]:
                         if token and hasattr(token, 'value'):
-                            # Strip out the '#' symbol so it doesn't get duplicated by _create_field
                             return token.value.strip().lstrip('#').strip()
             except Exception: pass
             return ""
@@ -497,40 +514,76 @@ class DarePyGUI:
                       fg="#444", bg="#eef2f7", justify="left", anchor="w",
                       padx=10, pady=8, wraplength=800).pack(fill="x", pady=(0, 10))
 
-        # 1. Step Checkboxes
-        for k in ['run_step_1_plotting', 'run_step_2_merging', 'run_step_3_interpolation', 'run_step_4_incoherent']:
-            val = m_data.get(k, False)
+        # Helper function to generate a consistent checkbox row for a step
+        def create_step_checkbox(parent_frame, step_key):
+            val = m_data.get(step_key, False)
             var = tk.BooleanVar(master=self.root, value=val)
 
-            row_f = tk.Frame(top_f, bg=bg)
-            row_f.pack(fill="x", anchor="w", pady=2)
+            row_f = tk.Frame(parent_frame, bg=bg)
+            row_f.pack(fill="x", anchor="w", pady=(8, 4))
 
-            tk.Checkbutton(row_f, text=k, variable=var, bg=bg, font=("Arial", 9, "bold")).pack(side="left")
+            tk.Checkbutton(row_f, text=step_key, variable=var, bg=bg, font=("Arial", 9, "bold")).pack(side="left")
 
-            cmt = get_comment(k)
+            cmt = get_comment(step_key)
             if cmt:
-                tk.Label(row_f, text=f"  # {cmt}", font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
+                tk.Label(row_f, text=f"   # {cmt}", font=("Arial", 8, "italic"), fg="#888", bg=bg).pack(side="left")
 
-            self.entries['merging_settings'][(k,)] = var
+            self.entries['merging_settings'][(step_key,)] = var
 
-        # 2. Skip Points Table
-        self._build_merging_table(s7, "Data Clipping (Skip Points)", "merging_settings")
+        # ==========================================
+        # STAGE 1: PLOTTING & CLIPPING
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_1_plotting')
 
-        # 3. Interpolation & Fitting Frame (Leveraging _create_field for maximum consistency)
-        interp_f = tk.LabelFrame(s7, text="Interpolation & Background Settings", padx=10, pady=10, bg=bg)
-        interp_f.pack(fill="x", padx=10, pady=5)
+        # Build the data clipping skip table right below Step 1
+        self._build_merging_table(top_f, "Data Clipping (Skip Points)", "merging_settings")
 
-        for param_key in ['interp_type', 'interp_points', 'last_points_to_fit']:
+        # ==========================================
+        # STAGE 2: MERGING
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_2_merging')
+
+        # ==========================================
+        # STAGE 3: INTERPOLATION & RESAMPLING
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_3_interpolation')
+
+        # Subsection frame for interpolation options
+        interp_options_f = tk.Frame(top_f, bg=bg, padx=15)
+        interp_options_f.pack(fill="x", pady=(2, 5))
+
+        for param_key in ['interp_type', 'interp_points']:
             if param_key in m_data:
                 cmt = get_comment(param_key)
                 self._create_field(
-                    parent=interp_f,
+                    parent=interp_options_f,
                     label=param_key,
                     value=m_data[param_key],
                     config_key='merging_settings',
                     path=(param_key,),
                     comment=cmt
                 )
+
+        # ==========================================
+        # STAGE 4: INCOHERENT BACKGROUND FIT
+        # ==========================================
+        create_step_checkbox(top_f, 'run_step_4_incoherent')
+
+        # Subsection frame for background parameters
+        incoherent_options_f = tk.Frame(top_f, bg=bg, padx=15)
+        incoherent_options_f.pack(fill="x", pady=(2, 5))
+
+        if 'last_points_to_fit' in m_data:
+            cmt = get_comment('last_points_to_fit')
+            self._create_field(
+                parent=incoherent_options_f,
+                label='last_points_to_fit',
+                value=m_data['last_points_to_fit'],
+                config_key='merging_settings',
+                path=('last_points_to_fit',),
+                comment=cmt
+            )
+
 
     def _build_merging_table(self, parent, title, m_key):
         bg = self.root.cget('bg')
@@ -757,11 +810,28 @@ class DarePyGUI:
                     pass
 
                 import subprocess
-                subprocess.Popen([sys.executable, script_path, self.config_file])
+                experiment_dir = os.path.dirname(os.path.abspath(self.config_file))
+                subprocess.Popen(
+                    [sys.executable, script_path, self.config_file],
+                    cwd=experiment_dir,
+                    env=os.environ.copy()
+                )
             else:
                 messagebox.showerror("Error", f"Target execution path module not found:\n{script_path}")
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = DarePyGUI(root)
-    root.mainloop()
+
+    # 1. Define a clear exit routine
+    def safe_exit():
+        root.quit()     # This explicitly breaks root.mainloop() so the script stops
+        root.destroy()  # This safely clears the window components out of memory
+
+    # 2. Bind the window closing event to our clean routine
+    root.protocol("WM_DELETE_WINDOW", safe_exit)
+
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        pass

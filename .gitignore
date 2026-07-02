@@ -1,6 +1,12 @@
-# 3. Ignore everything inside 'experiments' so we can pick only one
-/experiments/*
-# 4. Specifically allow the 'default_exp' folder and all its contents
-!/experiments/default_exp/
+# 1. Ignore cache and state files
 /darepy/codes/__pycache__/
 /darepy/.active_experiment.txt
+
+# 2. Ignore everything directly inside 'experiments'
+/experiments/*
+
+# 3. Allow the folder itself
+!/experiments/default_exp/
+
+# 4. CRITICAL: Allow everything INSIDE the folder recursively
+!/experiments/default_exp/**
