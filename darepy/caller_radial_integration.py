@@ -171,11 +171,11 @@ while True:
         result = org.select_detector_distances(configuration, class_files, result)
         target_dist = configuration['analysis']['target_detector_distances']
 
-        if target_dist == 'all':
+        if target_dist == 'all' or target_dist == '':
             processed_det_distances = [
                 k.replace('det_files_', '') for k in result['overview'].keys() if k.startswith('det_files_')
             ]
-        elif isinstance(target_dist, int) or (isinstance(target_dist, float) and target_dist.is_integer()):
+        elif isinstance(target_dist, int) or isinstance(target_dist, float):
             target_str = str(float(target_dist)).replace('.', 'p')
             processed_det_distances = [k.replace('det_files_', '') for k in result['overview'].keys()
                                        if k.startswith('det_files_') and k.endswith(target_str)]
