@@ -11,7 +11,6 @@
 - [Prerequisites](#prerequisites)
 - [A – Installing for the First Time](#a--installing-for-the-first-time)
 - [B – Using the Code After the First Installation](#b--using-the-code-after-the-first-installation)
-- [Project Structure & Data Management](#project-structure--data-management)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -38,7 +37,6 @@ Using standard Python (`venv`), initialize and enable an isolated environment to
 1. **Create a virtual environment** named `darepy-env`:
 ```bash
    python -m venv darepy-env
-   
 ```
 
 2. **Activate the virtual environment**:
@@ -120,30 +118,37 @@ You are now ready to run the data reduction pipeline.
 
 ### Step 5: Run the codes
 
-Start the visual environment for script control.
-
-1. **Launch spyder**:
-```bash
-spyder
-
-```
-
-
 
 In the `experiments` folder, you can create multiple experiment folders. To add a new experiment, make a new folder, call it the proposal number and a short ID. From `default_exp`, make sure to copy the `config_experiment.yaml` and `instrument_registry.yaml` files in the new folder. The hdf data files from the beamtime should be copied within your experiment folder as `raw_data`. The `default_exp` cloned from the git repository is an example of the expected structure for the experiment.
 
-2. **Start the darePy gui**
+1. **Start the darePy gui**
   
-Navigate to the right folder in `spyder` and the execute the code `launch_gui.py` in the experiment folder. Alternatively, you can run it directly in the command line.
+Navigate to the right experiment folder and the execute the code `launch_gui.py`, directly in the command line.
 
 ```bash
 python launch_gui.py
 
 ```
 
-
-
 Then follow the steps for running the data reduction.
+
+2. **Install spyder (if preferred)**:
+
+If you prefer, you can have a "matlab" feeling by running the codes in spyder. Make sure you are in the correct and activated python environment
+
+```bash
+pip install spyder
+
+```
+
+Navigate the the correct experiment folder, and run the `launch_gui.py` script.
+
+```bash
+launch_gui.py
+
+```
+
+
 
 > **Note:** If the gui is used, the codes within the `darepy` folder should not be changed. They should only be needed in case we run in the command line for debugging reasons.
 
@@ -176,13 +181,12 @@ git pull origin main
 
 2. **Activate the virtual environment**:
 *(Use the appropriate activation command for your OS from Step 1)*
-3. **Run spyder**:
+
+4. **Run the code in the command line or spyder**:
 ```bash
-spyder
+python launch_gui.py
 
 ```
-
-
 
 Find your codes and have fun!
 
@@ -190,7 +194,7 @@ Find your codes and have fun!
 Contributions to DarePy-SANS are welcome! If you find a bug or have a feature request, please open an issue in the repository. If you would like to contribute code, please open a Pull Request.
 
 ## Acknowledgments
-Acknowledgment to beamline scientists, contributors, or specific libraries used in the pipeline.
+I acknowledgment my colleagues, users, and contributors, for reporting bugs and help me test.
 
 ## License
 This project is licensed under PSI.
