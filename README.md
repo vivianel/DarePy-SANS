@@ -36,11 +36,10 @@ Before you begin, ensure you have the following installed on your system:
 Using standard Python (`venv`), initialize and enable an isolated environment to prevent dependency conflicts.
 
 1. **Create a virtual environment** named `darepy-env`:
-   ```bash
+```bash
    python -m venv darepy-env
-
+   
 ```
-
 
 2. **Activate the virtual environment**:
 * **Linux/macOS:**
@@ -67,7 +66,7 @@ darepy-env\Scripts\activate.bat
 
 
 
-### Step 2: Clone the Repository (main branch)
+### Step 2: Clone the Repository (main branch is often updated)
 
 Open your terminal (Linux/macOS) or Command Prompt/PowerShell (Windows) and run the following commands:
 
@@ -133,7 +132,10 @@ spyder
 
 In the `experiments` folder, you can create multiple experiment folders. To add a new experiment, make a new folder, call it the proposal number and a short ID. From `default_exp`, make sure to copy the `config_experiment.yaml` and `instrument_registry.yaml` files in the new folder. The hdf data files from the beamtime should be copied within your experiment folder as `raw_data`. The `default_exp` cloned from the git repository is an example of the expected structure for the experiment.
 
-2. **Start the darePy gui** (by running `launch_gui.py`):
+2. **Start the darePy gui**
+  
+Navigate to the right folder in `spyder` and the execute the code `launch_gui.py` in the experiment folder. Alternatively, you can run it directly in the command line.
+
 ```bash
 python launch_gui.py
 
