@@ -16,6 +16,13 @@ parent_dir = os.path.dirname(current_script_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
+
+# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
+codes_dir = os.path.join(parent_dir, "darepy/codes")
+
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
+
 # 3. Now you can safely import utils
 from utils import load_config
 

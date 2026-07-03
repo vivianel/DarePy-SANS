@@ -3,16 +3,25 @@ import sys
 import os
 import numpy as np
 import matplotlib
-from pathlib import Path
+
 
 # ==========================================
 # %% 1. PATH INJECTION (Finds utils.py one level up)
 # ==========================================
-current_dir = Path(__file__).resolve().parent
-parent_dir = current_dir.parent  # This is the /darepy/ folder
+# 1. Get the directory of the current script (darepy/codes/)
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. Go up one level to find utils.py (in darepy/)
+parent_dir = os.path.dirname(current_script_dir)
 
-if str(parent_dir) not in sys.path:
-    sys.path.insert(0, str(parent_dir))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+
+# 2. Point directly to the 'codes' subdirectory where utils.py and backends live
+codes_dir = os.path.join(parent_dir, "darepy/codes")
+
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
 
 from utils import load_hdf, find_hdf_filename, load_config, parse_scan_list
 

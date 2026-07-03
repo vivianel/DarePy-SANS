@@ -383,7 +383,6 @@ def select_transmission(config, class_files, result):
              class_files['detx_m'][ii] == trans_dist and
              class_files['time_s'][ii] > 0 and
              (class_files['beamstop_y'][ii] < -30 or class_files['beamstop_y'][ii] < 0)):
-             print('Im here')
              for k in list_keys:
                  class_trans[k].append(class_files[k][ii])
 
