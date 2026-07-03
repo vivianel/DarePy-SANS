@@ -193,5 +193,5 @@ Contributions to DarePy-SANS are welcome! If you find a bug or have a feature re
 Acknowledgment to beamline scientists, contributors, or specific libraries used in the pipeline.
 
 ## License
-This project is licensed under the [Insert License Name, e.g., MIT License] - see the LICENSE file for details.
+This project is licensed under PSI.
 """
