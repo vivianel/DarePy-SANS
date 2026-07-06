@@ -55,14 +55,14 @@ def set_integration(config, result, det_str):
     generate_beamstop_mask(config, result, det_str)
     setup_integration(config, result, det_str)
     result = load_standards(config, result, det_str)
-    
+
 
     # ==============================================================
     # 1D ABSOLUTE CALIBRATION
     # Calculates the scaling factor independently per detector distance
     # ==============================================================
     if config.get('physics_corrections', {}).get('perform_absolute_scaling', False):
-       
+
         water_img, water_var = process_water_standard(config, result)
         permanent_mask = result['integration'].get('int_mask')
 
@@ -130,7 +130,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
                 if file_path.is_file():
                     print(f"  -> Skip: Scan {scanNr} ('{sample_name}') already integrated or incomplete.")
                     continue
-           
+
         print(f"\n--- Reducing Scan {scanNr} ({sample_name}) ---")
         for ff in range(frame_nr_total):
             current_log = [scanNr, sample_name, ff]
@@ -289,7 +289,7 @@ def radial_integ(config, result, img1, file_name, det_str, ii, img1_variance=Non
     try:
         q, I, sigma = ai.integrate1d(
             img1, integration_points, correctSolidAngle=True, variance=img1_variance,
-            mask=mask, method='nosplit_csr', unit='q_A^-1', safe=True,
+            mask=mask, unit='q_A^-1', safe=True,
             error_model=error_model, flat=None, dark=None)
 
         # -------------------------------------------------------------
@@ -301,10 +301,11 @@ def radial_integ(config, result, img1, file_name, det_str, ii, img1_variance=Non
         # Extract upstream collimation (L1) which pyFAI does not know
         class_file = result['overview']['det_files_' + det_str]
         L1_m = class_file['coll_m'][ii]
+        hdf_name = class_file['name_hdf'][ii]
 
         #bCheck the toggle flag from the YAML!
-        if config.get('physics_corrections', {}).get('apply_resolution_smearing', False):
-            dq = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m)
+        if config.get('physics_corrections', {}).get('calculate_resolution_smearing', False):
+            dq = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m, hdf_name)
         else:
             dq = np.zeros_like(q) # Fill with zeros if turned off
 
@@ -377,7 +378,7 @@ def azimuthal_integ(config, result, img1, file_name, det_str, ii, img1_variance=
                     I_sector = I[:, az_idx]
                     sigma_sector = sigma[:, az_idx]
 
-                    if config.get('physics_corrections', {}).get('apply_resolution_smearing', False):
+                    if config.get('physics_corrections', {}).get('calculate_resolution_smearing', False):
                         # Calculate highly specific dq for this exact sector angle
                         dq_sector = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m, chi_deg=chi_center)
                     else:

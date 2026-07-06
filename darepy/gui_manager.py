@@ -483,8 +483,7 @@ class DarePyGUI:
         sd, _ = self.create_scrollable_tab(self.sub_nb, "Analysis Flags")
         self.build_config_area(sd, "Flags", "analysis_flags")
 
-        sr, _ = self.create_scrollable_tab(self.sub_nb, "Resolution Settings")
-        self.build_config_area(sr, "Resolution Geometry (dq)", "resolution_settings")
+
 
         # --- TAB 7: MERGING CURVES ---
         s8, f8 = self.create_scrollable_tab(self.notebook, "7. Merging Curves")

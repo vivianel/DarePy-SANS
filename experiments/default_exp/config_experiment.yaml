@@ -103,25 +103,8 @@ physics_corrections:
   apply_transmission: true        # Correct for sample attenuation
   normalize_to_thickness: true   # Normalize by sample path length (cm)
   perform_absolute_scaling: true  # Convert counts to absolute cross-section (cm-1)
-  apply_resolution_smearing: false   # Toggle for calculating dq
+  calculate_resolution_smearing: true   # Toggle for calculating dq
 
-resolution_settings:
-  _desc: |
-    RESOLUTION SETTINGS
-    Geometric parameters for dq smearing. Automatically handles
-    anisotropic smearing for azimuthal sector cuts.
-  calculate_resolution: false   # true for calculating the experimental resolution
-  # Source (A1) Settings - e.g., the neutron guide
-  source_shape: 'rectangular'    # 'circular' or 'rectangular'
-  source_slit_width: 0.05        # W1 in meters (e.g., 50 mm)
-  source_slit_height: 0.05       # H1 in meters (e.g., 50 mm)
-  source_aperture_radius: 0.009  # Fallback for circular
-
-  # Sample (A2) Settings - e.g., the microfluidic channel
-  aperture_shape: 'rectangular'  # 'circular' or 'rectangular'
-  sample_slit_width: 0.0002      # W2 in meters (e.g., 200 um)
-  sample_slit_height: 0.002      # H2 in meters (e.g., 2 mm)
-  sample_aperture_radius: 0.004  # Fallback for circular
 
 calibration_samples:
   _desc: |
@@ -203,7 +186,7 @@ analysis_flags:
   _desc: |
     ANALYSIS FLAGS
     Detailed integration settings.
-  save_plot_radial: true      # Export I(q) plots as PNG
+  save_plot_radial: false      # Export I(q) plots as PNG
   integration_points: 100     # Number of bins in q-space
   save_plot_azimuthal: false  # Export I(phi) plots
   save_data_azimuthal: false  # Export I(phi) as text

@@ -87,6 +87,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'counts_bottom':'entry0/bottom_data/data',
             'mag_field':'entry0/sample/magnetic_field_log/value',
             'thickness': '/entry0/sample/thickness',
+            'aperture_shape': 'entry0/SANS-LLB/sample_mask/shape',
+            'aperture_x': 'entry0/SANS-LLB/sample_mask/size',
+            'aperture_y': 'entry0/SANS-LLB/sample_mask/size_y',
             'flux_monit':  registry_monitor_path  # read from instrument_registry
         }
     }
@@ -106,10 +109,13 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
 
             raw_data = file_hdf[hdf_internal_path]
 
-            if which_property in ['time', 'moni', 'temp', 'counts', 'counts_left', 'counts_bottom']:
+            if which_property in ['time', 'moni', 'temp', 'counts', 'counts_left', 'counts_bottom', 'aperture_shape']:
                 prop = np.asarray(raw_data)
             elif which_property == 'mag_field':
                 prop = np.asarray(raw_data)[1:]
+            elif which_property in ['aperture_x', 'aperture_x']:
+                prop = np.asarray(raw_data)
+                prop = prop/1000 # given in mm, transformed in m
             else:
                 prop = raw_data[0]
 
