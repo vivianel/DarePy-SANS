@@ -87,6 +87,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'counts_bottom':'entry0/bottom_data/data',
             'mag_field':'entry0/sample/magnetic_field_log/value',
             'thickness': '/entry0/sample/thickness',
+            'sample_slit_shape': 'entry0/SANS-LLB/sample_mask/shape',
+            'sample_slit_x': 'entry0/SANS-LLB/sample_mask/size',
+            'sample_slit_y': 'entry0/SANS-LLB/sample_mask/size_y',
             'flux_monit':  registry_monitor_path  # read from instrument_registry
         }
     }
@@ -106,10 +109,13 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
 
             raw_data = file_hdf[hdf_internal_path]
 
-            if which_property in ['time', 'moni', 'temp', 'counts', 'counts_left', 'counts_bottom']:
+            if which_property in ['time', 'moni', 'temp', 'counts', 'counts_left', 'counts_bottom', 'sample_slit_shape']:
                 prop = np.asarray(raw_data)
             elif which_property == 'mag_field':
                 prop = np.asarray(raw_data)[1:]
+            elif which_property in ['sample_slit_x', 'sample_slit_x']:
+                prop = np.asarray(raw_data)
+                prop = prop/1000 # given in mm, transformed in m
             else:
                 prop = raw_data[0]
 
@@ -431,7 +437,7 @@ def load_instrument_registry(filepath=None):
 
     # Load and process
     try:
-        print(f"Loading registry from: {filepath}")
+        #print(f"Loading registry from: {filepath}")
         with open(filepath, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
@@ -494,3 +500,64 @@ def find_strict_calibration_file(target_id, sample_index, class_file):
                 return class_file['name_hdf'][ii]
 
     return None # Return None if no strictly matching standard exists
+
+
+
+def parse_pixel_ranges(input_data):
+    """
+    Converts shorthand '10:30, 40:60' or GUI lists ['10:30', '40:50']
+    into standard pairs [[10, 30], [40, 50]].
+    """
+    # 1. Handle None / Empty values cleanly
+    if not input_data or str(input_data).strip().lower() in ['none', '[none]', '[]']:
+        return []
+
+    # 2. Flatten a list of strings directly into a comma-separated string
+    # to bypass the literal array bracket string bug
+    if isinstance(input_data, list):
+        if len(input_data) > 0 and isinstance(input_data[0], str):
+            input_data = ",".join(input_data)
+        elif len(input_data) == 2 and isinstance(input_data[0], int):
+            # Safe catch for single flat integer pair list like [10, 30]
+            return [input_data]
+        else:
+            # Fallback for nested lists or list of range objects
+            input_data = ",".join([
+                f"{x.start}:{x.stop}" if isinstance(x, range) else
+                (f"{x[0]}:{x[1]}" if isinstance(x, list) else str(x))
+                for x in input_data
+            ])
+
+    ranges = []
+
+    # 3. Strip spaces and split by commas to handle distinct blocks
+    parts = str(input_data).replace(" ", "").split(",")
+
+    for part in parts:
+        if not part or part.lower() == 'none':
+            continue
+
+        # IMPORTANT: Clean away GUI remnants if they sneaked past as a string
+        part = part.replace("[", "").replace("]", "").replace("'", "").replace('"', "")
+
+        if ":" in part:
+            try:
+                start, end = map(int, part.split(":"))
+                ranges.append([start, end]) # Appends the boundaries, NO range extensions or sums
+            except ValueError:
+                continue
+        elif "-" in part:
+            try:
+                start, end = map(int, part.split("-"))
+                ranges.append([start, end])
+            except ValueError:
+                continue
+        else:
+            try:
+                # Standalone numbers become a mirror pair [val, val]
+                val = int(part)
+                ranges.append([val, val])
+            except ValueError:
+                continue
+
+    return ranges

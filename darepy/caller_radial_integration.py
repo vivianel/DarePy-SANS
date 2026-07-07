@@ -92,7 +92,8 @@ configuration = {
         'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
         # FIX: Map the transmission distance to where the backend expects it
         'trans_dist': ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18),
-        'sample_environment': sample_environment
+        'sample_environment': sample_environment,
+        'resolution_settings':ext_cfg['resolution_settings']
     },
     'physics_corrections': ext_cfg.get('physics_corrections', {}),
     'analysis': {
@@ -102,7 +103,7 @@ configuration = {
         'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
         'exclude_files': ext_cfg['pipeline_control'].get('exclude_files', []),
         'force_reintegrate': ext_cfg['pipeline_control']['force_reintegrate'],
-        'save_plot_azimuthal': ext_cfg['analysis_flags']['save_plot_azimuthal'],
+        'add_plot_azimuthal': ext_cfg['analysis_flags']['add_plot_azimuthal'],
         'save_plot_radial': ext_cfg['analysis_flags']['save_plot_radial'],
         'save_data_azimuthal': ext_cfg['analysis_flags']['save_data_azimuthal'],
         'save_2d_patterns': ext_cfg['analysis_flags']['save_2d_patterns'],

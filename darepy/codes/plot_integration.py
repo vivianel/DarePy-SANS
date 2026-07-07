@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from utils import create_analysis_folder
+from utils import create_analysis_folder, parse_pixel_ranges
 import integration as integ
 
 
@@ -55,12 +55,12 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
 
     sectors_nr = result['integration'].get('sectors_nr')
     raw_ranges = result['integration'].get('pixel_range_azim')
-    ranges_to_plot = integ._parse_pixel_ranges(raw_ranges)
+    ranges_to_plot = parse_pixel_ranges(raw_ranges)
 
     # ==============================================================
     # DYNAMIC GRID LOGIC: Check if Azimuthal Plotting is requested
     # ==============================================================
-    plot_azim_flag = config['analysis'].get('save_plot_azimuthal', 0) in [1, True, 'true', 'True']
+    plot_azim_flag = config['analysis'].get('add_plot_azimuthal', 0) in [1, True, 'true', 'True']
     plot_azim_parts = plot_azim_flag and (sectors_nr is not None) and (data_azimuth is not None)
 
     if plot_azim_parts:
