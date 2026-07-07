@@ -111,7 +111,7 @@ physics_corrections:
     Toggles for standard SANS mathematical corrections.
   normalize_to_monitor: true     # Account for primary beam flux fluctuations
   subtract_dark_current: true    # Subtract ambient noise and counts (Cadmium measurement)
-  subtract_empty_cell: false     # Remove container scattering
+  subtract_empty_cell: true      # Remove container scattering
   apply_flat_field: true         # Correct for detector pixel sensitivity (H2O)
   apply_transmission: true        # Correct for sample attenuation
   normalize_to_thickness: true   # Normalize by sample path length (cm)
@@ -199,10 +199,10 @@ analysis_flags:
   _desc: |
     ANALYSIS FLAGS
     Detailed integration settings.
-  save_plot_radial: true       # Export I(q) plots as PNG
+  save_plot_radial: false      # Export I(q) plots as PNG
   integration_points: 100     # Number of bins in q-space
-  add_plot_azimuthal: true   # Export I(phi) plots
-  save_data_azimuthal: true   # Export I(phi) as text
+  add_plot_azimuthal: false  # Export I(phi) plots
+  save_data_azimuthal: false  # Export I(phi) as text
   sectors_nr: 2               # Number of 'pizza slices' for azimuthal integration
   pixel_range_azim: '10:50' # radius ranges for the azimuthal integration: '10:50, 50:100'
   save_2d_patterns: false     # Save corrected 2D detector images

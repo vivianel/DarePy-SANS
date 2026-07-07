@@ -55,11 +55,11 @@ def calculate_q_resolution(q_A_1, config, det_dist_m, wl_A, L1_m, hdf_name, chi_
     pixel_size_m = registry.get('pixel_size', 0.0075)
     L2_m = float(det_dist_m)
 
-    if config['experiment']['resolution_settings']['source_slit_shape'] == 'auto':
+    if config['experiment']['resolution_settings']['source_slit_shape'] == 'auto' and inst_name == 'SANS-LLB':
         # Source slit (A1) dimensions in meters
         source_dims = (
-            registry['source_slit_x'],
-            registry['source_slit_y'],
+            registry['source_slit_x'][str(int(L1_m*1000))],
+            registry['source_slit_y'][str(int(L1_m*1000))],
             registry['source_slit_shape']       )
     else:
         source_dims = (
@@ -67,7 +67,7 @@ def calculate_q_resolution(q_A_1, config, det_dist_m, wl_A, L1_m, hdf_name, chi_
             config['experiment']['resolution_settings']['source_slit_y'],
             config['experiment']['resolution_settings']['source_slit_shape'])
 
-    if config['experiment']['resolution_settings']['sample_slit_shape'] == 'auto':
+    if config['experiment']['resolution_settings']['sample_slit_shape'] == 'auto' and inst_name == 'SANS-LLB':
     # Sample slit (A2) dimensions in meters
         sample_dims = (
             load_hdf(path_hdf_raw, hdf_name, 'sample_slit_x'),
