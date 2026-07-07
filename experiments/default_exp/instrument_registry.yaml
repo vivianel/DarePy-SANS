@@ -70,7 +70,7 @@ SANS-LLB:
   # Source (A1) Settings - e.g., the neutron guide
   source_slit_shape: 'square'    # 'square', 'circular' or 'rectangular'
   source_slit_x:
-    '18500': 0.045        # W1 in meters (e.g., 45 mm)
+    '18500': 0.042        # W1 in meters (e.g., 45 mm)
     '15500': 0.044
     '11750': 0.045
     '8000': 0.0455
@@ -78,7 +78,7 @@ SANS-LLB:
     '3000': 0.0465
     '1250': 0.047
   source_slit_y:
-    '18500': 0.045        # H1 in meters (e.g., 45 mm)
+    '18500': 0.042        # H1 in meters (e.g., 45 mm)
     '15500': 0.044
     '11750': 0.045
     '8000': 0.0455
