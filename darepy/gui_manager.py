@@ -139,6 +139,12 @@ class DarePyGUI:
         if v == "": return ""
         if v.lower() == 'true': return True
         if v.lower() == 'false': return False
+
+        # FIX: If the string contains a colon, it's a range shorthand (e.g., '10:30').
+        # Keep it completely intact as a raw string so it doesn't get corrupted.
+        if ":" in v:
+            return v
+
         if "," in v and not v.startswith('['):
             try: return [self._parse_string(x) for x in v.split(",")]
             except: return v
@@ -287,7 +293,7 @@ class DarePyGUI:
 
         # Handle options or entries only if it is NOT a boolean setup
         if not isinstance(value, bool):
-            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_shape", "aperture_shape"]:
+            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_slit_shape", "sample_slit_shape"]:
                 if label == "which_instrument":
                     opts = ["SANS-I", "SANS-LLB"]
                 elif label == "integration_direction":
@@ -296,8 +302,8 @@ class DarePyGUI:
                     opts = ["semitransparent", "standard"]
                 elif label in ["plot_scale", "interp_type"]:
                     opts = ["lin", "log"]
-                elif label in ["aperture_shape", "source_shape"]:
-                    opts = ["rectangular", "circular"]
+                elif label in ["sample_slit_shape", "source_slit_shape"]:
+                    opts = ["auto", "square", "rectangular", "circular"]
                 elif label in ['output_mode']:
                     opts = ['individual_frames', 'gif_animation']
 
@@ -326,7 +332,6 @@ class DarePyGUI:
         self.build_config_area(s1, "Sample Environment", "sample_environment")
 
         s2, f2 = self.create_scrollable_tab(self.notebook, "2. Pipeline control")
-        #self.build_config_area(s_combined, "Physics Corrections", "physics_corrections")
         self.build_config_area(s2, "Pipeline Control", "pipeline_control")
 
         # --- TAB 2: RENAME SAMPLES ---
@@ -483,6 +488,8 @@ class DarePyGUI:
         sd, _ = self.create_scrollable_tab(self.sub_nb, "Analysis Flags")
         self.build_config_area(sd, "Flags", "analysis_flags")
 
+        sr, _ = self.create_scrollable_tab(self.sub_nb, "Resolution Settings")
+        self.build_config_area(sr, "Resolution Geometry (dq)", "resolution_settings")
 
 
         # --- TAB 7: MERGING CURVES ---

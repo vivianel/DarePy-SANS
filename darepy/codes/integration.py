@@ -5,7 +5,7 @@ import csv
 from pathlib import Path
 from tabulate import tabulate
 import matplotlib.pyplot as plt
-from utils import load_hdf, create_analysis_folder, get_flexible_value
+from utils import load_hdf, create_analysis_folder, get_flexible_value, parse_pixel_ranges
 from image_corrections import (load_standards, load_and_normalize,
                         correct_EC, correct_flat_field, correct_dark, process_empty_cell)
 from setup_integrator import(generate_beamstop_mask, setup_integration)
@@ -13,19 +13,6 @@ from absolute_scaling import calculate_1D_absolute_scalar, apply_absolute_scalin
 import normalize_counts as norm
 import plot_integration as plot_integ
 from resolution import calculate_q_resolution
-
-def _parse_pixel_ranges(raw_ranges):
-    """Helper function to cleanly parse legacy single ranges or nested lists."""
-    if raw_ranges is None:
-        return []
-    if isinstance(raw_ranges, range):
-        return [[raw_ranges.start, raw_ranges.stop]]
-    elif isinstance(raw_ranges, list) and len(raw_ranges) > 0:
-        if isinstance(raw_ranges[0], int):
-            return [raw_ranges]
-        elif isinstance(raw_ranges[0], list):
-            return raw_ranges
-    return [] # Default to empty if nothing provided
 
 
 def set_integration(config, result, det_str):
@@ -90,7 +77,7 @@ def make_file_name(path, prefix, sufix, sample_name, det_str, scanNr, frame):
 def integrate(config, result, det_str, path_rad_int, path_det):
     """The Core Math Engine with Tabulated Logging and Modular Functions."""
     # Handle Plotting State
-    plotting_enabled = config['analysis'].get('save_plot_radial', 0) == 1 or config['analysis'].get('save_plot_azimuthal', 0) == 1
+    plotting_enabled = config['analysis'].get('save_plot_radial', 0) == 1 or config['analysis'].get('add_plot_azimuthal', 0) == 1
     if not plotting_enabled:
         plt.ioff()
         plotting_was_off = True
@@ -250,7 +237,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             if config['analysis'].get('save_plot_radial', 0) == 1:
                 plot_integ.plot_integ_radial(config, result, scanNr, ff, img, data_azimuth)
 
-            if config['analysis'].get('save_plot_azimuthal', 0) == 1:
+            if config['analysis'].get('add_plot_azimuthal', 0) == 1:
                 plot_integ.plot_integ_azimuthal(config, result, scanNr, ff)
 
             reduction_log.append(current_log)
@@ -303,7 +290,7 @@ def radial_integ(config, result, img1, file_name, det_str, ii, img1_variance=Non
         L1_m = class_file['coll_m'][ii]
         hdf_name = class_file['name_hdf'][ii]
 
-        #bCheck the toggle flag from the YAML!
+        #Check the toggle flag from the YAML!
         if config.get('physics_corrections', {}).get('calculate_resolution_smearing', False):
             dq = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m, hdf_name)
         else:
@@ -348,6 +335,7 @@ def azimuthal_integ(config, result, img1, file_name, det_str, ii, img1_variance=
             wl_A = ai.wavelength * 1e10
             class_file = result['overview']['det_files_' + det_str]
             L1_m = class_file['coll_m'][ii]
+            hdf_name = class_file['name_hdf'][ii]
 
             data_save = np.column_stack((q_all_sectors, I_all.transpose(), sigma_all.transpose()))
 
@@ -380,7 +368,7 @@ def azimuthal_integ(config, result, img1, file_name, det_str, ii, img1_variance=
 
                     if config.get('physics_corrections', {}).get('calculate_resolution_smearing', False):
                         # Calculate highly specific dq for this exact sector angle
-                        dq_sector = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m, chi_deg=chi_center)
+                        dq_sector = calculate_q_resolution(q, config, det_dist_m, wl_A, L1_m, hdf_name, chi_deg=chi_center)
                     else:
                         dq_sector = np.zeros_like(q)
 
@@ -400,7 +388,7 @@ def azimuthal_integ(config, result, img1, file_name, det_str, ii, img1_variance=
                 # 3. EXTRACT AZIMUTHAL PROFILES I(chi) vs chi
                 # ==============================================================
                 raw_ranges = result['integration'].get('pixel_range_azim')
-                ranges_to_save = _parse_pixel_ranges(raw_ranges)
+                ranges_to_save = parse_pixel_ranges(raw_ranges)
 
                 if not ranges_to_save:
                     ranges_to_save = [[0, len(q)]]

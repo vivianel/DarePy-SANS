@@ -67,16 +67,17 @@ def plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False):
 
                 try:
                     data = np.genfromtxt(file_name, delimiter=',', skip_header=1)
-                    q, I, e = data[:, 0], data[:, 1], np.abs(data[:, 2])
+                    q, I, e, dq = data[:, 0], data[:, 1], np.abs(data[:, 2]), np.abs(data[:, 3])
                 except:
                     continue
 
                 if sample_name not in merged_files:
-                    merged_files[sample_name] = {'I': [], 'q': [], 'error': [], 'det': []}
+                    merged_files[sample_name] = {'I': [], 'q': [], 'error': [], 'dq': [], 'det': []}
 
                 merged_files[sample_name]['I'].append(I)
                 merged_files[sample_name]['q'].append(q)
                 merged_files[sample_name]['error'].append(e)
+                merged_files[sample_name]['dq'].append(dq)
                 merged_files[sample_name]['det'].append(det_dist_val)
 
     print(f" -> Found {len(merged_files)} unique samples to plot.")
@@ -104,6 +105,7 @@ def plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False):
             q_seg = merged_files[name]['q'][i]
             I_seg = merged_files[name]['I'][i]
             e_seg = merged_files[name]['error'][i]
+            #dq_seg = merged_files[name]['dq'][i]
             d_label = merged_files[name]['det'][i]
 
             # --- IDENTIFY YAML SKIPS BY DISTANCE ---
@@ -159,7 +161,7 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
     os.makedirs(path_merged_txt, exist_ok=True)
 
     for keys in merged_files:
-        I_all, q_all, e_all = [], [], []
+        I_all, q_all, e_all, dq_all = [], [], [], []
         plt.close('all')
         plt.ioff()
 
@@ -176,18 +178,19 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
                 q = np.array(merged_files[keys]['q'][ii])
                 I = np.array(merged_files[keys]['I'][ii])
                 e = np.array(merged_files[keys]['error'][ii])
+                dq = np.array(merged_files[keys]['dq'][ii])
                 d_label = merged_files[keys]['det'][ii] # Get distance string
 
                 # 1. Clean NaNs and Zeros
                 mask = (~np.isnan(q)) & (I > 0)
-                q, I, e = q[mask], I[mask], e[mask]
+                q, I, e, dq = q[mask], I[mask], e[mask], dq[mask]
 
                 # 2. Apply YAML Skips BY DISTANCE
                 s_start = skip_start.get(d_label, 0)
                 s_end = skip_end.get(d_label, 0)
 
                 end_idx = max(0, len(q) - s_end)
-                q, I, e = q[s_start:end_idx], I[s_start:end_idx], e[s_start:end_idx]
+                q, I, e, dq = q[s_start:end_idx], I[s_start:end_idx], e[s_start:end_idx], dq[s_start:end_idx]
 
                 # ==========================================
                 # Prevent crash if array was completely trimmed
@@ -221,21 +224,23 @@ def merging_data(path_dir_an, merged_files, skip_start, skip_end):
                 q_all = np.concatenate((q_all, q))
                 I_all = np.concatenate((I_all, I))
                 e_all = np.concatenate((e_all, e))
+                dq_all = np.concatenate((dq_all, dq))
         else:
             # Handle single detector measurement (convert list element to array)
             q_all = np.array(merged_files[keys]['q'][0])
             I_all = np.array(merged_files[keys]['I'][0])
             e_all = np.array(merged_files[keys]['error'][0])
+            dq_all = np.array(merged_files[keys]['dq'][0])
 
         # 4. Final Sort and Save
         if len(q_all) > 0:
             idx = np.argsort(q_all)
-            q_final, I_final, e_final = q_all[idx], I_all[idx], e_all[idx]
+            q_final, I_final, e_final, dq_final = q_all[idx], I_all[idx], e_all[idx], dq_all[idx]
 
             # Save Text File (Name + _merged.dat)
             file_txt = os.path.join(path_merged_txt, f"{keys}_merged.dat")
-            header = 'q (A-1), I (1/cm), error'
-            np.savetxt(file_txt, np.column_stack((q_final, I_final, e_final)), delimiter=',', header=header)
+            header = 'q (A-1), I (1/cm), error, dq(A-1)'
+            np.savetxt(file_txt, np.column_stack((q_final, I_final, e_final, dq_final)), delimiter=',', header=header)
             print(f"  [SAVED] Merged raw data: {keys}_merged.dat")
 
             # 5. Save Plot

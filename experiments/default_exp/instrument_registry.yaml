@@ -68,7 +68,7 @@ SANS-LLB:
     '12': 1.452
 
   # Source (A1) Settings - e.g., the neutron guide
-  source_shape: 'rectangular'    # 'circular' or 'rectangular'
-  source_guide_width: 0.05        # W1 in meters (e.g., 50 mm)
-  source_guide_height: 0.05       # H1 in meters (e.g., 50 mm)
+  source_slit_shape: 'square'    # 'square', 'circular' or 'rectangular'
+  source_slit_x: 0.045        # W1 in meters (e.g., 45 mm)
+  source_slit_y: 0.045       # H1 in meters (e.g., 45 mm)
   wavelength_spread: 0.1           # Delta lambda / lambda FWHM (10% for SANS-LLB
