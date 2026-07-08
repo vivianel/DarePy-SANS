@@ -126,6 +126,7 @@ In the `experiments` folder, you can create multiple experiment folders. To add 
 Navigate to the right experiment folder and the execute the code `launch_gui.py`, directly in the command line.
 
 ```bash
+cd <go to youe experiment folder>
 python launch_gui.py
 
 ```
