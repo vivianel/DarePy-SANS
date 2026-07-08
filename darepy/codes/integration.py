@@ -249,11 +249,44 @@ def integrate(config, result, det_str, path_rad_int, path_det):
     print(tabulate(reduction_log, headers=log_headers, tablefmt="grid"))
 
     log_file = os.path.join(path_det, f"reduction_log_det{det_str}.csv")
-    with open(log_file, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(log_headers)
-        writer.writerows(reduction_log)
-    print(f"\n[INFO] Log book saved to: {log_file}")
+
+    # Check if the log file already exists
+    file_exists = os.path.isfile(log_file)
+    existing_entries = set()
+
+    if file_exists:
+        try:
+            # Read existing scan+frame combinations to avoid duplication
+            with open(log_file, 'r', newline='') as f:
+                reader = csv.reader(f)
+                header = next(reader, None)  # skip header
+                for row in reader:
+                    if row:
+                        # Index 0 is Scan, Index 2 is Frame
+                        scan_id = int(row[0])
+                        frame_id = int(row[2])
+                        existing_entries.add((scan_id, frame_id))
+        except Exception as e:
+            print(f"[WARNING] Could not read existing log file safely: {e}. Defaulting to overwrite.")
+            file_exists = False
+
+    # Filter out only the genuinely new additions
+    new_rows_to_write = [
+        row for row in reduction_log
+        if (int(row[0]), int(row[2])) not in existing_entries
+    ]
+
+    if new_rows_to_write:
+        # Append ('a') if file exists, write fresh ('w') if it doesn't
+        mode = 'a' if file_exists else 'w'
+        with open(log_file, mode, newline='') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(log_headers)
+            writer.writerows(new_rows_to_write)
+        print(f"\n[INFO] Log book updated. Appended {len(new_rows_to_write)} new rows to: {log_file}")
+    else:
+        print(f"\n[INFO] Log book untouched. All scan/frame entries already exist in: {log_file}")
 
     if plotting_was_off:
         plt.ion()
