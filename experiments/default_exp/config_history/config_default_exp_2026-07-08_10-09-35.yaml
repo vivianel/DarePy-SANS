@@ -51,7 +51,7 @@ plot_2d:
   _desc: |
     PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 1450          # Scans to visualize (e.g., 85776:89530, 89650)
+  list_scan: 1449          # Scans to visualize (e.g., 85776:89530, 89650)
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
   - 1
@@ -143,7 +143,7 @@ detector_geometry:
     - 60.67
     2:
     - 62.43
-    - 62.67
+    - 59.34
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
     8:
       bs0:
@@ -170,14 +170,14 @@ detector_geometry:
     2:
       bs0:
       - 55
-      - 70
-      - 54
-      - 69
+      - 71
+      - 53
+      - 71
       bs1:
       - 0
-      - 5
+      - 9
       - 0
-      - 127
+      - 128
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
     8:
     - 58
@@ -191,9 +191,9 @@ detector_geometry:
     - 69
     2:
     - 58
-    - 66
-    - 54
-    - 69
+    - 67
+    - 50
+    - 74
 analysis_flags:
   _desc: |
     ANALYSIS FLAGS

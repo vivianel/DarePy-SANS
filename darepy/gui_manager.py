@@ -797,7 +797,7 @@ class DarePyGUI:
             self.refresh_ui()
 
     def run_script(self, name):
-        """Runs scripts safely using Spyder's native workspace context runner."""
+        """Runs scripts safely using Spyder's native workspace context runner or an observed background subprocess."""
         if self.save_data():
             script_path = os.path.normpath(os.path.join(script_dir, "codes", name))
             if not os.path.exists(script_path):
@@ -809,21 +809,40 @@ class DarePyGUI:
                     from IPython import get_ipython
                     ipy = get_ipython()
                     if ipy:
-                        # Runs inside Spyder's console context cleanly
+                        # Runs inside Spyder's console context cleanly (Blocking execution)
                         ipy.run_line_magic('run', f'\"{script_path}\" \"{self.config_file}\"')
+                        self.refresh_ui()  # Refreshes right after execution finishes
                         return
                 except:
                     pass
 
+                # Asynchronous subprocess context execution loop
                 import subprocess
                 experiment_dir = os.path.dirname(os.path.abspath(self.config_file))
-                subprocess.Popen(
+                
+                # Capture the process object instead of discarding it
+                process = subprocess.Popen(
                     [sys.executable, script_path, self.config_file],
                     cwd=experiment_dir,
                     env=os.environ.copy()
                 )
+                
+                # Start non-blocking polling sequence to see when the window closes
+                self.check_process_status(process, name)
             else:
                 messagebox.showerror("Error", f"Target execution path module not found:\n{script_path}")
+                self.refresh_ui()
+
+    def check_process_status(self, process, script_name):
+        """Periodically checks if the background process has closed, then refreshes the interface."""
+        # poll() returns None if process is running, or return code if completed
+        if process.poll() is None:
+            # Not finished yet; re-check again in 500ms (keeps main UI responsive)
+            self.root.after(500, lambda: self.check_process_status(process, script_name))
+        else:
+            # Process finished! Trigger layout reload engine
+            self.log_to_console(f"🏁 FINISHED: {script_name}. Reloading parameters...")
+            self.refresh_ui()
 
 if __name__ == "__main__":
     root = tk.Tk()

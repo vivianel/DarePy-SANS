@@ -29,10 +29,18 @@ from utils import load_hdf, find_hdf_filename, load_config, parse_scan_list
 config = load_config()
 
 # --- REST OF THE IMPORTS ---
+# Force 'Agg' if this script is strictly generating files/animations in the background,
+# or safely fall back to 'TkAgg' if it needs to pop up a Tkinter-friendly plot window.
 try:
-    matplotlib.use('Qt5Agg')
-except:
-    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+except ImportError:
+    # If the default backend is broken (e.g. trying to find Qt), force a safe fallback
+    matplotlib.use('Agg') 
+    import matplotlib.pyplot as plt
+
+# If you explicitly want to make sure it doesn't try to look for Qt5 or crash:
+matplotlib.use('Agg')  # <--- Change to 'TkAgg' ONLY if you want pop-up windows in Spyder
+
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from PIL import Image
@@ -309,7 +317,7 @@ if __name__ == '__main__':
 
         # After saving all frames and leaving their figures open, call plt.show()
         # to ensure they are actually displayed and interactive in your environment.
-        plt.show()
+        #plt.show()
 
     else:
         print(f"Error: Invalid OUTPUT_MODE '{OUTPUT_MODE}'. Please choose 'gif_animation' or 'individual_frames'.")

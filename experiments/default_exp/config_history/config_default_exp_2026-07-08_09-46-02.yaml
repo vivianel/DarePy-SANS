@@ -7,10 +7,10 @@ analysis_paths:
     ANALYSIS PATHS
     Tells the reduction pipeline where to find the raw data and save the results.
   project_base: 
-    C:\Users\lutzbueno_v\Documents\Analysis\SANS_analysis\DarePy-SANS\experiments\test_exp                 # Root directory for the config files and for saving the results
+    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2026_0915_coffee2     # Root directory for the config files and for saving the results
   raw_data: 
-    C:\Users\lutzbueno_v\Documents\Analysis\SANS_analysis\DarePy-SANS\experiments\test_exp\raw_data             # Source of HDF files
-  scripts_dir: C:\Users\lutzbueno_v\Documents\Analysis\SANS_analysis\DarePy-SANS\                    # Location of source code = git repository
+    C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS/experiments/2026_0915_coffee2/raw_data # Source of HDF files
+  scripts_dir: C:/Users/lutzbueno_v/Documents/Analysis/DarePy-SANS_code/DarePy-SANS                  # Location of source code = git repository
   dry_run: false         # If true = Check path availability without listing
 
 instrument_setup:
@@ -43,7 +43,7 @@ rename_samples:
   _desc: |
     RENAME SAMPLES
     Standardize sample names in metadata for correct downstream matching, especially for merging files.
-  files_change: 1435      # Scan numbers to change name - Ex. 85776:89530, 89650
+  files_change: 1434      # Scan numbers to change name - Ex. 85776:89530, 89650
   add_subscript: 'test'     # Append text to the current name. Useful to add temperature or magnetic field, if forgotten during the measuments - Ex: '_25C'
   replace_with: 'NEW'       # Overwrites the name given during the measurements - Ex. 'CTAB_NaSal'
 
@@ -51,7 +51,7 @@ plot_2d:
   _desc: |
     PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 1450          # Scans to visualize (e.g., 85776:89530, 89650)
+  list_scan: 1449          # Scans to visualize (e.g., 85776:89530, 89650)
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
   - 1
@@ -74,10 +74,10 @@ beam_center_mask:
   semitransparent: true
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
-  - 7
+  - 2
   plot_scale: 'log'        # Color mapping: 'log' or 'lin'
 
-  scan_nr: 1433
+  scan_nr: 1450
 
 resolution_settings:
   _desc: |
@@ -142,8 +142,8 @@ detector_geometry:
     - 62.44
     - 60.67
     2:
+    - 61.96
     - 62.43
-    - 62.67
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
     8:
       bs0:
@@ -169,15 +169,15 @@ detector_geometry:
       - 70
     2:
       bs0:
-      - 55
+      - 54
       - 70
       - 54
-      - 69
+      - 70
       bs1:
       - 0
       - 5
       - 0
-      - 127
+      - 128
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
     8:
     - 58
@@ -190,8 +190,8 @@ detector_geometry:
     - 56
     - 69
     2:
-    - 58
-    - 66
+    - 59
+    - 65
     - 54
     - 69
 analysis_flags:
