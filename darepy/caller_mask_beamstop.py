@@ -87,6 +87,7 @@ if plot_scale == 'log':
 print(f"Plotting mode: {plot_scale.upper()}")
 print(f"Colorbar limits (linear reference space) set to: {clim}")
 
+
 # ==========================================
 # %% Interactive Masking Class
 # ==========================================
@@ -106,6 +107,7 @@ class MaskTransmissionManager:
         self.ax = initial_ax
         self.cbar = None
         self.clicks = []
+        self.temp_artists = []  # Tracks live click markers and bounding patches
 
         self.cid_click = None
         self.cid_key = None
@@ -127,32 +129,30 @@ class MaskTransmissionManager:
         self.clicks = []
         self.pending_coords = None
         self.switching_step = False
+        self.clear_temp_artists()
         self.ax.clear()
 
         if self.current_state == 'bs_collect':
             self.fig.suptitle('SANS Masking Setup: Step 1 - Define Beam Stops', fontsize=14, color='darkblue')
-            title = f'Area {self.current_bs_count + 1}. Click 4 corners to instantly mask. Press ENTER to finish Step 1.'
+            title = (f'Area {self.current_bs_count + 1}: Click 4 corners.\n'
+                     f'Press [m] to commit & add another | [r] to reset current area | [ENTER] to finish Step 1.')
             img_to_display = self.img_masked_bs
         elif self.current_state == 'transmission':
             self.fig.suptitle('SANS Masking Setup: Step 2 - Select Transmission Area', fontsize=14, color='darkorange')
-            title = 'Click 4 corners + ENTER to save and view Final Results.'
+            title = 'Click 4 corners. Press [r] to reset | [ENTER] to save and view Final Results.'
             img_to_display = self.img_data
         else:
             return
 
         self.ax.set_title(title, fontsize=10)
 
-        # --- UPDATED COLOR SCALING LOGIC (MATCHING SCRIPT 2) ---
         with np.errstate(invalid='ignore', divide='ignore'):
             if self.scale_mode == 'lin':
                 im = self.ax.imshow(img_to_display, origin='lower', cmap='jet', clim=self.clim)
             elif self.scale_mode == 'log':
-                # Safely clip zeros while preserving active NaNs
                 safe_img = np.where(img_to_display <= 0, 1e-4, img_to_display)
                 im = self.ax.imshow(np.log(safe_img), origin='lower', cmap='jet', clim=self.clim)
 
-        # --- PERSISTENT COLORBAR AXIS ENGINE ---
-        # Ensures the colorbar axis is only generated once per unique figure window
         if not hasattr(self, 'cax_bar') or self.cax_bar not in self.fig.axes:
             divider = make_axes_locatable(self.ax)
             self.cax_bar = divider.append_axes("right", size="5%", pad=0.1)
@@ -160,7 +160,6 @@ class MaskTransmissionManager:
             self.cax_bar.clear()
 
         self.cbar = self.fig.colorbar(im, cax=self.cax_bar)
-
         self.ax.grid(which='major', color='w', linestyle='--', linewidth=1)
         self.fig.canvas.draw_idle()
 
@@ -179,27 +178,71 @@ class MaskTransmissionManager:
             self.fig.canvas.mpl_disconnect(self.cid_close)
             self.cid_close = None
 
+    def clear_temp_artists(self):
+        """Removes visual dots and uncommitted bounding rectangles from the display axis."""
+        for artist in self.temp_artists:
+            try:
+                artist.remove()
+            except:
+                pass
+        self.temp_artists = []
+
     def on_click(self, event, click_limit):
         if event.inaxes == self.ax:
             if len(self.clicks) < click_limit:
                 self.clicks.append([event.xdata, event.ydata])
                 print(f'Clicked: x = {np.round(event.xdata, 2)}, y = {np.round(event.ydata, 2)}')
 
+                # Visual feedback: Draw a point where the user clicked
+                dot = self.ax.scatter(event.xdata, event.ydata, color='red', s=40, zorder=5)
+                self.temp_artists.append(dot)
+                self.fig.canvas.draw_idle()
+
                 if len(self.clicks) == click_limit:
                     self.pending_coords = self._calculate_area_coords()
+                    Ymin, Ymax, Xmin, Xmax = self.pending_coords
+
+                    # Visual feedback: Draw the feedback preview box
+                    rect = plt.Rectangle((Xmin, Ymin), Xmax - Xmin, Ymax - Ymin,
+                                         linewidth=2, edgecolor='red', facecolor='none', linestyle='-')
+                    self.ax.add_patch(rect)
+                    self.temp_artists.append(rect)
 
                     if self.current_state == 'bs_collect':
-                        self.confirm_beamstop()
+                        self.ax.set_title("Mask drawn! Press [m] to add another, [r] to redraw, or [ENTER] to advance.", fontsize=9, color='red')
                     elif self.current_state == 'transmission':
-                        Ymin, Ymax, Xmin, Xmax = self.pending_coords
-                        self.ax.add_patch(plt.Rectangle((Xmin, Ymin), Xmax - Xmin, Ymax - Ymin, linewidth=2, edgecolor='red', facecolor='none'))
-                        self.ax.set_title("Transmission area selected. Press ENTER to complete.", fontsize=10, color='red')
-                        self.fig.canvas.draw_idle()
+                        self.ax.set_title("Transmission area drawn! Press [r] to redraw or [ENTER] to complete.", fontsize=9, color='red')
+
+                    self.fig.canvas.draw_idle()
 
     def on_key(self, event):
-        if event.key == 'enter':
+        # [m] Key: Commit current beamstop mask and clear canvas to accept a brand new one
+        if event.key == 'm' and self.current_state == 'bs_collect':
+            if self.pending_coords is not None:
+                self.confirm_beamstop()
+            else:
+                print("Cannot add mask yet. You must select 4 corners first.")
+
+        # [r] Key: Reset current selection markers to re-click your 4 corners
+        elif event.key == 'r':
+            print("[RESET] Cleared temporary points. Try selecting this area again.")
+            self.clicks = []
+            self.pending_coords = None
+            self.clear_temp_artists()
             if self.current_state == 'bs_collect':
-                print("\n[ENTER] Finished Step 1 via keyboard.")
+                self.ax.set_title(f'Area {self.current_bs_count + 1}: Click 4 corners.\n'
+                                  f'Press [m] to commit & add another | [r] to reset current area | [ENTER] to finish Step 1.', fontsize=10)
+            elif self.current_state == 'transmission':
+                self.ax.set_title('Click 4 corners. Press [r] to reset | [ENTER] to save and view Final Results.', fontsize=10)
+            self.fig.canvas.draw_idle()
+
+        # [ENTER] Key: Move forward
+        elif event.key == 'enter':
+            if self.current_state == 'bs_collect':
+                # If there's an uncommitted mask on screen when hitting enter, save it automatically
+                if self.pending_coords is not None:
+                    self.confirm_beamstop()
+                print("\n[ENTER] Finalizing Step 1 and closing mask manager window.")
                 self.switching_step = True
                 self.disconnect_listeners()
                 plt.close(self.fig)
@@ -231,7 +274,7 @@ class MaskTransmissionManager:
         self.current_bs_count += 1
         key = f'bs_{self.current_bs_count}'
         self.bs_masks_dict[key] = coords
-        print(f"[INSTANT MASK] Stored {key}: [Ymin, Ymax, Xmin, Xmax] = {coords}")
+        print(f"[COMMIT MASK] Stored {key}: [Ymin, Ymax, Xmin, Xmax] = {coords}")
 
         Ymin, Ymax, Xmin, Xmax = coords
         self.img_masked_bs[Ymin:Ymax, Xmin:Xmax] = np.nan
@@ -263,7 +306,6 @@ class MaskTransmissionManager:
             axes_results.add_patch(plt.Rectangle((self.saved_trans[2], self.saved_trans[0]), self.saved_trans[3]-self.saved_trans[2], self.saved_trans[1]-self.saved_trans[0], linewidth=2, edgecolor='red', facecolor='none'))
         axes_results.set_title('Configured Calibration Masks')
         plt.show()
-
 # ==========================================
 # %% YAML Exporter
 # ==========================================
