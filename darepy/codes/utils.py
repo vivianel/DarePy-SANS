@@ -66,6 +66,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'moni':        '/entry1/SANS/detector/preset',
             'temp':        '/entry1/sample/temperature',
             'counts':      'entry1/SANS/detector/counts',
+            'date':        'entry1/start_time',
+            'start_time':   'entry1/start_time',
+            'end_time':   'entry1/end_time',
             'flux_monit':  registry_monitor_path  # read from instrument_registry
         },
         'SANS-LLB': {
@@ -90,6 +93,10 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'sample_slit_shape': 'entry0/SANS-LLB/sample_mask/shape',
             'sample_slit_x': 'entry0/SANS-LLB/sample_mask/size',
             'sample_slit_y': 'entry0/SANS-LLB/sample_mask/size_y',
+            'date':        'entry0/start_time',
+            'start_time':   'entry0/start_time',
+            'end_time':   'entry0/end_time',
+
             'flux_monit':  registry_monitor_path  # read from instrument_registry
         }
     }
@@ -116,6 +123,21 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             elif which_property in ['sample_slit_x', 'sample_slit_x']:
                 prop = np.asarray(raw_data)
                 prop = prop/1000 # given in mm, transformed in m
+            elif which_property == 'date':
+                prop = np.asarray(raw_data)
+                prop = prop.astype(str)
+                prop = np.char.split(prop, ' ')
+                prop = prop[0][0]
+            elif which_property == 'start_time':
+                prop = np.asarray(raw_data)
+                prop = prop.astype(str)
+                prop = np.char.split(prop, ' ')
+                prop = prop[0][1][:-4]
+            elif which_property == 'end_time':
+                prop = np.asarray(raw_data)
+                prop = prop.astype(str)
+                prop = np.char.split(prop, ' ')
+                prop = prop[0][1][:-4]
             else:
                 prop = raw_data[0]
 

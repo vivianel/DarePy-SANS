@@ -15,7 +15,8 @@ from utils import find_hdf_by_identifier, parse_scan_list, load_hdf, create_anal
 
 def list_files(config, result):
     # Initialize dictionary for storing metadata
-    class_files = {'name_hdf': [], 'scan': [], 'sample_name': [], 'att': [],
+    class_files = {'name_hdf': [], 'scan': [], 'sample_name': [], 'date': [], 'start_time': [],
+                   'end_time': [], 'att': [],
         'beamstop_y': [], 'coll_m': [], 'wl_A': [], 'detx_m': [],
         'dety_m': [],  'moni_e4': [], 'time_s': [], 'thickness_cm': [],
         'frame_nr': []}
@@ -62,6 +63,9 @@ def list_files(config, result):
         if scan_nr not in exclude_files:
             class_files['name_hdf'].append(file)
             class_files['scan'].append(scan_nr)
+            class_files['date'].append(load_hdf(path_hdf_raw, file, 'date'))
+            class_files['start_time'].append(load_hdf(path_hdf_raw, file, 'start_time'))
+            class_files['end_time'].append(load_hdf(path_hdf_raw, file, 'end_time'))
             class_files['att'].append(load_hdf(path_hdf_raw, file, 'att'))
             class_files['beamstop_y'].append(load_hdf(path_hdf_raw, file, 'beamstop_y'))
             class_files['coll_m'].append(load_hdf(path_hdf_raw, file, 'coll'))
