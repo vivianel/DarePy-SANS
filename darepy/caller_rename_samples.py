@@ -150,10 +150,8 @@ for ii in range(0, len(files)):
 
             if isinstance(replace_with, str) and replace_with != '':
                 new_sample_name = replace_with
-            elif isinstance(replace_with, int) and replace_with != 0:
-                new_sample_name = str(replace_with)
-            elif isinstance(subscript, str) and subscript != '':
-                copy_suffix = subscript
+            elif subscript != '':
+                subscript = str(subscript)
                 new_sample_name = f"{new_sample_name}_{subscript}"
 
             # --- OVERWRITE THE ORIGINAL NAME FIELD ---
