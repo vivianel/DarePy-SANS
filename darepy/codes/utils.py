@@ -165,7 +165,7 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             elif which_property == 'beamstop_y':
                 prop = round(prop, 2)
             elif which_property == 'thickness':
-                prop = round(prop, 2) # given in mm, but used later in cm
+                prop = round(prop/10, 2) # given in mm in Nicos, but used later in cm
             return prop
 
     except FileNotFoundError:
