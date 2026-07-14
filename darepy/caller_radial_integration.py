@@ -98,8 +98,15 @@ if os.path.exists(result_file):
     with open(result_file, 'rb') as f:
         result = pickle.load(f)
 
+
+    # If transmission is disabled in the config, clear any cached transmission data
+    if not apply_transmission:
+        print("🧹 'Apply Transmission' is disabled. Clearing cached transmission data from loaded results.")
+        result['transmission'] = {}
+    # -------------------------
+
     # If results exist, but do not have results['transmission'] populated, trigger calculation in case apply_transmission is True
-    if apply_transmission and (not result.get('transmission') or len(result.get('transmission', {})) == 0):
+    elif apply_transmission and (not result.get('transmission') or len(result.get('transmission', {})) == 0):
         print("⚠️ Results exist, but do not contain 'transmission' data. Triggering automated calculation.")
         should_run_transmission = True
 else:

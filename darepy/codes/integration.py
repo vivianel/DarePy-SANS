@@ -247,45 +247,59 @@ def integrate(config, result, det_str, path_rad_int, path_det):
     print("="*80)
     print(tabulate(reduction_log, headers=log_headers, tablefmt="grid"))
 
+    import os
+
     log_file = os.path.join(path_det, f"reduction_log_det{det_str}.csv")
 
-    # Check if the log file already exists
-    file_exists = os.path.isfile(log_file)
-    existing_entries = set()
+    # 1. Standardize your current runtime data into string tuples for a clean comparison
+    current_runtime_entries = [
+        tuple(str(item).strip() for item in row) for row in reduction_log
+    ]
 
-    if file_exists:
+    file_needs_update = True
+
+    # 2. Check what's currently on disk
+    if os.path.isfile(log_file):
         try:
-            # Read existing scan+frame combinations to avoid duplication
             with open(log_file, 'r', newline='') as f:
                 reader = csv.reader(f)
                 header = next(reader, None)  # skip header
-                for row in reader:
-                    if row:
-                        # Index 0 is Scan, Index 2 is Frame
-                        scan_id = int(row[0])
-                        frame_id = int(row[2])
-                        existing_entries.add((scan_id, frame_id))
+                existing_file_entries = [
+                    tuple(str(item).strip() for item in row) for row in reader if row
+                ]
+
+            # If the file on disk is identical to our current reduction_log, skip writing
+            if current_runtime_entries == existing_file_entries:
+                file_needs_update = False
+
         except Exception as e:
-            print(f"[WARNING] Could not read existing log file safely: {e}. Defaulting to overwrite.")
-            file_exists = False
+            print(f"[WARNING] Error reading log file ({e}). Forcing a fresh overwrite.")
+            file_needs_update = True
 
-    # Filter out only the genuinely new additions
-    new_rows_to_write = [
-        row for row in reduction_log
-        if (int(row[0]), int(row[2])) not in existing_entries
-    ]
+    # 3. Write the file if a parameter changed or if the file doesn't exist
+    if file_needs_update:
+        # Get absolute path to see exactly where Python is looking on your computer
+        abs_log_file = os.path.abspath(log_file)
+        print(f"[DEBUG] Attempting disk write to absolute path:\n        --> {abs_log_file}")
 
-    if new_rows_to_write:
-        # Append ('a') if file exists, write fresh ('w') if it doesn't
-        mode = 'a' if file_exists else 'w'
-        with open(log_file, mode, newline='') as f:
-            writer = csv.writer(f)
-            if not file_exists:
-                writer.writerow(log_headers)
-            writer.writerows(new_rows_to_write)
-        print(f"\n[INFO] Log book updated. Appended {len(new_rows_to_write)} new rows to: {log_file}")
+        try:
+            with open(abs_log_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(log_headers)  # Always write headers first
+                writer.writerows(reduction_log)  # Write the fresh parameters
+
+                f.flush()  # Force Python to push data to internal buffer
+                os.fsync(f.fileno())  # Force the OS to write buffer to physical disk
+
+            print(f"✅ [INFO] Log book successfully updated and saved to: {abs_log_file}")
+
+            # Double-check byte size immediately after writing
+            print(f"[DEBUG] Verified file size on disk: {os.path.getsize(abs_log_file)} bytes")
+
+        except Exception as write_error:
+            print(f"❌ [CRITICAL WRITE ERROR] Failed to write file to disk: {write_error}")
     else:
-        print(f"\n[INFO] Log book untouched. All scan/frame entries already exist in: {log_file}")
+        print(f"\n[INFO] Log book untouched. Saved file parameters already match current execution exactly.")
 
     if plotting_was_off:
         plt.ion()
