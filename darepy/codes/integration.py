@@ -320,10 +320,52 @@ def radial_integ(config, result, img1, file_name, det_str, ii, img1_variance=Non
     error_model = "azimuthal" if img1_variance is None else None
 
     try:
-        q, I, sigma = ai.integrate1d(
-            img1, integration_points, correctSolidAngle=True, variance=img1_variance,
-            mask=mask, unit='q_A^-1', safe=True,
-            error_model=error_model, flat=None, dark=None)
+        from pyFAI.units import eq_q, register_radial_unit
+
+        # 1. Register the exact string you want to use
+        # We scale eq_q (which is in nm^-1) by 10 to get Å^-1, then apply arcsinh
+        # 1. Register the custom unit directly in Å^-1
+        # Since eq_q is in nm^-1, we multiply by 0.1 to convert it to Å^-1
+        register_radial_unit(
+            "arcsinh(q.A)_Numpy",
+            scale=1.0,
+            label=r"arcsinh($q \cdot \text{\AA}^{-1}$)",
+            equation=lambda x, y, z, wavelength: np.arcsinh(0.1 * eq_q(x, y, z, wavelength))
+        )
+
+        # 2. Get the physical bounds of the detector in Å^-1
+        q_array_A = ai.qArray() / 10.0  # Convert detector's nm^-1 to Å^-1
+
+        # Use only unmasked pixels to avoid bounds issues
+        active_pixels = q_array_A[mask == 0] if mask is not None else q_array_A
+        q_min_phys = active_pixels.min()
+        q_max_phys = active_pixels.max()
+
+        # 3. Convert physical limits to arcsinh space (direct 1:1 mapping)
+        radial_range_arcsinh = (
+            np.arcsinh(q_min_phys),
+            np.arcsinh(q_max_phys)
+        )
+
+        # 4. Integrate using the corrected unit and range
+        q_arcsinh, I, sigma = ai.integrate1d(
+            img1,
+            npt=integration_points,
+            correctSolidAngle=True,
+            variance=img1_variance,
+            mask=mask,
+            unit="arcsinh(q.A)_Numpy",
+            safe=True,
+            method="splitpixel",
+            radial_range=radial_range_arcsinh,
+            error_model=error_model,
+            flat=None,
+            dark=None
+        )
+
+        # 5. Revert the grid back to standard q (Å^-1)
+        # Because our custom unit was purely arcsinh(q_A), we just take the sinh!
+        q = np.sinh(q_arcsinh)
 
         # -------------------------------------------------------------
         # 2. RESOLUTION (dq) CALCULATION

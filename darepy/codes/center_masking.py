@@ -288,7 +288,7 @@ class ClickManager:
         for azim_range in npt_azim_ranges:
             q, I, sigma = self.ai_final.integrate1d(img_for_integration, 100,
                                                     correctSolidAngle = True,
-                                                    method = 'nosplit_csr',
+                                                    method = 'splitpixel',
                                                     unit = 'q_A^-1',
                                                     safe = True,
                                                     error_model = "azimuthal",
