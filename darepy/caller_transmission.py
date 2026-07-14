@@ -2,6 +2,7 @@
 import sys
 from pathlib import Path
 import os
+import pickle  # Added to load/deserialize previously saved results
 
 # 1. Get the directory of the current script (darepy/codes/)
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -83,15 +84,40 @@ if __name__ == "__main__":
         }
     }
 
-    # Initialize blank result container
-    result = {
-        'transmission': {},
-        'overview': {},
-        'integration': {
-            'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
-            'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
-            'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
-        }}
+    # Resolve the destination analysis folder beforehand
+    analysis_folder = create_analysis_folder(configuration)
+
+    # --- NEW: Check if results structure already exists and load it ---
+    result_file = os.path.join(analysis_folder, 'result.npy')
+
+    if os.path.exists(result_file):
+        print(f"📦 Existing results container found! Loading from: {result_file}")
+        with open(result_file, 'rb') as f:
+            result = pickle.load(f)
+
+        # Ensure crucial structural top-level keys exist in the loaded dict
+        if 'transmission' not in result:
+            result['transmission'] = {}
+        if 'overview' not in result:
+            result['overview'] = {}
+        if 'integration' not in result:
+            result['integration'] = {}
+
+        # Dynamically synchronize active integration configurations on-load
+        result['integration']['pixel_range_azim'] = ext_cfg['analysis_flags']['pixel_range_azim']
+        result['integration']['integration_points'] = ext_cfg['analysis_flags'].get('integration_points', 120)
+        result['integration']['sectors_nr'] = ext_cfg['analysis_flags'].get('sectors_nr', 1)
+    else:
+        print("ℹ️ No existing results file found. Initializing blank results container.")
+        # Fallback empty structure
+        result = {
+            'transmission': {},
+            'overview': {},
+            'integration': {
+                'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
+                'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
+                'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
+            }}
 
     # --- STEP 3: SINGLE EXECUTION SEQUENCE ---
     print("Step 0: Indexing files (Required for Transmission)...")
@@ -103,8 +129,7 @@ if __name__ == "__main__":
         result = run_transmission(configuration, class_files, result, ctrl)
 
         # --- STEP 4: PERSIST RESULTS FOR RADIAL INTEGRATION ---
-        # This creates the 'analysis' folder and saves result.npy
-        analysis_folder = create_analysis_folder(configuration)
+        # Save results back to disk utilizing the pre-resolved folder path
         save_results(analysis_folder, result)
 
         print(f"\n✅ SUCCESS: Transmission calculation complete.")

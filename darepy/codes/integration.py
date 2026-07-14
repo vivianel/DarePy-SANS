@@ -176,7 +176,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
                 else:
                     current_log.append("INVALID")
             else:
-                current_log.append("1.000")
+                current_log.append("NOPE")
 
             # 4: Empty Cell
             if physics.get('subtract_empty_cell', False):
@@ -197,8 +197,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
                 current_log.append("OFF")
 
             # 5: Thickness
-            thick_block = config['experiment']['calibration']['thickness']
-            thick_val_for_log = get_flexible_value(thick_block, clean_name, default_fallback=0.1)
+            thick_val_for_log = class_file['thickness_cm'][ii]
 
             if physics.get('normalize_to_thickness', False):
                 img = norm.normalize_thickness(config, hdf_name, result, img)

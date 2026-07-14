@@ -583,3 +583,30 @@ def parse_pixel_ranges(input_data):
                 continue
 
     return ranges
+
+def load_thickness(hdf_name, sample_name, config):
+    """
+    Independent function to load thickness based on sample name and detector distance.
+    Can be easily imported and reused across other reduction stages.
+    """
+    path_hdf_raw = config.get('analysis', {}).get('path_hdf_raw', '')
+    thickness_map = config.get('experiment', {}).get('sample_thickness', {})
+    default_t = thickness_map.get('default', 0.1)
+
+    # Priority 1: Read from file metadata if available
+    if hdf_name:
+        try:
+            t_meta = load_hdf(path_hdf_raw, hdf_name, 'thickness')
+            if t_meta not in (None, 0, 0.0, "None", "nan", "NaN"):
+                val = float(t_meta)
+                if not np.isnan(val) and val > 0:
+                    return val
+        except Exception:
+            pass
+
+    # Priority 3: Fallback to standard sample name match
+    if sample_name in thickness_map:
+        return float(thickness_map[sample_name])
+
+    # Priority 4: Default fallback baseline
+    return float(default_t)

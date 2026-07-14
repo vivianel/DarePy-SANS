@@ -11,7 +11,7 @@ import csv  # Replaced pandas with native csv
 import numpy as np
 import pickle
 from tabulate import tabulate
-from utils import find_hdf_by_identifier, parse_scan_list, load_hdf, create_analysis_folder, save_results
+from utils import find_hdf_by_identifier, parse_scan_list, load_hdf, create_analysis_folder, save_results, load_thickness
 
 def list_files(config, result):
     # Initialize dictionary for storing metadata
@@ -88,8 +88,9 @@ def list_files(config, result):
             res = load_hdf(path_hdf_raw, file, 'counts')
             class_files['frame_nr'].append(res.shape[0] if (res is not None and res.ndim > 2) else 1)
 
-            list_thickness = config['experiment'].get('sample_thickness', {})
-            class_files['thickness_cm'].append(list_thickness.get(sample_name, list_thickness.get('all', 0.1)))
+            # 1. CALL THE INDEPENDENT FUNCTION: Extract matching thickness metric
+            thickness = load_thickness(file, sample_name, config)
+            class_files['thickness_cm'].append(thickness)
 
     path_dir_an = create_analysis_folder(config)
     save_list_files(path_dir_an, path_dir_an, class_files, 'all_files', result)

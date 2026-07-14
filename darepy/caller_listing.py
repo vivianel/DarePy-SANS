@@ -97,7 +97,6 @@ if __name__ == "__main__":
     # --- THE ROBUST CONFIGURATION ---
     configuration = {
         'experiment': {
-            'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
             'sample_environment': sample_environment
         },
         'analysis': {

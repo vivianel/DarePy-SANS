@@ -10,7 +10,7 @@ import sys
 import csv
 from tabulate import tabulate
 
-# Importing unified flexible logic directly from utils
+# Importing unified flexible logic directly from utils (Removed load_thickness)
 from utils import load_hdf, create_analysis_folder, save_results, get_flexible_value, find_hdf_by_identifier
 from prepare_input import save_list_files
 import normalize_counts as norm
@@ -122,7 +122,6 @@ def trans_calc_reference(config, result, class_files):
                 matched_key = None
                 for k in coordinates.keys():
                     try:
-                        # Safely evaluate if keys match numerically (handles float 5.0 vs int 5 vs string '5')
                         if float(k) == float(dist):
                             matched_key = k
                             break
@@ -135,9 +134,15 @@ def trans_calc_reference(config, result, class_files):
                     sys.exit(f'[ERROR] Missing region specifications inside transmission_coordinates for distance {dist}m.')
 
                 c = coordinates[matched_key]
-                # Apply the bounding box coordinates to select the area
                 mask[c[0]:c[1], c[2]:c[3]] = 1
                 EB_ref = float(np.sum(img * mask))
+                # used for correcting the transmisison in 20261374
+                #if dist == 2.5:
+                #    EB_ref = 1.461
+                #if dist == 8:
+                #    EB_ref = 0.1731
+                #if dist == 17.7:
+                #    EB_ref = 0.0577
 
                 result['transmission'][f'mask_{dist}'] = mask
                 result['transmission'][f'mean_EB_{dist}'] = EB_ref
@@ -157,10 +162,6 @@ def trans_calc_sample(config, result):
     class_all = result['overview']['all_files']
     class_trans = result['overview'].get('trans_files', {})
     trans_hdf_names = class_trans.get('name_hdf', [])
-
-    # Extract Thickness Rules
-    thickness_map = config['experiment'].get('sample_thickness', {})
-    default_t = thickness_map.get('default', 0.1)
     trans_dist = config.get('physics_corrections', {}).get('dist_trans_measurements', 0)
 
     # Output Trackers
@@ -179,8 +180,8 @@ def trans_calc_sample(config, result):
         scan_nr = class_all['scan'][ii]
         det_m = class_all['detx_m'][ii]
 
-        # 1. Hierarchical Thickness Check (Metadata -> Config Map -> Default Fallback)
-        thickness = resolve_thickness(path_hdf_raw, hdf_name, sample_name, thickness_map, default_t)
+        # 1. READ DIRECTLY FROM THE METADATA (populated previously by prepare_input.py)
+        thickness = class_all['thickness_cm'][ii]
         list_thick_all.append(thickness)
 
         # Base Placeholders
@@ -206,7 +207,7 @@ def trans_calc_sample(config, result):
 
                     trans_val = 1.000 if hdf_name == eb_hdf else round(sum_counts / EB_ref, 3)
             else:
-                trans_val = "--"  # Bypassed scan for standard transmission setup
+                trans_val = "--"
 
         # 3. Process Semi-transparent Beamstop Track
         elif beamstop == 'semitransparent':
@@ -270,26 +271,6 @@ def trans_calc_sample(config, result):
 # =============================================================================
 # HELPER UTILITIES
 # =============================================================================
-
-def resolve_thickness(path_hdf_raw, hdf_name, sample_name, thickness_map, default_t):
-    """Resolves thickness with priority order: Metadata -> Config Named Sample -> Config Default."""
-    # 1. Try reading directly from file metadata
-    try:
-        t_meta = load_hdf(path_hdf_raw, hdf_name, 'thickness')
-        if t_meta not in (None, 0, 0.0, "None", "nan", "NaN"):
-            val = float(t_meta)
-            if not np.isnan(val) and val > 0:
-                return val
-    except Exception:
-        pass
-
-    # 2. Look for the explicit sample match in the configuration YAML
-    if sample_name in thickness_map:
-        return float(thickness_map[sample_name])
-
-    # 3. Fallback to global configuration baseline
-    return float(default_t)
-
 
 def filter_by_distance(class_files, target_dist):
     """Returns a subset dictionary of files matching a precise detector distance."""
