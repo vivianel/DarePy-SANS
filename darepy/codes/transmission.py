@@ -38,7 +38,6 @@ def trans_calc(config, class_files, result):
     elif beamstop == 'semitransparent':
         result = trans_calc_reference(config, result, class_files)
         result = trans_calc_sample(config, result)
-
     return result
 
 
@@ -137,12 +136,12 @@ def trans_calc_reference(config, result, class_files):
                 mask[c[0]:c[1], c[2]:c[3]] = 1
                 EB_ref = float(np.sum(img * mask))
                 # used for correcting the transmisison in 20261374
-                #if dist == 2.5:
-                #    EB_ref = 1.461
-                #if dist == 8:
-                #    EB_ref = 0.1731
-                #if dist == 17.7:
-                #    EB_ref = 0.0577
+                if dist == 2.5:
+                    EB_ref = 1.461
+                if dist == 8:
+                    EB_ref = 0.1731
+                if dist == 17.7:
+                    EB_ref = 0.0577
 
                 result['transmission'][f'mask_{dist}'] = mask
                 result['transmission'][f'mean_EB_{dist}'] = EB_ref
@@ -169,7 +168,7 @@ def trans_calc_sample(config, result):
     list_counts_all = []
     list_thick_all = []
     trans_log = []
-    log_headers = ["Scan", "Sample", "Det_m", "EB_Scan", "Trans_Counts", "Transmission", "Thickness(cm)"]
+    log_headers = ["Scan", "Sample", "Det_m", "EB_Scan", "Trans_Counts", "Thickness(cm)", "Transmission"]
 
     # ==========================================
     # UNIFIED FILE PROCESSING LOOP
@@ -233,7 +232,7 @@ def trans_calc_sample(config, result):
                 else:
                     trans_val = round(sum_counts / EB_ref, 3) if EB_ref > 0 else 0.000
             else:
-                trans_val = "NO_REF"
+                trans_val = "--"
 
         # Collect results
         list_trans_all.append(trans_val)
@@ -241,14 +240,21 @@ def trans_calc_sample(config, result):
 
         # Append row formatted cleanly for logging
         trans_str = f"{trans_val:.3f}" if isinstance(trans_val, (int, float)) else str(trans_val)
-        trans_log.append([scan_nr, sample_name, det_m, eb_scan_str, sum_counts_str, trans_str, f"{thickness:.3f}"])
+        trans_log.append([scan_nr, sample_name, det_m, eb_scan_str, sum_counts_str,  f"{thickness:.3f}", trans_str])
 
     # ==========================================
     # SAVE & WRITE LOG OUTCOMES
     # ==========================================
-    result['transmission']['calc'] = list_trans_all
-    class_all['transmission'] = list_trans_all
+    list_trans = propagate_transmissions(class_all['sample_name'], list_trans_all)
+    class_all['transmission'] = list_trans
+    # update trans
+    for ll, row in enumerate(trans_log):
+        trans_log[ll][-1] = list_trans[ll]
+
     class_all['thickness_cm'] = list_thick_all
+    # update the results file
+    result['overview']['all_files'] = class_all
+    save_results(path_dir_an, result)
 
     # Print to console
     log_title = f"TRANSMISSION LOG ({beamstop.upper()} BEAMSTOP)"
@@ -264,7 +270,7 @@ def trans_calc_sample(config, result):
         writer.writerows(trans_log)
     print(f"\n[INFO] Transmission log saved directly to: {log_file_path}")
 
-    save_list_files(path_dir_an, path_dir_an, class_all, 'all_files', result)
+    save_list_files(path_dir_an, path_dir_an, class_all, 'all_files')
     return result
 
 
@@ -318,6 +324,42 @@ def select_transmission(config, class_files, result):
     result['overview']['trans_files'] = class_trans
     return result
 
+def propagate_transmissions(sample_names, transmissions):
+    """
+    Links sample names with their calculated transmissions and propagates
+    them to fill in placeholders like '--', 'NO_REF', or 'MISSING'.
+    """
+    # Step 1: Collect all valid numerical transmissions for each sample name
+    sample_to_vals = {}
+    for name, trans in zip(sample_names, transmissions):
+        if trans not in ('--', 'NO_REF', 'MISSING') and trans is not None:
+            try:
+                # Store valid numerical transmissions
+                val = float(trans)
+                sample_to_vals.setdefault(name, []).append(val)
+            except (ValueError, TypeError):
+                pass
+
+    # Step 2: Compute the average (representative) transmission for each sample
+    sample_trans_map = {}
+    for name, vals in sample_to_vals.items():
+        # Using mean to handle multiple measurements consistently
+        sample_trans_map[name] = round(sum(vals) / len(vals), 4)
+
+    # Step 3: Rebuild transmission list, replacing placeholders with mapped values
+    updated_transmissions = []
+    for name, trans in zip(sample_names, transmissions):
+        if trans in ('--', 'NO_REF', 'MISSING') or trans is None:
+            # If it's a placeholder, fill it using our map
+            if name in sample_trans_map:
+                updated_transmissions.append(sample_trans_map[name])
+            else:
+                updated_transmissions.append(trans) # Keep original placeholder if no measurement exists
+        else:
+            # Keep the original calculated float if it already exists
+            updated_transmissions.append(trans)
+
+    return updated_transmissions
 
 class bcolors:
     HEADER = '\033[95m'

@@ -71,13 +71,16 @@ def normalize_transmission(config, hdf_name, result, counts):
         return counts
 
     idx = list(class_all['name_hdf']).index(str(hdf_name))
-    trans_value = result['transmission']['calc'][idx]
+    trans_value = class_all['transmission'][idx]
+
     # Check if we have a valid numerical transmission value
     if isinstance(trans_value, (float, int, np.float64)) and trans_value > 0:
         # Intensity scales by 1/T
         return counts / trans_value
 
     return counts
+
+
 
 def normalize_thickness(config, hdf_name, result, counts):
     """Normalizes counts by sample thickness (cm)."""

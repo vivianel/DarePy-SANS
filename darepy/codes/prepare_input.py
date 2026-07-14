@@ -88,12 +88,15 @@ def list_files(config, result):
             res = load_hdf(path_hdf_raw, file, 'counts')
             class_files['frame_nr'].append(res.shape[0] if (res is not None and res.ndim > 2) else 1)
 
-            # 1. CALL THE INDEPENDENT FUNCTION: Extract matching thickness metric
             thickness = load_thickness(file, sample_name, config)
             class_files['thickness_cm'].append(thickness)
 
+
+
     path_dir_an = create_analysis_folder(config)
-    save_list_files(path_dir_an, path_dir_an, class_files, 'all_files', result)
+    result['overview']['all_files'] = class_files
+    save_results(path_dir_an, result)
+    save_list_files(path_dir_an, path_dir_an, class_files, 'all_files')
 
     save_file = os.path.join(path_dir_an, 'config.npy')
     with open(save_file, 'wb') as handle:
@@ -101,7 +104,7 @@ def list_files(config, result):
 
     return class_files
 
-def save_list_files(path_save, path_dir_an, class_files, name, result):
+def save_list_files(path_save, path_dir_an, class_files, name):
     """Saves metadata to CSV and prints a table WITHOUT pandas."""
 
     save_file = os.path.join(path_save, f"{name}.csv")
@@ -129,13 +132,14 @@ def save_list_files(path_save, path_dir_an, class_files, name, result):
         print(f"... (Showing first 20 of {len(class_files['name_hdf'])} files. Check {name}.csv!)")
 
     print("-" * 20)
-    result['overview'][name] = class_files
-    save_results(path_dir_an, result)
 
-def select_detector_distances(config, class_files, result):
+
+def select_detector_distances(config, result):
     """Groups files by detector distance by creating metadata lists (no copying)."""
     calibration = config['experiment']['calibration']
     path_dir_an = create_analysis_folder(config)
+
+    class_files = result['overview']['all_files']
 
     unique_det = np.unique(class_files['detx_m'])
 
@@ -180,8 +184,11 @@ def select_detector_distances(config, class_files, result):
             # Save this definitive map directly into the results dictionary
             result['overview'][f'calibration_map_{string}'] = calib_map
 
+
         # This CSV file and the 'result' dictionary now act as our Single Source of Truth
-        save_list_files(path_det, path_dir_an, class_det, f'det_files_{string}', result)
+        save_list_files(path_det, path_dir_an, class_det, f'det_files_{string}')
+        result['overview'][f'det_files_{string}'] = class_det
+        save_results(path_dir_an, result)
 
     return result
 

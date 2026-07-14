@@ -166,17 +166,17 @@ def integrate(config, result, det_str, path_rad_int, path_det):
 
             # 3: Transmission (Sample)
             if physics.get('apply_transmission', False):
-                idx_all = list(result['overview']['all_files']['name_hdf']).index(hdf_name)
-                trans = result['transmission']['calc'][idx_all]
+                idx = list(class_file['name_hdf']).index(str(hdf_name))
+                trans = class_file['transmission'][idx]
 
-                if isinstance(trans, (float, int, np.float64)) and trans > 0:
+                if isinstance(trans, (float, int, np.float64)) and trans > 0 and trans < 1.05:
                     img = norm.normalize_transmission(config, hdf_name, result, img)
                     var = np.square(norm.normalize_transmission(config, hdf_name, result, np.sqrt(var)))
                     current_log.append(f"{trans:.3f}")
                 else:
                     current_log.append("INVALID")
             else:
-                current_log.append("NOPE")
+                current_log.append("OFF")
 
             # 4: Empty Cell
             if physics.get('subtract_empty_cell', False):

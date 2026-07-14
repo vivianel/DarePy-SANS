@@ -47,7 +47,7 @@ configuration = {
         'calibration': ext_cfg['calibration_samples'],
         'wl_input': ext_cfg['pipeline_control']['wavelength'],
         'sample_thickness': ext_cfg.get('calibration_samples', {}).get('thickness', {}),
-        # FIX: Map the transmission distance to where the backend expects it
+        'beamstop': ext_cfg.get('transmission_setup', {}).get('beamstop', 'semitransparent'),
         'trans_dist': ext_cfg.get('transmission_setup', {}).get('dist_trans_measurements', 18),
         'sample_environment': sample_environment,
         'resolution_settings': ext_cfg['resolution_settings']
@@ -82,7 +82,7 @@ configuration = {
 
 # Resolve target folder and extract toggle configuration
 analysis_folder = create_analysis_folder(configuration)
-apply_t = configuration['physics_corrections'].get('apply_transmission', False)
+apply_transmission = configuration['physics_corrections'].get('apply_transmission', False)
 result_file = os.path.join(analysis_folder, 'result.npy')
 
 # Flag to determine whether we need to trigger transmission calculations
@@ -99,11 +99,11 @@ if os.path.exists(result_file):
         result = pickle.load(f)
 
     # If results exist, but do not have results['transmission'] populated, trigger calculation in case apply_transmission is True
-    if apply_t and (not result.get('transmission') or len(result.get('transmission', {})) == 0):
+    if apply_transmission and (not result.get('transmission') or len(result.get('transmission', {})) == 0):
         print("⚠️ Results exist, but do not contain 'transmission' data. Triggering automated calculation.")
         should_run_transmission = True
 else:
-    if apply_t:
+    if apply_transmission:
         print("ℹ️ No existing results file found. Transmission is requested; scheduling transmission calculation first.")
         should_run_transmission = True
     else:
@@ -165,7 +165,7 @@ if should_run_transmission:
             print("❌ [CRITICAL ERROR] No results exist and transmission script is missing. Exiting.")
             sys.exit(1)
 else:
-    if apply_t:
+    if apply_transmission:
         print("\nℹ️ [INFO] Transmission data already exists. Skipping automated transmission calculation.")
     else:
         print("\nℹ️ [INFO] 'Apply Transmission' is disabled. Skipping Transmission calculation pipeline.")
@@ -183,15 +183,10 @@ while True:
     print(f"   STARTING RADIAL INTEGRATION (Iteration {iteration})")
     print("="*50)
 
-    # 1. Silent File Discovery
-    class_files = org.list_files(configuration, result)
-
-    if not class_files:
-        break
 
     # 2. Integration Loop
     if ctrl.get('run_reduction', True):
-        result = org.select_detector_distances(configuration, class_files, result)
+        result = org.select_detector_distances(configuration, result)
         target_dist = configuration['analysis']['target_detector_distances']
 
         if target_dist == 'all' or target_dist == '':
