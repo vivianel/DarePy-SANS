@@ -7,10 +7,11 @@ analysis_paths:
     ANALYSIS PATHS
     Tells the reduction pipeline where to find the raw data and save the results.
   project_base: 
-    C:\Users\lutzbueno_v\Documents\Analysis\SANS_analysis\DarePy-SANS\experiments\test_exp                 # Root directory for the config files and for saving the results
+    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2026_1374_Mix         # Root directory for the config files and for saving the results
   raw_data: 
-    C:\Users\lutzbueno_v\Documents\Analysis\SANS_analysis\DarePy-SANS\experiments\test_exp\raw_data             # Source of HDF files
-  scripts_dir: C:\Users\lutzbueno_v\Documents\Analysis\SANS_analysis\DarePy-SANS\                    # Location of source code = git repository
+    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2026_1374_Mix\raw_data     # Source of HDF files
+  scripts_dir: 
+    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\                            # Location of source code = git repository
   dry_run: false         # If true = Check path availability without listing
 
 instrument_setup:
@@ -35,7 +36,7 @@ pipeline_control:
   force_reintegrate: true    # True: Overwrite existing .dat files
   wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
   target_detector_distances: all  # Filter by distance (m): 'all' or list 1.6, 6.0
-  exclude_files: '1457:1465' # Scans to skip (e.g., bad data or setup runs)
+  exclude_files: '2000:2353, 2420, 2421, 2443, 2444, 2466, 2467' # Scans to skip (e.g., bad data or setup runs)
   live_monitoring: false # Auto-process new files as they appear at the beamline
   monitor_interval: 10   # Delay (sec) between checks for new raw data
 
@@ -43,18 +44,18 @@ rename_samples:
   _desc: |
     RENAME SAMPLES
     Standardize sample names in metadata for correct downstream matching, especially for merging files.
-  files_change: 1435      # Scan numbers to change name - Ex. 85776:89530, 89650
-  add_subscript: 'test'     # Append text to the current name. Useful to add temperature or magnetic field, if forgotten during the measuments - Ex: '_25C'
-  replace_with: 'NEW'       # Overwrites the name given during the measurements - Ex. 'CTAB_NaSal'
+  files_change: 2434:2436, 2457:2459, 2480:2482 # Scan numbers to change name - Ex. 85776:89530, 89650
+  add_subscript: 2          # Append text to the current name. Useful to add temperature or magnetic field, if forgotten during the measuments - Ex: '_25C'
+  replace_with: ''          # Overwrites the name given during the measurements - Ex. 'CTAB_NaSal'
 
 plot_2d:
   _desc: |
     PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 1450          # Scans to visualize (e.g., 85776:89530, 89650)
+  list_scan: 2418          # Scans to visualize (e.g., 85776:89530, 89650)
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
-  - 1
+  - 15
   plot_scale: 'log'        # Color mapping: 'log' or 'lin'
   enable_bg_subtraction: false # Preview data minus a specific background scan
   background_scan_nr: 1434     # Scan number to subtract for 2D preview
@@ -68,16 +69,16 @@ beam_center_mask:
     MASKING & BEAM CENTER
     Interactive tool for finding beam center and masking the beam stop.
   scans:
-    8: 1444
-    17.5: 1450
-    2: 1433
+    8: 2396
+    17.7: 2418
+    2.5: 2374
   semitransparent: true
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
-  - 7
+  - 15
   plot_scale: 'log'        # Color mapping: 'log' or 'lin'
 
-  scan_nr: 1433
+  scan_nr: 2418
 
 resolution_settings:
   _desc: |
@@ -136,63 +137,68 @@ detector_geometry:
     Refresh the gui after the calculation with the iterative tool.
   beam_center_guess: # center  of the scattering pattern for a given detector distance in meters
     8:
-    - 63.12
-    - 62.37
-    17.5:
-    - 62.44
-    - 60.67
-    2:
-    - 62.43
+    - 62.32
+    - 62.8
+    2.5:
     - 62.67
+    - 61.96
+    17.7:
+    - 61.74
+    - 61.81
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
     8:
       bs0:
       - 55
-      - 71
-      - 56
       - 69
+      - 55
+      - 71
       bs1:
-      - 55
-      - 71
-      - 64
-      - 70
-    17.5:
+      - 68
+      - 75
+      - 48
+      - 75
+    2.5:
       bs0:
-      - 55
-      - 71
-      - 55
-      - 69
-      bs1:
-      - 55
-      - 71
-      - 66
-      - 70
-    2:
-      bs0:
-      - 55
+      - 54
       - 70
       - 54
+      - 70
+    17.7:
+      bs0:
+      - 53
       - 69
+      - 55
+      - 70
       bs1:
-      - 0
-      - 5
-      - 0
-      - 127
+      - 72
+      - 78
+      - 48
+      - 56
+      bs2:
+      - 68
+      - 72
+      - 51
+      - 72
+      bs3:
+      - 52
+      - 56
+      - 51
+      - 73
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
     8:
-    - 58
-    - 65
+    - 57
+    - 66
     - 55
     - 70
-    17.5:
+    2.5:
     - 58
-    - 65
-    - 56
-    - 69
-    2:
-    - 58
-    - 66
+    - 67
     - 54
+    - 70
+    17.7:
+    - 59
+    - 66
+    - 55
     - 69
 analysis_flags:
   _desc: |
@@ -213,14 +219,13 @@ merging_settings:
     Parameters for stitching multiple detector distances into one I(q) curve.
   run_step_1_plotting: true      # Preview individual curves before stitching
   skip_start: # Points to trim from low-q end per distance
-    8: 20
-    17.5: 3
-    2: 0
+    8: 30
+    17.7: 5
+    2.5: 20
   skip_end:   # Points to trim from high-q end (noisy regions) per distance
     8: 5
-    17.5: 40
-    2: 5
-
+    17.7: 10
+    2.5: 5
   run_step_2_merging: true        # Merge overlapping regions
   run_step_3_interpolation: false # Interpolate to common q-grid
 
@@ -228,3 +233,4 @@ merging_settings:
   interp_points: 150  # Total points in final merged curve
   run_step_4_incoherent: false    # Fit and subtract flat incoherent background
   last_points_to_fit: 10 # Points used for Porod/Background estimation
+  scale_subtraction: 0.95 # by how much should the calculated incoherent background be scaled before subtraction                                                                                                                

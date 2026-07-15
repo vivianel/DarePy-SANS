@@ -590,6 +590,17 @@ class DarePyGUI:
                 comment=cmt
             )
 
+        if 'scale_subtraction' in m_data:
+            cmt = get_comment('scale_subtraction')
+            self._create_field(
+                parent=incoherent_options_f,
+                label='scale_subtraction',
+                value=m_data['scale_subtraction'],
+                config_key='merging_settings',
+                path=('scale_subtraction',),
+                comment=cmt
+            )
+
 
     def _build_merging_table(self, parent, title, m_key):
         bg = self.root.cget('bg')
@@ -819,14 +830,14 @@ class DarePyGUI:
                 # Asynchronous subprocess context execution loop
                 import subprocess
                 experiment_dir = os.path.dirname(os.path.abspath(self.config_file))
-                
+
                 # Capture the process object instead of discarding it
                 process = subprocess.Popen(
                     [sys.executable, script_path, self.config_file],
                     cwd=experiment_dir,
                     env=os.environ.copy()
                 )
-                
+
                 # Start non-blocking polling sequence to see when the window closes
                 self.check_process_status(process, name)
             else:

@@ -343,7 +343,7 @@ def interpolate_data(path_dir_an, interp_type='log', interp_points=150, smooth_w
 
 # %% subtract incoherent
 # %% subtract_incoherent
-def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_threshold=0.05):
+def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=50, constancy_threshold=0.05):
     """
     Step 4: Subtracts incoherent flat background.
     Automatically prioritizes interpolated data for better fitting accuracy.
@@ -405,7 +405,7 @@ def subtract_incoherent(path_dir_an, initial_last_points_fit=50, constancy_thres
                 bounds=(0, np.max(f_I)*1.5)
             )
             # Apply slight 3% correction factor as per your preference
-            incoherent_fit = params[0] * 0.95
+            incoherent_fit = params[0] * scale_subtraction
 
             subtracted_I = I_pos - incoherent_fit
 

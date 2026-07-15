@@ -170,13 +170,13 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
 
     except FileNotFoundError:
         print(f"\n[ERROR] HDF5 file not found: {full_hdf_path}")
-        sys.exit(1)
+        #sys.exit(1)
     except KeyError as e:
-        print(f"\n[ERROR] Path missing in {hdf_name}: {e}")
-        sys.exit(1)
+        print(f"\n Path missing in {hdf_name}: {e}. Replacing with a default value.")
+        #sys.exit(1)
     except Exception as e:
         print(f"\n[ERROR] Unexpected error reading '{which_property}' in {hdf_name}: {e}")
-        sys.exit(1)
+        #sys.exit(1)
 
 
 def check_dimension(prop):
@@ -597,11 +597,12 @@ def load_thickness(hdf_name, sample_name, config):
     if hdf_name:
         try:
             t_meta = load_hdf(path_hdf_raw, hdf_name, 'thickness')
-            if t_meta not in (None, 0, 0.0, "None", "nan", "NaN"):
+            if t_meta is not None:
                 val = float(t_meta)
                 if not np.isnan(val) and val > 0:
                     return val
-        except Exception:
+        except (ValueError, TypeError):
+            # Triggers if float() conversion fails on string/invalid values
             pass
 
     # Priority 3: Fallback to standard sample name match

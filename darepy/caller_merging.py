@@ -100,9 +100,10 @@ else:
 # FUNCTION 4: INCOHERENT BACKGROUND SUBTRACTION
 # ==========================================
 if m_set.get('run_step_4_incoherent', False):
-    last_points = m_set.get('last_points_to_fit', 50)
+    last_points = m_set.get('last_points_to_fit', 10)
+    scale_subtraction = m_set.get('scale_subtraction', 1)
     print(f"\n[STEP 4] Subtracting incoherent background (Last {last_points} pts)...")
-    pp.subtract_incoherent(path_dir_an, initial_last_points_fit=last_points)
+    pp.subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=last_points)
 else:
     print(f"\n[SKIP] Step 4: Background subtraction disabled.")
 
