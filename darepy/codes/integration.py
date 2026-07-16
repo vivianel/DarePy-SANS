@@ -334,7 +334,7 @@ def radial_integ(config, result, img1, file_name, det_str, ii, img1_variance=Non
         )
 
         # 2. Get the physical bounds of the detector in Å^-1
-        q_array_A = ai.qArray() / 10.0  # Convert detector's nm^-1 to Å^-1
+        q_array_A = ai.qArray(shape = img1.shape) / 10.0  # Convert detector's nm^-1 to Å^-1
 
         # Use only unmasked pixels to avoid bounds issues
         active_pixels = q_array_A[mask == 0] if mask is not None else q_array_A
@@ -401,7 +401,7 @@ def azimuthal_integ(config, result, img1, file_name, det_str, ii, img1_variance=
     ai = result['integration'].get('ai')
     permanent_mask = result['integration'].get('int_mask')
     integration_points = result['integration'].get('integration_points')
-    sectors_nr = result['integration'].get('sectors_nr')
+    sectors_nr = result['integration']['sectors_nr']
 
     if ai is None or permanent_mask is None or integration_points is None or sectors_nr is None:
         return None

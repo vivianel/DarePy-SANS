@@ -122,7 +122,7 @@ else:
             'integration': {
                 'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
                 'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
-                'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
+                'sectors_nr': ext_cfg['analysis_flags']['sectors_nr']
             }
         }
         print("Step 0: Indexing files to guarantee the correct results structure...")

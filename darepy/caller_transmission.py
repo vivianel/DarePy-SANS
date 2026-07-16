@@ -106,7 +106,7 @@ if __name__ == "__main__":
         # Dynamically synchronize active integration configurations on-load
         result['integration']['pixel_range_azim'] = ext_cfg['analysis_flags']['pixel_range_azim']
         result['integration']['integration_points'] = ext_cfg['analysis_flags'].get('integration_points', 120)
-        result['integration']['sectors_nr'] = ext_cfg['analysis_flags'].get('sectors_nr', 1)
+        result['integration']['sectors_nr'] = ext_cfg['analysis_flags']['sectors_nr']
     else:
         print("ℹ️ No existing results file found. Initializing blank results container.")
         # Fallback empty structure
@@ -116,7 +116,7 @@ if __name__ == "__main__":
             'integration': {
                 'pixel_range_azim': ext_cfg['analysis_flags']['pixel_range_azim'],
                 'integration_points': ext_cfg['analysis_flags'].get('integration_points', 120),
-                'sectors_nr': ext_cfg['analysis_flags'].get('sectors_nr', 1)
+                'sectors_nr': ext_cfg['analysis_flags']['sectors_nr']
             }}
 
     # --- STEP 3: SINGLE EXECUTION SEQUENCE ---
