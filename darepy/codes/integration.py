@@ -401,7 +401,7 @@ def azimuthal_integ(config, result, img1, file_name, det_str, ii, img1_variance=
     ai = result['integration'].get('ai')
     permanent_mask = result['integration'].get('int_mask')
     integration_points = result['integration'].get('integration_points')
-    sectors_nr = result['integration']['sectors_nr']
+    sectors_nr = config['analysis']['sectors_nr']
 
     if ai is None or permanent_mask is None or integration_points is None or sectors_nr is None:
         return None
