@@ -6,11 +6,9 @@ analysis_paths:
   _desc: |
     ANALYSIS PATHS
     Tells the reduction pipeline where to find the raw data and save the results.
-  project_base: 
-    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2026_1374_Mix         # Root directory for the config files and for saving the results
-  raw_data: 
-    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\experiments\2026_1374_Mix\raw_data     # Source of HDF files
-  scripts_dir: 
+  project_base: C:\Users\lutzbueno_v\Documents\Analysis\Flat_field                                         # Root directory for the config files and for saving the results
+  raw_data: C:\Users\lutzbueno_v\Documents\Analysis\Flat_field\raw_data                                         # Source of HDF files
+  scripts_dir:
     C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\                            # Location of source code = git repository
   dry_run: false         # If true = Check path availability without listing
 
@@ -52,7 +50,7 @@ plot_2d:
   _desc: |
     PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 2418          # Scans to visualize (e.g., 85776:89530, 89650)
+  list_scan: 2708          # Scans to visualize (e.g., 85776:89530, 89650)
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
   - 15
@@ -72,13 +70,14 @@ beam_center_mask:
     8: 2396
     17.7: 2418
     2.5: 2374
-  semitransparent: true
+    4.5: 2712
+  semitransparent: false
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
-  - 15
+  - 7
   plot_scale: 'log'        # Color mapping: 'log' or 'lin'
 
-  scan_nr: 2418
+  scan_nr: 2712
 
 resolution_settings:
   _desc: |
@@ -145,6 +144,12 @@ detector_geometry:
     17.7:
     - 61.74
     - 61.81
+    4.5:
+    - 0.0
+    - 0.0
+    4.25:
+    - 24.2
+    - 62.77
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
     8:
       bs0:
@@ -184,6 +189,17 @@ detector_geometry:
       - 56
       - 51
       - 73
+    4.5:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    4.25:
+      bs0:
+      - 55
+      - 70
+      - 16
+      - 32
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
     8:
     - 57
@@ -200,6 +216,11 @@ detector_geometry:
     - 66
     - 55
     - 69
+    4.5:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
 analysis_flags:
   _desc: |
     ANALYSIS FLAGS
@@ -222,10 +243,12 @@ merging_settings:
     8: 30
     17.7: 5
     2.5: 20
+    4.5: 0
   skip_end:   # Points to trim from high-q end (noisy regions) per distance
     8: 5
     17.7: 10
     2.5: 5
+    4.5: 0
   run_step_2_merging: true        # Merge overlapping regions
   run_step_3_interpolation: false # Interpolate to common q-grid
 
@@ -233,4 +256,4 @@ merging_settings:
   interp_points: 150  # Total points in final merged curve
   run_step_4_incoherent: false    # Fit and subtract flat incoherent background
   last_points_to_fit: 10 # Points used for Porod/Background estimation
-  scale_subtraction: 0.95 # by how much should the calculated incoherent background be scaled before subtraction                                                                                                                
+  scale_subtraction: 0.95 # by how much should the calculated incoherent background be scaled before subtraction
