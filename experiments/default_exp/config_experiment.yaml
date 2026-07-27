@@ -240,7 +240,7 @@ merging_settings:
     Parameters for stitching multiple detector distances into one I(q) curve.
   run_step_1_plotting: true      # Preview individual curves before stitching
   skip_start: # Points to trim from low-q end per distance
-    8: 30
+    8: 20
     17.7: 5
     2.5: 20
     4.5: 0
