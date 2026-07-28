@@ -84,7 +84,8 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'sample_name': '/entry0/sample/name',
             'time':        '/entry0/control/count_time',
             'moni':        '/entry0/control/preset',
-            'temp':        '/entry0/sample/temperature',
+            'temp_S':        '/entry0/sample/se_TS5', # this value must be updated depending on the water bath. Ideally, we should add an alias
+            'temp_WB':        '/entry0/sample/se_T',
             'counts':      'entry0/central_data/data',
             'counts_left': 'entry0/left_data/data',
             'counts_bottom':'entry0/bottom_data/data',
@@ -109,7 +110,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
 
             hdf_internal_path = PATHS[instrument][which_property]
 
-            if which_property == 'temp' and hdf_internal_path not in file_hdf:
+            if which_property == 'temp_S' and hdf_internal_path not in file_hdf:
+                return 'unknown'
+            if which_property == 'temp_WB' and hdf_internal_path not in file_hdf:
                 return 'unknown'
             if which_property == 'mag_field' and hdf_internal_path not in file_hdf:
                 return 'unknown'

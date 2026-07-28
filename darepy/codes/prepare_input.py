@@ -23,7 +23,8 @@ def list_files(config, result):
     if config['experiment']['sample_environment']['electromagnet']:
         class_files['B_T'] = []
     if config['experiment']['sample_environment']['water_bath']:
-        class_files['temp_C'] = []
+        class_files['temp_WB'] = []
+        class_files['temp_S'] = []
 
     path_hdf_raw = config['analysis']['path_hdf_raw']
     raw_exclude = config['analysis'].get('exclude_files', [])
@@ -82,7 +83,8 @@ def list_files(config, result):
             if config['experiment']['sample_environment']['electromagnet']:
                 class_files['B_T'].append(load_hdf(path_hdf_raw, file, 'mag_field'))
             if config['experiment']['sample_environment']['water_bath']:
-                class_files['temp_C'].append(load_hdf(path_hdf_raw, file, 'temp'))
+                class_files['temp_WB'].append(load_hdf(path_hdf_raw, file, 'temp_WB'))
+                class_files['temp_S'].append(load_hdf(path_hdf_raw, file, 'temp_S'))
 
 
             res = load_hdf(path_hdf_raw, file, 'counts')
