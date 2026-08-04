@@ -8,9 +8,10 @@ from pathlib import Path
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 # 2. Go up one level to find utils.py (in darepy/)
 parent_dir = os.path.dirname(current_script_dir)
+codes_dir = os.path.join(current_script_dir, 'codes')
 
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
+if codes_dir not in sys.path:
+    sys.path.insert(0, codes_dir)
 
 # 3. Now you can safely import utils
 from utils import load_config, find_strict_calibration_file

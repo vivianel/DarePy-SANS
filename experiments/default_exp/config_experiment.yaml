@@ -24,7 +24,7 @@ sample_environment:
     Defines additional values to save, depening on sample environment.
   water_bath: false # For saving the temperature (T_c) in the tables
   electromagnet: false # For saving the magnetic field (B_T) in the tables
-  syringe_pumps: false # NOT IMPLEMENTED: For saving the flow rate (Q_mlps) in the tables
+  syringe_pumps: false # For saving the flow rate (Q_ulps) in the tables
   rheometer: false # NOT IMPLEMENTED: For saving parameters of rheometer in the tables
 
 pipeline_control:

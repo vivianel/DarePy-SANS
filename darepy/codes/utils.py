@@ -97,6 +97,9 @@ def load_hdf(path_hdf_raw, hdf_name, which_property):
             'date':        'entry0/start_time',
             'start_time':   'entry0/start_time',
             'end_time':   'entry0/end_time',
+            'flow_S1':      'entry0/sample/se_syr1_flow_rate',
+            'flow_S2':      'entry0/sample/se_syr2_flow_rate',
+            'flow_conti':   'entry0/sample/se_contiflow',
 
             'flux_monit':  registry_monitor_path  # read from instrument_registry
         }

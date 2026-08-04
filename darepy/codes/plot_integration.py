@@ -147,7 +147,7 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
 
     # Panel 3: Cake Plot
     try:
-        res2d = ai.integrate2d(img1_log_plot, integration_points, 360, method='BBox', unit='q_A^-1', mask=mask_bool)
+        res2d = ai.integrate2d(img1_log_plot, integration_points, 360, method=('full','csr','cython'), unit='q_A^-1', mask=mask_bool)
         I_c, tth_q, chi = res2d
         I_c_plot = I_c.copy()
         I_c_plot[I_c_plot == 0] = np.nan

@@ -25,6 +25,10 @@ def list_files(config, result):
     if config['experiment']['sample_environment']['water_bath']:
         class_files['temp_WB'] = []
         class_files['temp_S'] = []
+    if config['experiment']['sample_environment']['syringe_pumps']:
+        class_files['flow_S1_ulps'] = []
+        class_files['flow_S2_ulps'] = []
+        class_files['flow_conti_ulps'] = []
 
     path_hdf_raw = config['analysis']['path_hdf_raw']
     raw_exclude = config['analysis'].get('exclude_files', [])
@@ -85,6 +89,10 @@ def list_files(config, result):
             if config['experiment']['sample_environment']['water_bath']:
                 class_files['temp_WB'].append(load_hdf(path_hdf_raw, file, 'temp_WB'))
                 class_files['temp_S'].append(load_hdf(path_hdf_raw, file, 'temp_S'))
+            if config['experiment']['sample_environment']['syringe_pumps']:
+                class_files['flow_S1_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_S1'))
+                class_files['flow_S2_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_S2'))
+                class_files['flow_conti_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_conti'))
 
 
             res = load_hdf(path_hdf_raw, file, 'counts')
