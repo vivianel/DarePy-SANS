@@ -293,7 +293,7 @@ class DarePyGUI:
 
         # Handle options or entries only if it is NOT a boolean setup
         if not isinstance(value, bool):
-            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_slit_shape", "sample_slit_shape"]:
+            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_slit_shape", "sample_slit_shape","save_format_2d"]:
                 if label == "which_instrument":
                     opts = ["SANS-I", "SANS-LLB"]
                 elif label == "integration_direction":
@@ -306,6 +306,8 @@ class DarePyGUI:
                     opts = ["auto", "square", "rectangular", "circular"]
                 elif label in ['output_mode']:
                     opts = ['individual_frames', 'gif_animation']
+                elif label == "save_format_2d":
+                    opts = ["array_2d", "nist_ascii"]
 
                 w = ttk.Combobox(f, values=opts, state="readonly")
                 w.set(value)

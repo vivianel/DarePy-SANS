@@ -232,6 +232,7 @@ analysis_flags:
   sectors_nr: 2               # Number of 'pizza slices' for azimuthal integration
   pixel_range_azim: '10:50' # radius ranges for the azimuthal integration: '10:50, 50:100'
   save_2d_patterns: false     # Save corrected 2D detector images
+  save_format_2d: array_2d # 2D file format: 'array_2d' (I/variance grids) or 'nist_ascii' (Qx-Qy-I-dI)
 
 
 merging_settings:

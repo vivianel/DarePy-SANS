@@ -64,6 +64,7 @@ configuration = {
         'save_plot_radial': ext_cfg['analysis_flags']['save_plot_radial'],
         'save_data_azimuthal': ext_cfg['analysis_flags']['save_data_azimuthal'],
         'save_2d_patterns': ext_cfg['analysis_flags']['save_2d_patterns'],
+        'save_format_2d': ext_cfg['analysis_flags']['save_format_2d'],
         'sectors_nr': ext_cfg['analysis_flags']['sectors_nr'],
         'beam_center_guess': {
             # Beam centers MUST be floats for sub-pixel accuracy in pyFAI
