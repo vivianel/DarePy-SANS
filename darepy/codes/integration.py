@@ -228,10 +228,39 @@ def integrate(config, result, det_str, path_rad_int, path_det):
             data_azimuth = azimuthal_integ(config, result, img, f_azim, det_str, ii, img1_variance=var)
 
             if config['analysis'].get('save_2d_patterns', 0) == 1:
-                f_pat = make_file_name(path_rad_int, 'pattern2D', 'dat', sample_name, det_str, scanNr, ff)
-                f_var = make_file_name(path_rad_int, 'variance2D', 'dat', sample_name, det_str, scanNr, ff)
-                np.savetxt(f_pat, img, delimiter=',')
-                np.savetxt(f_var, var, delimiter=',')
+                format_2d = config['analysis'].get('save_format_2d', 'array_2d')
+                
+                if format_2d == 'nist_ascii':
+                    def x2q(x_pixels, wl_A, dist_m, pixelsize_m):
+                        dist_A = dist_m * 1e10
+                        theta = np.arctan((pixelsize_m / 1e-10) * x_pixels / dist_A)
+                        return (4 * np.pi / wl_A) * np.sin(theta / 2)
+
+                    ai = result['integration'].get('ai')
+                    bc_x = result['integration']['beam_center_x']
+                    bc_y = result['integration']['beam_center_y']
+                    mask = result['integration']['int_mask']
+                    qx = x2q(np.arange(img.shape[1]) - bc_x, ai.wavelength * 1e10, ai.dist, ai.pixel1)
+                    qy = x2q(np.arange(img.shape[0]) - bc_y, ai.wavelength * 1e10, ai.dist, ai.pixel1)
+                    Qx, Qy = np.meshgrid(qx, qy, indexing="xy")
+                    
+                    img_nist = img.copy()
+                    var_nist = var.copy()
+                    
+                    mask_bool = mask.astype(bool)
+                    img_nist[mask_bool] = np.nan
+                    var_nist[mask_bool] = np.nan
+            
+                    combined = np.column_stack([Qx.ravel(), Qy.ravel(), img_nist.ravel(), np.sqrt(var_nist).ravel()])
+            
+                    f_nist2d = make_file_name(path_rad_int, 'nist2D', 'dat', sample_name, det_str, scanNr, ff)
+                    header_ascii_2d = "Data columns Qx - Qy - I(Qx,Qy) - dI(Qx,Qy)\nASCII data"
+                    np.savetxt(f_nist2d, combined, delimiter='  ', header=header_ascii_2d)
+                else:
+                    f_pat = make_file_name(path_rad_int, 'pattern2D', 'dat', sample_name, det_str, scanNr, ff)
+                    f_var = make_file_name(path_rad_int, 'variance2D', 'dat', sample_name, det_str, scanNr, ff)
+                    np.savetxt(f_pat, img, delimiter=',')
+                    np.savetxt(f_var, var, delimiter=',')
 
             if config['analysis'].get('save_plot_radial', 0) == 1:
                 plot_integ.plot_integ_radial(config, result, scanNr, ff, img, data_azimuth)
