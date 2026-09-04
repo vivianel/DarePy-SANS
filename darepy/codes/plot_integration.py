@@ -210,20 +210,77 @@ def plot_integ_radial(config, result, ScanNr, Frame, img_2D, data_azimuth):
                     def cosine_form(theta, I_0, theta0, offset):
                         return I_0 * np.cos(np.radians(theta - theta0)) ** 2 + offset
 
+                    import warnings
+                    from scipy.optimize import OptimizeWarning
+                    
                     try:
-                        base_guess = np.min(sum_point_valid)
-                        amp_guess = np.max(sum_point_valid) - base_guess
-                        phase_guess = range_angle_valid[np.argmax(sum_point_valid)]
-                        param, _ = optimize.curve_fit(
-                            cosine_form, range_angle_valid, sum_point_valid,
-                            p0=[amp_guess, phase_guess, base_guess], bounds=([0, 0, 0], [np.inf, 180, np.inf])
-                        )
-                        I_aniso, phi, I_iso = param
-
-                        chi_smooth = np.linspace(0, 360, 100)
-                        axs5.semilogy(chi_smooth, cosine_form(chi_smooth, *param), '--', color=colors[0], label=f'R{i+1} Fit ({phi:.1f}°)')
-                    except Exception:
-                        pass
+                        y = np.asarray(sum_point_valid)
+                        chi = np.asarray(range_angle_valid)
+                    
+                        base_guess = np.min(y)
+                        amp_guess = np.max(y) - base_guess
+                    
+                        # Your orientation has 180-degree symmetry
+                        phase_guess = chi[np.argmax(y)] % 180.0
+                    
+                        # ---------------------------------------------------------
+                        # Estimate noise from point-to-point fluctuations
+                        # ---------------------------------------------------------
+                        dy = np.diff(y)
+                    
+                        if len(dy) > 2:
+                            noise = np.median(
+                                np.abs(dy - np.median(dy))
+                            ) / (0.6745 * np.sqrt(2))
+                        else:
+                            noise = 0.0
+                    
+                        # ---------------------------------------------------------
+                        # Do not try to determine orientation if anisotropy
+                        # is indistinguishable from noise
+                        # ---------------------------------------------------------
+                        if amp_guess > 3 * noise and amp_guess > 0:
+                    
+                            with warnings.catch_warnings():
+                                warnings.simplefilter("ignore", OptimizeWarning)
+                    
+                                param, pcov = optimize.curve_fit(
+                                    cosine_form,
+                                    chi,
+                                    y,
+                                    p0=[
+                                        amp_guess,
+                                        phase_guess,
+                                        max(base_guess, 0)
+                                    ],
+                                    bounds=(
+                                        [0, 0, 0],
+                                        [np.inf, 180, np.inf]
+                                    ),
+                                    maxfev=10000
+                                )
+                    
+                            I_aniso, phi, I_iso = param
+                    
+                            chi_smooth = np.linspace(0, 360, 360)
+                    
+                            axs5.semilogy(
+                                chi_smooth,
+                                cosine_form(chi_smooth, *param),
+                                '--',
+                                color=colors[0],
+                                label=f'R{i+1} Fit ({phi:.1f}°)'
+                            )
+                    
+                        else:
+                            # Signal essentially isotropic:
+                            # orientation is not meaningful
+                            I_aniso = 0
+                            phi = np.nan
+                            I_iso = np.mean(y)
+                    
+                    except (ValueError, RuntimeError) as err:
+                        print(f"Angular fit failed for R{i+1}: {err}")
 
                     for ii in range(len(range_angle_midpoints)):
                         if not np.isnan(sum_point[ii]):

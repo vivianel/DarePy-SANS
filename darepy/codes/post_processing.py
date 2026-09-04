@@ -142,120 +142,6 @@ def plot_all_data(path_dir_an, skip_start, skip_end, force_replot=False):
     print("\n[SUCCESS] All overlay checks processed!")
     return merged_files
 
-# %% merging_data
-def merging_data(path_dir_an, merged_files, skip_start, skip_end):
-    """
-    Stitches scattering data from different detector distances for each sample.
-    Handles data stored as lists to accommodate varying segment lengths.
-    """
-    import os
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from scipy.interpolate import interp1d
-
-    # Setup directories
-    path_merged = os.path.join(path_dir_an, 'merged/')
-    path_merged_fig = os.path.join(path_merged, 'figures/')
-    path_merged_txt = os.path.join(path_merged, 'data_merged/')
-    os.makedirs(path_merged_fig, exist_ok=True)
-    os.makedirs(path_merged_txt, exist_ok=True)
-
-    for keys in merged_files:
-        I_all, q_all, e_all, dq_all = [], [], [], []
-        plt.close('all')
-        plt.ioff()
-
-        # Check if we have multiple segments (stored as a list)
-        num_segments = len(merged_files[keys]['q'])
-
-        if num_segments > 1:
-            # Sort detectors from HIGH-q to LOW-q so the highest-q curve is the baseline
-            first_q_vals = [merged_files[keys]['q'][kk][0] for kk in range(num_segments)]
-            idx_det = np.argsort(first_q_vals)[::-1]  # <--- Added [::-1] here!
-            scaling = 1.0
-
-            for ii in idx_det:
-                q = np.array(merged_files[keys]['q'][ii])
-                I = np.array(merged_files[keys]['I'][ii])
-                e = np.array(merged_files[keys]['error'][ii])
-                dq = np.array(merged_files[keys]['dq'][ii])
-                d_label = merged_files[keys]['det'][ii] # Get distance string
-
-                # 1. Clean NaNs and Zeros
-                mask = (~np.isnan(q)) & (I > 0)
-                q, I, e, dq = q[mask], I[mask], e[mask], dq[mask]
-
-                # 2. Apply YAML Skips BY DISTANCE
-                s_start = skip_start.get(d_label, 0)
-                s_end = skip_end.get(d_label, 0)
-
-                end_idx = max(0, len(q) - s_end)
-                q, I, e, dq = q[s_start:end_idx], I[s_start:end_idx], e[s_start:end_idx], dq[s_start:end_idx]
-
-                # ==========================================
-                # Prevent crash if array was completely trimmed
-                # ==========================================
-                if len(q) == 0:
-                    print(f"  [WARNING] Det {d_label}m was completely trimmed/empty. Skipping.")
-                    continue
-
-                # 3. Calculate Scaling based on Overlap
-                if ii != idx_det[0] and len(q_all) > 0:
-                    min_overlap = max(np.min(q_all), np.min(q))
-                    max_overlap = min(np.max(q_all), np.max(q))
-
-                    if max_overlap > min_overlap:
-                        interp_q = np.linspace(min_overlap, max_overlap, 50)
-                        try:
-                            # Interpolate existing data vs new segment
-                            i_prev = interp1d(q_all, I_all, kind='linear', fill_value="extrapolate")(interp_q)
-                            i_curr = interp1d(q, I, kind='linear', fill_value="extrapolate")(interp_q)
-
-                            valid = (i_curr > 0) & (i_prev > 0)
-                            if np.any(valid):
-                                scaling = np.median(i_prev[valid] / i_curr[valid])
-                        except:
-                            scaling = 1.0
-
-                    I = np.multiply(I, scaling)
-                    e = np.multiply(e, scaling)
-
-                # Concatenate the trimmed and scaled segment to the master lists
-                q_all = np.concatenate((q_all, q))
-                I_all = np.concatenate((I_all, I))
-                e_all = np.concatenate((e_all, e))
-                dq_all = np.concatenate((dq_all, dq))
-        else:
-            # Handle single detector measurement (convert list element to array)
-            q_all = np.array(merged_files[keys]['q'][0])
-            I_all = np.array(merged_files[keys]['I'][0])
-            e_all = np.array(merged_files[keys]['error'][0])
-            dq_all = np.array(merged_files[keys]['dq'][0])
-
-        # 4. Final Sort and Save
-        if len(q_all) > 0:
-            idx = np.argsort(q_all)
-            q_final, I_final, e_final, dq_final = q_all[idx], I_all[idx], e_all[idx], dq_all[idx]
-
-            # Save Text File (Name + _merged.dat)
-            file_txt = os.path.join(path_merged_txt, f"{keys}_merged.dat")
-            header = 'q (A-1), I (1/cm), error, dq(A-1)'
-            np.savetxt(file_txt, np.column_stack((q_final, I_final, e_final, dq_final)), delimiter=',', header=header)
-            print(f"  [SAVED] Merged raw data: {keys}_merged.dat")
-
-            # 5. Save Plot
-            plt.figure(figsize=(8, 6))
-            plt.errorbar(q_final, I_final, yerr=e_final, fmt='o', ms=2, lw=0.4, color='black', alpha=0.6)
-            plt.xscale('log'); plt.yscale('log')
-            plt.xlabel(r'$q$ [$\AA^{-1}$]'); plt.ylabel(r'$I(q)$ [cm$^{-1}$]')
-            plt.title(f'Merged Stitched Data: {keys}')
-            file_fig = os.path.join(path_merged_fig, f"{keys}_merged.jpeg")
-            plt.savefig(file_fig, dpi=150)
-            plt.close()
-        else:
-            print(f"  [SKIP] {keys}: No data points remaining after trimming.")
-
-    return True
 
 # %% interpolate_data
 def interpolate_data(path_dir_an, interp_type='log', interp_points=150, smooth_window=1):
@@ -341,7 +227,810 @@ def interpolate_data(path_dir_an, interp_type='log', interp_points=150, smooth_w
     print("Step 3 Complete. Check the 'data_merged' folder for '_interp.dat' files.")
     return True
 
-# %% subtract incoherent
+
+def merging_data(
+        path_dir_an,
+        merged_files,
+        skip_start,
+        skip_end,
+        slope_tol=0.30,
+        min_overlap_points=8,
+        min_logq_span=0.05,
+        max_offset_fraction=0.98,
+        required_improvement=0.30,
+        slope_passes=2
+    ):
+    """
+    Stitch scattering data from different detector distances.
+
+    Procedure
+    ---------
+    1. Clean and trim each detector curve.
+    2. Sort detector curves from high-q to low-q.
+    3. Compare log-log slopes in overlapping q-regions.
+    4. If one curve is significantly flatter, try subtracting a
+       constant background from that curve.
+    5. Accept the subtraction only if the slope agreement improves.
+    6. Multiplicatively scale adjacent curves.
+    7. Merge, sort and save.
+
+    Parameters
+    ----------
+    slope_tol : float
+        Minimum absolute difference between log-log slopes before
+        considering an additive-background correction.
+
+    min_overlap_points : int
+        Minimum number of points required in each curve in the overlap.
+
+    min_logq_span : float
+        Minimum overlap width in decades of log10(q).
+        0.05 corresponds to roughly a 12% q-range.
+
+    max_offset_fraction : float
+        Maximum constant that can be subtracted, expressed as a fraction
+        of the minimum intensity in the overlap.
+
+    required_improvement : float
+        Minimum fractional improvement in slope mismatch required for
+        accepting a correction.
+        0.30 means the mismatch must improve by at least 30%.
+
+    slope_passes : int
+        Number of passes through adjacent detector pairs.
+        Two passes help when the middle detector is corrected.
+    """
+
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    from scipy.interpolate import interp1d
+    from scipy.optimize import minimize_scalar
+
+
+    # ================================================================
+    # Helper: log-log slope
+    # ================================================================
+    def loglog_slope(q, I, qmin, qmax):
+
+        mask = (
+            np.isfinite(q) &
+            np.isfinite(I) &
+            (q > 0) &
+            (I > 0) &
+            (q >= qmin) &
+            (q <= qmax)
+        )
+
+        if np.count_nonzero(mask) < min_overlap_points:
+            return None
+
+        q_fit = q[mask]
+        I_fit = I[mask]
+
+        logq = np.log10(q_fit)
+
+        # Do not determine slopes from an extremely narrow q interval
+        if np.ptp(logq) < min_logq_span:
+            return None
+
+        logI = np.log10(I_fit)
+
+        slope, intercept = np.polyfit(logq, logI, 1)
+
+        return slope
+
+
+    # ================================================================
+    # Helper: determine constant background
+    # ================================================================
+    def find_constant_for_target_slope(
+            q,
+            I,
+            qmin,
+            qmax,
+            target_slope
+        ):
+
+        mask = (
+            np.isfinite(q) &
+            np.isfinite(I) &
+            (q > 0) &
+            (I > 0) &
+            (q >= qmin) &
+            (q <= qmax)
+        )
+
+        q_fit = q[mask]
+        I_fit = I[mask]
+
+        if len(q_fit) < min_overlap_points:
+            return None, None
+
+        # Maximum subtraction allowed.
+        #
+        # It must remain below the minimum intensity in the overlap.
+        C_max = max_offset_fraction * np.min(I_fit)
+
+        if C_max <= 0:
+            return None, None
+
+        logq = np.log10(q_fit)
+
+        def objective(C):
+
+            corrected = I_fit - C
+
+            if np.any(corrected <= 0):
+                return 1e20
+
+            slope = np.polyfit(
+                logq,
+                np.log10(corrected),
+                1
+            )[0]
+
+            return (slope - target_slope)**2
+
+        result = minimize_scalar(
+            objective,
+            bounds=(0.0, C_max),
+            method='bounded',
+            options={
+                'xatol': max(C_max * 1e-8, 1e-15)
+            }
+        )
+
+        if not result.success:
+            return None, None
+
+        C = result.x
+
+        corrected = I_fit - C
+
+        new_slope = np.polyfit(
+            logq,
+            np.log10(corrected),
+            1
+        )[0]
+
+        return C, new_slope
+
+
+    # ================================================================
+    # Directories
+    # ================================================================
+    path_merged = os.path.join(path_dir_an, 'merged/')
+    path_merged_fig = os.path.join(path_merged, 'figures/')
+    path_merged_txt = os.path.join(path_merged, 'data_merged/')
+
+    os.makedirs(path_merged_fig, exist_ok=True)
+    os.makedirs(path_merged_txt, exist_ok=True)
+
+
+    # ================================================================
+    # Loop over samples
+    # ================================================================
+    for keys in merged_files:
+
+        plt.close('all')
+        plt.ioff()
+
+        num_segments = len(merged_files[keys]['q'])
+
+        # ============================================================
+        # Read, clean and trim detector segments
+        # ============================================================
+        segments = []
+
+        for ii in range(num_segments):
+
+            q = np.asarray(
+                merged_files[keys]['q'][ii],
+                dtype=float
+            )
+
+            I = np.asarray(
+                merged_files[keys]['I'][ii],
+                dtype=float
+            )
+
+            e = np.asarray(
+                merged_files[keys]['error'][ii],
+                dtype=float
+            )
+
+            dq = np.asarray(
+                merged_files[keys]['dq'][ii],
+                dtype=float
+            )
+
+            d_label = merged_files[keys]['det'][ii]
+
+            # --------------------------------------------------------
+            # Clean
+            # --------------------------------------------------------
+            mask = (
+                np.isfinite(q) &
+                np.isfinite(I) &
+                np.isfinite(e) &
+                (q > 0) &
+                (I > 0)
+            )
+
+            q = q[mask]
+            I = I[mask]
+            e = e[mask]
+            dq = dq[mask]
+
+            # --------------------------------------------------------
+            # YAML trimming
+            # --------------------------------------------------------
+            s_start = skip_start.get(d_label, 0)
+            s_end = skip_end.get(d_label, 0)
+
+            if s_end > 0:
+                end_idx = len(q) - s_end
+            else:
+                end_idx = len(q)
+
+            end_idx = max(0, end_idx)
+
+            q = q[s_start:end_idx]
+            I = I[s_start:end_idx]
+            e = e[s_start:end_idx]
+            dq = dq[s_start:end_idx]
+
+            if len(q) == 0:
+
+                print(
+                    f"  [WARNING] Det {d_label} was "
+                    f"completely trimmed/empty."
+                )
+
+                continue
+
+            # Sort internally by q
+            idx = np.argsort(q)
+
+            segments.append({
+                'q': q[idx],
+                'I': I[idx],
+                'e': e[idx],
+                'dq': dq[idx],
+                'det': d_label
+            })
+
+
+        if len(segments) == 0:
+
+            print(
+                f"  [SKIP] {keys}: no usable data."
+            )
+
+            continue
+
+
+        # ============================================================
+        # Sort HIGH-q -> LOW-q
+        # ============================================================
+        segments.sort(
+            key=lambda s: np.max(s['q']),
+            reverse=True
+        )
+
+
+        print()
+        print("=" * 70)
+        print(f"Sample: {keys}")
+        print("=" * 70)
+
+        print(
+            "Detector order:",
+            " -> ".join(
+                str(s['det']) for s in segments
+            )
+        )
+
+
+        # ============================================================
+        # STEP 1
+        #
+        # ADDITIVE BACKGROUND CORRECTION
+        #
+        # This is done BEFORE multiplicative scaling because scaling
+        # does not change the log-log slope, while an additive constant
+        # does.
+        # ============================================================
+
+        for slope_pass in range(slope_passes):
+
+            print(
+                f"\nSlope correction pass "
+                f"{slope_pass + 1}/{slope_passes}"
+            )
+
+            correction_made = False
+
+            for j in range(1, len(segments)):
+
+                seg_hi = segments[j - 1]
+                seg_lo = segments[j]
+
+                qmin = max(
+                    np.min(seg_hi['q']),
+                    np.min(seg_lo['q'])
+                )
+
+                qmax = min(
+                    np.max(seg_hi['q']),
+                    np.max(seg_lo['q'])
+                )
+
+                if qmax <= qmin:
+
+                    print(
+                        f"  No overlap: "
+                        f"{seg_hi['det']} / {seg_lo['det']}"
+                    )
+
+                    continue
+
+
+                slope_hi = loglog_slope(
+                    seg_hi['q'],
+                    seg_hi['I'],
+                    qmin,
+                    qmax
+                )
+
+                slope_lo = loglog_slope(
+                    seg_lo['q'],
+                    seg_lo['I'],
+                    qmin,
+                    qmax
+                )
+
+                if slope_hi is None or slope_lo is None:
+
+                    print(
+                        f"  Insufficient overlap for slope: "
+                        f"{seg_hi['det']} / {seg_lo['det']}"
+                    )
+
+                    continue
+
+
+                delta_slope = abs(
+                    slope_hi - slope_lo
+                )
+
+                print(
+                    f"  {seg_hi['det']} vs {seg_lo['det']} "
+                    f"| q = {qmin:.4g}-{qmax:.4g}"
+                )
+
+                print(
+                    f"      slopes: "
+                    f"{slope_hi:.3f}  /  "
+                    f"{slope_lo:.3f}"
+                )
+
+                print(
+                    f"      Δslope = "
+                    f"{delta_slope:.3f}"
+                )
+
+
+                # ----------------------------------------------------
+                # Slopes already sufficiently close
+                # ----------------------------------------------------
+                if delta_slope <= slope_tol:
+
+                    print(
+                        "      -> slopes compatible"
+                    )
+
+                    continue
+
+
+                # ----------------------------------------------------
+                # A positive constant background makes a decreasing
+                # curve flatter.
+                #
+                # Therefore this automatic correction is only sensible
+                # when both curves are decreasing.
+                # ----------------------------------------------------
+                if slope_hi >= 0 or slope_lo >= 0:
+
+                    print(
+                        "      -> WARNING: slope sign is not "
+                        "consistent with simple background flattening."
+                    )
+
+                    print(
+                        "         No automatic subtraction."
+                    )
+
+                    continue
+
+
+                # ----------------------------------------------------
+                # Find flatter curve
+                #
+                # Example:
+                #
+                # -0.5 is flatter than -3.0
+                # ----------------------------------------------------
+                if abs(slope_hi) < abs(slope_lo):
+
+                    flat_seg = seg_hi
+                    flat_slope = slope_hi
+                    target_slope = slope_lo
+                    flat_name = seg_hi['det']
+
+                else:
+
+                    flat_seg = seg_lo
+                    flat_slope = slope_lo
+                    target_slope = slope_hi
+                    flat_name = seg_lo['det']
+
+
+                # ----------------------------------------------------
+                # Find constant C such that slope(I-C)
+                # approaches the reference slope
+                # ----------------------------------------------------
+                C, corrected_slope = (
+                    find_constant_for_target_slope(
+                        flat_seg['q'],
+                        flat_seg['I'],
+                        qmin,
+                        qmax,
+                        target_slope
+                    )
+                )
+
+                if C is None:
+
+                    print(
+                        "      -> could not determine "
+                        "stable additive correction"
+                    )
+
+                    continue
+
+
+                mismatch_before = abs(
+                    flat_slope - target_slope
+                )
+
+                mismatch_after = abs(
+                    corrected_slope - target_slope
+                )
+
+
+                if mismatch_before > 0:
+
+                    improvement = (
+                        1.0 -
+                        mismatch_after /
+                        mismatch_before
+                    )
+
+                else:
+                    improvement = 0
+
+
+                print(
+                    f"      flatter curve: Det {flat_name}"
+                )
+
+                print(
+                    f"      candidate background C = "
+                    f"{C:.6g} cm^-1"
+                )
+
+                print(
+                    f"      corrected slope = "
+                    f"{corrected_slope:.3f}"
+                )
+
+                print(
+                    f"      improvement = "
+                    f"{100 * improvement:.1f}%"
+                )
+
+
+                # ----------------------------------------------------
+                # Accept only meaningful corrections
+                # ----------------------------------------------------
+                if improvement >= required_improvement:
+
+                    flat_seg['I'] = (
+                        flat_seg['I'] - C
+                    )
+
+                    # Error remains unchanged here.
+                    #
+                    # This assumes C is a deterministic correction.
+                    # If C has an uncertainty, it should be propagated
+                    # separately.
+
+                    # Remove points becoming <= 0
+                    valid = (
+                        np.isfinite(flat_seg['I']) &
+                        (flat_seg['I'] > 0)
+                    )
+
+                    removed = (
+                        len(flat_seg['I']) -
+                        np.count_nonzero(valid)
+                    )
+
+                    flat_seg['q'] = (
+                        flat_seg['q'][valid]
+                    )
+
+                    flat_seg['I'] = (
+                        flat_seg['I'][valid]
+                    )
+
+                    flat_seg['e'] = (
+                        flat_seg['e'][valid]
+                    )
+
+                    flat_seg['dq'] = (
+                        flat_seg['dq'][valid]
+                    )
+
+                    correction_made = True
+
+                    print(
+                        f"      -> ACCEPTED: "
+                        f"subtracting {C:.6g} cm^-1 "
+                        f"from Det {flat_name}"
+                    )
+
+                    if removed:
+                        print(
+                            f"         removed {removed} "
+                            f"non-positive points"
+                        )
+
+                else:
+
+                    print(
+                        "      -> rejected: additive constant "
+                        "does not sufficiently improve the match"
+                    )
+
+
+            if not correction_made:
+                break
+
+
+        # ============================================================
+        # STEP 2
+        #
+        # MULTIPLICATIVE SCALING
+        # ============================================================
+
+        print("\nMultiplicative stitching:")
+
+        for j in range(len(segments)):
+
+            if j == 0:
+
+                print(
+                    f"  Det {segments[j]['det']}: "
+                    f"reference scale = 1"
+                )
+
+                continue
+
+
+            prev = segments[j - 1]
+            curr = segments[j]
+
+            qmin = max(
+                np.min(prev['q']),
+                np.min(curr['q'])
+            )
+
+            qmax = min(
+                np.max(prev['q']),
+                np.max(curr['q'])
+            )
+
+            scaling = 1.0
+
+
+            if qmax > qmin:
+
+                # Logarithmic sampling is preferable because q itself
+                # is logarithmically distributed in most SAS analyses.
+                interp_q = np.geomspace(
+                    qmin,
+                    qmax,
+                    100
+                )
+
+                f_prev = interp1d(
+                    prev['q'],
+                    prev['I'],
+                    kind='linear',
+                    bounds_error=False,
+                    fill_value=np.nan
+                )
+
+                f_curr = interp1d(
+                    curr['q'],
+                    curr['I'],
+                    kind='linear',
+                    bounds_error=False,
+                    fill_value=np.nan
+                )
+
+                i_prev = f_prev(interp_q)
+                i_curr = f_curr(interp_q)
+
+                valid = (
+                    np.isfinite(i_prev) &
+                    np.isfinite(i_curr) &
+                    (i_prev > 0) &
+                    (i_curr > 0)
+                )
+
+                if np.count_nonzero(valid) >= min_overlap_points:
+
+                    ratios = (
+                        i_prev[valid] /
+                        i_curr[valid]
+                    )
+
+                    scaling = np.median(ratios)
+
+                    curr['I'] *= scaling
+                    curr['e'] *= scaling
+
+                    print(
+                        f"  Det {curr['det']} -> "
+                        f"Det {prev['det']}: "
+                        f"scale = {scaling:.6g}"
+                    )
+
+                else:
+
+                    print(
+                        f"  [WARNING] Not enough valid points "
+                        f"for scaling {curr['det']} -> "
+                        f"{prev['det']}"
+                    )
+
+            else:
+
+                print(
+                    f"  [WARNING] No overlap for scaling "
+                    f"{curr['det']} -> {prev['det']}"
+                )
+
+
+        # ============================================================
+        # STEP 3
+        #
+        # Merge segments
+        # ============================================================
+
+        q_all = np.concatenate([
+            s['q'] for s in segments
+        ])
+
+        I_all = np.concatenate([
+            s['I'] for s in segments
+        ])
+
+        e_all = np.concatenate([
+            s['e'] for s in segments
+        ])
+
+        dq_all = np.concatenate([
+            s['dq'] for s in segments
+        ])
+
+
+        # ============================================================
+        # Final sort
+        # ============================================================
+
+        idx = np.argsort(q_all)
+
+        q_final = q_all[idx]
+        I_final = I_all[idx]
+        e_final = e_all[idx]
+        dq_final = dq_all[idx]
+
+
+        # ============================================================
+        # Save data
+        # ============================================================
+
+        file_txt = os.path.join(
+            path_merged_txt,
+            f"{keys}_merged.dat"
+        )
+
+        header = (
+            'q (A-1), I (1/cm), error, dq(A-1)'
+        )
+
+        np.savetxt(
+            file_txt,
+            np.column_stack((
+                q_final,
+                I_final,
+                e_final,
+                dq_final
+            )),
+            delimiter=',',
+            header=header
+        )
+
+        print(
+            f"\n  [SAVED] "
+            f"{keys}_merged.dat"
+        )
+
+
+        # ============================================================
+        # Save merged plot
+        # ============================================================
+
+        plt.figure(figsize=(8, 6))
+
+        plt.errorbar(
+            q_final,
+            I_final,
+            yerr=e_final,
+            fmt='o',
+            ms=2,
+            lw=0.4,
+            alpha=0.6
+        )
+
+        plt.xscale('log')
+        plt.yscale('log')
+
+        plt.xlabel(
+            r'$q$ [$\AA^{-1}$]'
+        )
+
+        plt.ylabel(
+            r'$I(q)$ [cm$^{-1}$]'
+        )
+
+        plt.title(
+            f'Merged Stitched Data: {keys}'
+        )
+
+        plt.tight_layout()
+
+        file_fig = os.path.join(
+            path_merged_fig,
+            f"{keys}_merged.jpeg"
+        )
+
+        plt.savefig(
+            file_fig,
+            dpi=150
+        )
+
+        plt.close()
+
+
+    return True
+
 # %% subtract_incoherent
 def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=50, constancy_threshold=0.05):
     """
