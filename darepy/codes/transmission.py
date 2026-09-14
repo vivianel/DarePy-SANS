@@ -136,12 +136,12 @@ def trans_calc_reference(config, result, class_files):
                 mask[c[0]:c[1], c[2]:c[3]] = 1
                 EB_ref = float(np.sum(img * mask))
                 # used for correcting the transmisison in 20261374
-                if dist == 2.5:
-                    EB_ref = 1.461
-                if dist == 8:
-                    EB_ref = 0.1731
-                if dist == 17.7:
-                    EB_ref = 0.0577
+                #if dist == 2.5:
+                #    EB_ref = 1.461
+                #if dist == 8:
+                #    EB_ref = 0.1731
+                #if dist == 17.7:
+                #    EB_ref = 0.0577
 
                 result['transmission'][f'mask_{dist}'] = mask
                 result['transmission'][f'mean_EB_{dist}'] = EB_ref
