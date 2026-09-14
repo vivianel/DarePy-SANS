@@ -293,7 +293,7 @@ class DarePyGUI:
 
         # Handle options or entries only if it is NOT a boolean setup
         if not isinstance(value, bool):
-            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_slit_shape", "sample_slit_shape","save_format_2d"]:
+            if label in ["which_instrument", "integration_direction", "beamstop", "plot_scale","interp_type", 'output_mode', "source_slit_shape", "sample_slit_shape","save_format_2d", "background_scale_region"]:
                 if label == "which_instrument":
                     opts = ["SANS-I", "SANS-LLB"]
                 elif label == "integration_direction":
@@ -308,6 +308,8 @@ class DarePyGUI:
                     opts = ['individual_frames', 'gif_animation']
                 elif label == "save_format_2d":
                     opts = ["array_2d", "nist_ascii"]
+                elif label == "background_scale_region":
+                    opts = ["low_q", "high_q"]
 
                 w = ttk.Combobox(f, values=opts, state="readonly")
                 w.set(value)
@@ -552,28 +554,41 @@ class DarePyGUI:
         create_step_checkbox(top_f, 'run_step_2_merging')
 
         # ==========================================
-        # STAGE 3: INTERPOLATION & RESAMPLING
+        # STAGE 3: MERGED SAMPLE BACKGROUND SUBTRACTION
         # ==========================================
-        create_step_checkbox(top_f, 'run_step_3_interpolation')
+        create_step_checkbox(top_f, 'run_step_3_sample_background')
 
-        # Subsection frame for interpolation options
-        interp_options_f = tk.Frame(top_f, bg=bg, padx=15)
-        interp_options_f.pack(fill="x", pady=(2, 5))
+        # Subsection frame for the selected merged background and its scaling
+        sample_bg_options_f = tk.LabelFrame(
+            top_f,
+            text="Step 3 - Sample Background Subtraction",
+            padx=10,
+            pady=8,
+            bg=bg,
+            fg="#e67e22",
+            font=("Arial", 9, "bold")
+        )
+        sample_bg_options_f.pack(fill="x", padx=15, pady=(2, 8))
 
-        for param_key in ['interp_type', 'interp_points']:
-            if param_key in m_data:
-                cmt = get_comment(param_key)
-                self._create_field(
-                    parent=interp_options_f,
-                    label=param_key,
-                    value=m_data[param_key],
-                    config_key='merging_settings',
-                    path=(param_key,),
-                    comment=cmt
-                )
+        sample_bg_defaults = {
+            'background_sample': 'background_sample_name',
+            'background_scale_region': 'low_q',
+            'background_scale_points': 10,
+        }
+
+        for param_key, default_value in sample_bg_defaults.items():
+            cmt = get_comment(param_key)
+            self._create_field(
+                parent=sample_bg_options_f,
+                label=param_key,
+                value=m_data.get(param_key, default_value),
+                config_key='merging_settings',
+                path=(param_key,),
+                comment=cmt
+            )
 
         # ==========================================
-        # STAGE 4: INCOHERENT BACKGROUND FIT
+        # STAGE 4: RESIDUAL INCOHERENT BACKGROUND FIT
         # ==========================================
         create_step_checkbox(top_f, 'run_step_4_incoherent')
 

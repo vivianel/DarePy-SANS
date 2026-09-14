@@ -6,10 +6,11 @@ analysis_paths:
   _desc: |
     ANALYSIS PATHS
     Tells the reduction pipeline where to find the raw data and save the results.
-  project_base: C:\Users\lutzbueno_v\Documents\Analysis\Flat_field                                         # Root directory for the config files and for saving the results
-  raw_data: C:\Users\lutzbueno_v\Documents\Analysis\Flat_field\raw_data                                         # Source of HDF files
-  scripts_dir:
-    C:\Users\lutzbueno_v\Documents\Analysis\DarePy-SANS_code\DarePy-SANS\                            # Location of source code = git repository
+  project_base: 
+    C:\Users\gac-sansllb\Documents\DarePy-SANS_codes\DarePy-SANS\experiments\20260902_Plazanet             # Root directory for the config files and for saving the results
+  raw_data: 
+    C:\Users\gac-sansllb\Documents\DarePy-SANS_codes\DarePy-SANS\experiments\20260902_Plazanet\raw_data\        # Source of HDF files
+  scripts_dir: C:\Users\gac-sansllb\Documents\DarePy-SANS_codes\DarePy-SANS\                         # Location of source code = git repository
   dry_run: false         # If true = Check path availability without listing
 
 instrument_setup:
@@ -34,7 +35,8 @@ pipeline_control:
   force_reintegrate: true    # True: Overwrite existing .dat files
   wavelength: auto               # Neutron wavelength in Ang. 'auto' reads HDF metadata
   target_detector_distances: all  # Filter by distance (m): 'all' or list 1.6, 6.0
-  exclude_files: '2000:2353, 2420, 2421, 2443, 2444, 2466, 2467' # Scans to skip (e.g., bad data or setup runs)
+  exclude_files: '7620:7626, 7629, 7631,7693,7694,7695,7702,7703,7704,7705,7706,7272:7314,
+    7658'                                                                                   # Scans to skip (e.g., bad data or setup runs)
   live_monitoring: false # Auto-process new files as they appear at the beamline
   monitor_interval: 10   # Delay (sec) between checks for new raw data
 
@@ -42,18 +44,29 @@ rename_samples:
   _desc: |
     RENAME SAMPLES
     Standardize sample names in metadata for correct downstream matching, especially for merging files.
-  files_change: 2434:2436, 2457:2459, 2480:2482 # Scan numbers to change name - Ex. 85776:89530, 89650
-  add_subscript: 2          # Append text to the current name. Useful to add temperature or magnetic field, if forgotten during the measuments - Ex: '_25C'
+  files_change:                                 # Scan numbers to change name - Ex. 85776:89530, 89650
+  - 7194
+  - 7215
+  - 7235
+  add_subscript: H2O        # Append text to the current name. Useful to add temperature or magnetic field, if forgotten during the measuments - Ex: '_25C'
   replace_with: ''          # Overwrites the name given during the measurements - Ex. 'CTAB_NaSal'
 
 plot_2d:
   _desc: |
     PLOT 2D PATTERNS
     Quick visualization of detector counts in 2D.
-  list_scan: 2708          # Scans to visualize (e.g., 85776:89530, 89650)
+  list_scan:               # Scans to visualize (e.g., 85776:89530, 89650)
+  - 7694
+  - 7695
+  - 7702
+  - 7703
+  - 7704
+  - 7705
+  - 7706
+  - 7707
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
-  - 15
+  - 10
   plot_scale: 'log'        # Color mapping: 'log' or 'lin'
   enable_bg_subtraction: false # Preview data minus a specific background scan
   background_scan_nr: 1434     # Scan number to subtract for 2D preview
@@ -67,17 +80,17 @@ beam_center_mask:
     MASKING & BEAM CENTER
     Interactive tool for finding beam center and masking the beam stop.
   scans:
-    8: 2396
-    17.7: 2418
-    2.5: 2374
-    4.5: 2712
-  semitransparent: false
+    8: 7627
+    2: 7272
+    17.5: 6691
+    1.9: 6856
+  semitransparent: true
   clim:                    # Intensity limits for colorbar [min, max], lin is linear, log is orders of magnitude
   - 0
-  - 7
+  - 10
   plot_scale: 'log'        # Color mapping: 'log' or 'lin'
 
-  scan_nr: 2712
+  scan_nr: 7272
 
 resolution_settings:
   _desc: |
@@ -99,7 +112,7 @@ transmission_setup:
     TRANSMISSION CALCULATION
     Specific hardware settings for calculating sample attenuation.
   beamstop: semitransparent # select the type of beamstop used. Options: semitransparent or standard
-  empty_beam: EB   # Name or scan number of direct beam reference for Transmission calculation (needed for each distance as a reference for semitransparent)
+  empty_beam: EB     # Name or scan number of direct beam reference for Transmission calculation (needed for each distance as a reference for semitransparent)
   dist_trans_measurements: 17.5   # Distance (m) used for transmission measurements (needed ONLY for standard beamstop)
 
 
@@ -110,7 +123,7 @@ physics_corrections:
     Toggles for standard SANS mathematical corrections.
   normalize_to_monitor: true     # Account for primary beam flux fluctuations
   subtract_dark_current: true    # Subtract ambient noise and counts (Cadmium measurement)
-  subtract_empty_cell: true      # Remove container scattering
+  subtract_empty_cell: false     # Remove container scattering
   apply_flat_field: true         # Correct for detector pixel sensitivity (H2O)
   apply_transmission: true        # Correct for sample attenuation
   normalize_to_thickness: true   # Normalize by sample path length (cm)
@@ -124,11 +137,12 @@ calibration_samples:
     Keywords in raw data used to identify standard measurements.
   dark_current: Cd # Background noise run (Cadmium)
   water: H2O       # Standard used for absolute calibration (H2O)
-  water_cell: EC   # Empty container for the water used as a standard for absolutre calibration
+  water_cell: EC_H2O # Empty container for the water used as a standard for absolutre calibration
   empty_cell:
-    default: EC    # Default container background for all samples
+    default: EC     # Default container background for all samples
   thickness:       # Sample thickness (cm) per sample name
-    default: 0.1
+    EB: 0.1
+    default: 2
 detector_geometry:
   _desc: |
     DETECTOR GEOMETRY
@@ -136,91 +150,77 @@ detector_geometry:
     Refresh the gui after the calculation with the iterative tool.
   beam_center_guess: # center  of the scattering pattern for a given detector distance in meters
     8:
-    - 62.32
-    - 62.8
-    2.5:
-    - 62.67
-    - 61.96
-    17.7:
-    - 61.74
-    - 61.81
-    4.5:
-    - 0.0
-    - 0.0
+    - 62.79
+    - 62.72
     4.25:
     - 24.2
     - 62.77
+    2:
+    - 15.41
+    - 61.96
+    17.5:
+    - 62.83
+    - 60.66
+    1.9:
+    - 23.25
+    - 63.14
   beamstopper_coordinates: # mask for beam stop coordinates and other regions for a given detector distance in meters
     8:
       bs0:
-      - 55
-      - 69
-      - 55
-      - 71
-      bs1:
-      - 68
-      - 75
-      - 48
-      - 75
-    2.5:
-      bs0:
       - 54
-      - 70
-      - 54
-      - 70
-    17.7:
-      bs0:
-      - 53
       - 69
-      - 55
+      - 56
       - 70
-      bs1:
-      - 72
-      - 78
-      - 48
-      - 56
-      bs2:
-      - 68
-      - 72
-      - 51
-      - 72
-      bs3:
-      - 52
-      - 56
-      - 51
-      - 73
-    4.5:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 0.0
     4.25:
       bs0:
       - 55
       - 70
       - 16
       - 32
+    2:
+      bs0:
+      - 55
+      - 71
+      - 5
+      - 20
+    17.5:
+      bs0:
+      - 55
+      - 69
+      - 57
+      - 70
+    1.9:
+      bs0:
+      - 55
+      - 71
+      - 16
+      - 32
+      bs1:
+      - 63
+      - 66
+      - 0
+      - 16
   transmission_coordinates: # ROI for calculating transmission counts, only needed for SANS-LLB due to the semi-transparent beam stop
     8:
-    - 57
-    - 66
-    - 55
-    - 70
-    2.5:
     - 58
+    - 64
+    - 57
+    - 69
+    2:
+    - 59
     - 67
-    - 54
-    - 70
-    17.7:
+    - 5
+    - 18
+    17.5:
     - 59
     - 66
-    - 55
-    - 69
-    4.5:
-    - 0.0
-    - 0.0
-    - 0.0
-    - 0.0
+    - 57
+    - 68
+    1.9:
+    - 59
+    - 67
+    - 16
+    - 31
 analysis_flags:
   _desc: |
     ANALYSIS FLAGS
@@ -232,29 +232,36 @@ analysis_flags:
   sectors_nr: 2               # Number of 'pizza slices' for azimuthal integration
   pixel_range_azim: '10:50' # radius ranges for the azimuthal integration: '10:50, 50:100'
   save_2d_patterns: false     # Save corrected 2D detector images
-  save_format_2d: array_2d # 2D file format: 'array_2d' (I/variance grids) or 'nist_ascii' (Qx-Qy-I-dI)
+  save_format_2d: nist_ascii # 2D file format: 'array_2d' (I/variance grids) or 'nist_ascii' (Qx-Qy-I-dI)
 
 
 merging_settings:
   _desc: |
     MERGING SETTINGS
     Parameters for stitching multiple detector distances into one I(q) curve.
-  run_step_1_plotting: true      # Preview individual curves before stitching
+  run_step_1_plotting: false     # Preview individual curves before stitching
   skip_start: # Points to trim from low-q end per distance
-    8: 30
-    17.7: 5
-    2.5: 20
-    4.5: 0
+    8: 10
+    2: 5
+    17.5: 5
+    1.9: 0
   skip_end:   # Points to trim from high-q end (noisy regions) per distance
-    8: 5
-    17.7: 10
-    2.5: 5
-    4.5: 0
-  run_step_2_merging: true        # Merge overlapping regions
+    8: 20
+    2: 0
+    17.5: 45
+    1.9: 0
+  run_step_2_merging: false       # Merge overlapping regions
   run_step_3_interpolation: false # Interpolate to common q-grid
 
   interp_type: log    # Resampling spacing: 'log' or 'lin'
   interp_points: 150  # Total points in final merged curve
   run_step_4_incoherent: false    # Fit and subtract flat incoherent background
   last_points_to_fit: 10 # Points used for Porod/Background estimation
-  scale_subtraction: 0.95 # by how much should the calculated incoherent background be scaled before subtraction
+  scale_subtraction: 0.9  # by how much should the calculated incoherent background be scaled before subtraction
+  run_step_3_sample_background: true
+  background_sample: EC
+  background_scale: 0.8
+  background_last_points_to_fit: 10
+  background_scale_mode: auto
+  background_scale_region: low_q
+  background_scale_points: 30

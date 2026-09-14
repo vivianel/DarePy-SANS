@@ -1031,11 +1031,412 @@ def merging_data(
 
     return True
 
-# %% subtract_incoherent
-def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=50, constancy_threshold=0.05):
+# %% subtract_merged_background
+def subtract_merged_background(
+        path_dir_an,
+        background_sample,
+        background_scale_region='low_q',
+        background_scale_points=10,
+    ):
     """
-    Step 4: Subtracts incoherent flat background.
-    Automatically prioritizes interpolated data for better fitting accuracy.
+    Step 3: subtract a selected merged sample as a q-dependent background.
+
+    The background is scaled AUTOMATICALLY and independently for every sample.
+    The user selects which end of the common q-range is used for the scale fit:
+    ``low_q`` uses the first X overlapping points and ``high_q`` uses the last X.
+
+    The automatic fit is
+
+        I_sample(q) = scale * I_background(q) + constant
+
+    within the selected X points. Only ``scale * I_background(q)`` is subtracted
+    in Step 3. The fitted constant is deliberately retained so that Step 4 can
+    determine and subtract the remaining flat incoherent signal.
+
+    If the selected background points are too flat to determine an independent
+    slope and intercept, the code falls back automatically to a weighted
+    sample/background ratio over the same selected points. There is no manual
+    scale option.
+
+    Parameters
+    ----------
+    background_sample : str
+        Bare sample name or ``*_merged.dat`` filename used as the reference.
+    background_scale_region : {'low_q', 'high_q'}
+        End of the overlapping q-range used for scaling each sample.
+    background_scale_points : int
+        Number of overlapping points from the chosen q-end used for the fit.
+    """
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import interp1d
+
+    path_merged = os.path.join(path_dir_an, 'merged')
+    path_merged_txt = os.path.join(path_merged, 'data_merged')
+    path_merged_fig = os.path.join(path_merged, 'figures')
+
+    os.makedirs(path_merged_txt, exist_ok=True)
+    os.makedirs(path_merged_fig, exist_ok=True)
+
+    scale_region = str(background_scale_region).strip().lower()
+    if scale_region not in {'low_q', 'high_q'}:
+        print(
+            f"[WARNING] Unknown background_scale_region='{background_scale_region}'. "
+            "Using low_q."
+        )
+        scale_region = 'low_q'
+
+    try:
+        background_scale_points = max(int(background_scale_points), 2)
+    except Exception:
+        background_scale_points = 10
+
+    def select_scale_indices(q, sample_I, sample_e, bg_I, bg_e, region, n_points):
+        valid = (
+            np.isfinite(q) & np.isfinite(sample_I) & np.isfinite(sample_e) &
+            np.isfinite(bg_I) & np.isfinite(bg_e) &
+            (q > 0)
+        )
+        idx_all = np.flatnonzero(valid)
+        if len(idx_all) < 2:
+            return None
+
+        n_use = min(n_points, len(idx_all))
+        if region == 'low_q':
+            return idx_all[:n_use]
+        return idx_all[-n_use:]
+
+    def fit_automatic_scale(q, sample_I, sample_e, bg_I, bg_e, region, n_points):
+        """Return scale, scale_error, retained_constant, constant_error, q_range, method."""
+        idx = select_scale_indices(
+            q, sample_I, sample_e, bg_I, bg_e, region, n_points
+        )
+        if idx is None or len(idx) < 2:
+            return None, None, None, None, None, 'too few overlapping scale points'
+
+        x = np.asarray(bg_I[idx], dtype=float)
+        y = np.asarray(sample_I[idx], dtype=float)
+        ex = np.abs(np.asarray(bg_e[idx], dtype=float))
+        ey = np.abs(np.asarray(sample_e[idx], dtype=float))
+        q_range = (float(np.min(q[idx])), float(np.max(q[idx])))
+
+        # Preferred fit: y = scale*x + constant. The constant is not subtracted.
+        # This keeps sample/background flat offsets from biasing the scale.
+        x_span = float(np.ptp(x))
+        x_level = max(float(np.nanmax(np.abs(x))), 1e-15)
+        enough_variation = np.isfinite(x_span) and x_span > max(1e-12, 1e-4 * x_level)
+
+        if len(idx) >= 3 and enough_variation:
+            scale_guess = 1.0
+            beta = None
+            covariance = None
+
+            try:
+                for _ in range(6):
+                    sigma = np.sqrt(ey**2 + (abs(scale_guess) * ex)**2)
+                    positive_sigma = sigma[np.isfinite(sigma) & (sigma > 0)]
+                    floor = (
+                        np.median(positive_sigma) * 1e-6
+                        if len(positive_sigma) else 1e-12
+                    )
+                    sigma[~np.isfinite(sigma) | (sigma <= 0)] = max(floor, 1e-12)
+
+                    X = np.column_stack((x, np.ones_like(x)))
+                    Xw = X / sigma[:, None]
+                    yw = y / sigma
+                    normal = Xw.T @ Xw
+
+                    if not np.all(np.isfinite(normal)) or np.linalg.cond(normal) > 1e12:
+                        beta = None
+                        break
+
+                    covariance = np.linalg.inv(normal)
+                    beta = covariance @ (Xw.T @ yw)
+                    new_scale = float(beta[0])
+
+                    if not np.isfinite(new_scale) or new_scale <= 0:
+                        beta = None
+                        break
+
+                    if abs(new_scale - scale_guess) <= 1e-6 * max(abs(scale_guess), 1.0):
+                        scale_guess = new_scale
+                        break
+                    scale_guess = new_scale
+
+                if beta is not None:
+                    fitted_scale = float(beta[0])
+                    fitted_constant = float(beta[1])
+
+                    model = fitted_scale * x + fitted_constant
+                    sigma = np.sqrt(ey**2 + (abs(fitted_scale) * ex)**2)
+                    sigma[~np.isfinite(sigma) | (sigma <= 0)] = 1e-12
+                    chi2 = float(np.sum(((y - model) / sigma)**2))
+                    dof = max(len(y) - 2, 1)
+                    covariance = covariance * max(chi2 / dof, 1.0)
+
+                    scale_error = float(np.sqrt(max(covariance[0, 0], 0.0)))
+                    constant_error = float(np.sqrt(max(covariance[1, 1], 0.0)))
+                    return (
+                        fitted_scale, scale_error,
+                        fitted_constant, constant_error,
+                        q_range, 'linear_with_offset'
+                    )
+            except Exception:
+                pass
+
+        # Fully automatic fallback for a nearly flat selected q-region:
+        # fit through the origin using weighted sample/background ratios.
+        # This is less able to separate different flat offsets, but it still
+        # provides an automatic multiplicative factor when the slope+offset
+        # problem is underdetermined.
+        ratio_mask = (
+            np.isfinite(x) & np.isfinite(y) & np.isfinite(ex) & np.isfinite(ey) &
+            (np.abs(x) > 1e-15)
+        )
+        if np.count_nonzero(ratio_mask) < 2:
+            return None, None, None, None, q_range, 'background is too flat/zero for autoscaling'
+
+        xr = x[ratio_mask]
+        yr = y[ratio_mask]
+        exr = ex[ratio_mask]
+        eyr = ey[ratio_mask]
+        ratios = yr / xr
+
+        ratio_sigma = np.sqrt(
+            (eyr / xr)**2 +
+            ((yr * exr) / (xr**2))**2
+        )
+        good = np.isfinite(ratios) & np.isfinite(ratio_sigma) & (ratio_sigma > 0)
+
+        if np.count_nonzero(good) >= 2:
+            weights = 1.0 / ratio_sigma[good]**2
+            fitted_scale = float(np.average(ratios[good], weights=weights))
+            formal_error = float(np.sqrt(1.0 / np.sum(weights)))
+            scatter = float(np.std(ratios[good], ddof=1) / np.sqrt(np.count_nonzero(good)))
+            scale_error = max(formal_error, scatter)
+        else:
+            finite_ratio = ratios[np.isfinite(ratios)]
+            if len(finite_ratio) < 2:
+                return None, None, None, None, q_range, 'automatic ratio fit failed'
+            fitted_scale = float(np.median(finite_ratio))
+            mad = float(np.median(np.abs(finite_ratio - fitted_scale)))
+            scale_error = 1.4826 * mad / np.sqrt(len(finite_ratio))
+
+        if not np.isfinite(fitted_scale) or fitted_scale <= 0:
+            return None, None, None, None, q_range, 'automatic scale is non-positive/non-finite'
+
+        return fitted_scale, scale_error, 0.0, 0.0, q_range, 'ratio_fallback'
+
+    # Accept either a bare sample name or a merged filename.
+    background_name = os.path.basename(str(background_sample))
+    if background_name.endswith('_merged.dat'):
+        background_name = background_name[:-len('_merged.dat')]
+
+    background_file = os.path.join(path_merged_txt, f'{background_name}_merged.dat')
+    if not os.path.exists(background_file):
+        print(f"[ERROR] Background merged file not found: {background_file}")
+        return False
+
+    try:
+        bg_data = np.genfromtxt(background_file, delimiter=',', skip_header=1)
+        if bg_data.ndim != 2 or bg_data.shape[1] < 3:
+            raise ValueError('background file must contain at least q, I, error')
+        q_bg = np.asarray(bg_data[:, 0], dtype=float)
+        I_bg = np.asarray(bg_data[:, 1], dtype=float)
+        e_bg = np.abs(np.asarray(bg_data[:, 2], dtype=float))
+    except Exception as err:
+        print(f"[ERROR] Could not load background file '{background_file}': {err}")
+        return False
+
+    bg_mask = (
+        np.isfinite(q_bg) & np.isfinite(I_bg) & np.isfinite(e_bg) &
+        (q_bg > 0)
+    )
+    q_bg, I_bg, e_bg = q_bg[bg_mask], I_bg[bg_mask], e_bg[bg_mask]
+
+    if len(q_bg) < 2:
+        print('[ERROR] Background curve contains too few valid points.')
+        return False
+
+    bg_sort = np.argsort(q_bg)
+    q_bg, I_bg, e_bg = q_bg[bg_sort], I_bg[bg_sort], e_bg[bg_sort]
+
+    print(
+        f"  Background '{background_name}': automatic per-sample scaling from "
+        f"{scale_region}, using up to {background_scale_points} overlapping points"
+    )
+
+    # Use the raw merged background. Any constant left after the scaled
+    # subtraction is intentionally handled by Step 4.
+    bg_I_interp = interp1d(
+        q_bg, I_bg, kind='linear', bounds_error=False, fill_value=np.nan
+    )
+    bg_e_interp = interp1d(
+        q_bg, e_bg, kind='linear', bounds_error=False, fill_value=np.nan
+    )
+
+    merged_files = sorted(
+        f for f in os.listdir(path_merged_txt) if f.endswith('_merged.dat')
+    )
+    if not merged_files:
+        print("[ERROR] No '_merged.dat' files found for sample-background subtraction.")
+        return False
+
+    processed = 0
+
+    for file_short_name in merged_files:
+        base_name = file_short_name[:-len('_merged.dat')]
+        if base_name == background_name:
+            print(f"  [SKIP] {base_name}: this is the selected background reference.")
+            continue
+
+        file_path_data = os.path.join(path_merged_txt, file_short_name)
+        try:
+            data = np.genfromtxt(file_path_data, delimiter=',', skip_header=1)
+            if data.ndim != 2 or data.shape[1] < 3:
+                raise ValueError('file must contain at least q, I, error')
+            q = np.asarray(data[:, 0], dtype=float)
+            I = np.asarray(data[:, 1], dtype=float)
+            e = np.abs(np.asarray(data[:, 2], dtype=float))
+        except Exception as err:
+            print(f"  [ERROR] Could not load {file_short_name}: {err}")
+            continue
+
+        sample_mask = np.isfinite(q) & np.isfinite(I) & np.isfinite(e) & (q > 0)
+        q, I, e = q[sample_mask], I[sample_mask], e[sample_mask]
+        if len(q) == 0:
+            print(f"  [SKIP] {base_name}: no valid sample points.")
+            continue
+
+        order = np.argsort(q)
+        q, I, e = q[order], I[order], e[order]
+        bg_I_at_q = bg_I_interp(q)
+        bg_e_at_q = bg_e_interp(q)
+
+        overlap = np.isfinite(bg_I_at_q) & np.isfinite(bg_e_at_q)
+        if np.count_nonzero(overlap) < 2:
+            print(f"  [SKIP] {base_name}: insufficient q-overlap with background.")
+            continue
+
+        q_out = q[overlap]
+        I_in = I[overlap]
+        e_in = e[overlap]
+        bg_I_use = bg_I_at_q[overlap]
+        bg_e_use = bg_e_at_q[overlap]
+
+        result = fit_automatic_scale(
+            q_out, I_in, e_in, bg_I_use, bg_e_use,
+            scale_region, background_scale_points,
+        )
+        (
+            effective_scale, scale_error,
+            fit_constant, fit_constant_error,
+            fit_q_range, fit_method,
+        ) = result
+
+        if effective_scale is None:
+            print(
+                f"  [SKIP] {base_name}: automatic {scale_region} scale failed "
+                f"({fit_method})."
+            )
+            continue
+
+        print(
+            f"  {base_name}: auto scale = {effective_scale:.6g} +/- {scale_error:.2g} "
+            f"from {background_scale_points} requested {scale_region} points "
+            f"(q={fit_q_range[0]:.4g}-{fit_q_range[1]:.4g}, method={fit_method})"
+        )
+        if fit_method == 'linear_with_offset':
+            print(
+                f"      retained local offset = {fit_constant:.6g} "
+                f"+/- {fit_constant_error:.2g} cm^-1 (left for Step 4)"
+            )
+
+        scaled_bg = effective_scale * bg_I_use
+        scaled_bg_error = np.sqrt(
+            (abs(effective_scale) * bg_e_use)**2 +
+            (bg_I_use * scale_error)**2
+        )
+
+        I_out = I_in - scaled_bg
+        e_out = np.sqrt(e_in**2 + scaled_bg_error**2)
+        removed = len(q) - len(q_out)
+
+        header = (
+            'q (A-1), I_sample_bg_subtracted (1/cm), error '
+            f'(background={background_name}, scale={effective_scale:.8g}, '
+            f'scale_error={scale_error:.4g}, scale_region={scale_region}, '
+            f'scale_points={min(background_scale_points, len(q_out))}, '
+            f'scale_method={fit_method}, '
+            f'auto_scale_q={fit_q_range[0]:.8g}:{fit_q_range[1]:.8g})'
+        )
+        file_out = os.path.join(path_merged_txt, f'{base_name}_sample_bg_subtracted.dat')
+        np.savetxt(
+            file_out, np.column_stack((q_out, I_out, e_out)),
+            delimiter=',', header=header,
+        )
+
+        # Diagnostic plot with the actual per-sample scale and selected q-range.
+        plt.close('all')
+        fig, ax = plt.subplots(figsize=(9, 6))
+        in_pos = I_in > 0
+        bg_pos = scaled_bg > 0
+        out_pos = I_out > 0
+
+        if np.any(in_pos):
+            ax.errorbar(
+                q_out[in_pos], I_in[in_pos], yerr=e_in[in_pos],
+                fmt='.', alpha=0.30, label='Merged sample'
+            )
+        if np.any(bg_pos):
+            ax.plot(
+                q_out[bg_pos], scaled_bg[bg_pos], '--', lw=1.5,
+                label=f'Background x {effective_scale:.4g}'
+            )
+        if np.any(out_pos):
+            ax.errorbar(
+                q_out[out_pos], I_out[out_pos], yerr=e_out[out_pos],
+                fmt='o', ms=3, label='After sample-background subtraction'
+            )
+
+        ax.axvspan(
+            fit_q_range[0], fit_q_range[1], alpha=0.10,
+            label=f'Auto-scale region ({scale_region})'
+        )
+
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlabel(r'$q$ [$\AA^{-1}$]')
+        ax.set_ylabel(r'$I(q)$ [cm$^{-1}$]')
+        ax.set_title(f'Sample-background subtraction: {base_name}')
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(path_merged_fig, f'{base_name}_sample_bg_subtracted.jpeg'),
+            dpi=150,
+        )
+        plt.close(fig)
+
+        print(
+            f"  [SAVED] {base_name}_sample_bg_subtracted.dat"
+            + (f" (dropped {removed} points outside background q-range)" if removed else '')
+        )
+        processed += 1
+
+    print(f"Sample-background subtraction completed for {processed} sample(s).")
+    return processed > 0
+
+
+# %% subtract_incoherent
+def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=50, constancy_threshold=0.05, use_sample_background=True):
+    """
+    Step 4: Subtract the residual incoherent flat background.
+
+    When ``use_sample_background`` is True, Step 3 outputs
+    (``*_sample_bg_subtracted.dat``) are used. Otherwise raw ``*_merged.dat``
+    files are used. The explicit flag prevents stale Step 3 files from a
+    previous run being consumed when Step 3 is disabled in the caller.
     """
     import os
     import numpy as np
@@ -1047,13 +1448,23 @@ def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=
     path_merged_txt = os.path.join(path_merged, 'data_merged')
     path_merged_fig = os.path.join(path_merged, 'figures')
 
-    # 1. Decide which files to process (Prioritize _interp over _merged)
+    # 1. Decide which files to process.
+    # Step 4 should consume Step 3 products when they exist.
     all_files = os.listdir(path_merged_txt)
-    interp_files = [f for f in all_files if f.endswith('_interp.dat')]
-    raw_merged_files = [f for f in all_files if f.endswith('_merged.dat')]
+    sample_bg_files = sorted(
+        f for f in all_files if f.endswith('_sample_bg_subtracted.dat')
+    )
+    raw_merged_files = sorted(
+        f for f in all_files if f.endswith('_merged.dat')
+    )
 
-    # If interp files exist, we use them. Otherwise, we use the raw merged ones.
-    files_to_process = interp_files if interp_files else raw_merged_files
+    if use_sample_background:
+        if not sample_bg_files:
+            print("[ERROR] Step 3 background-subtracted files were requested but none were found.")
+            return False
+        files_to_process = sample_bg_files
+    else:
+        files_to_process = raw_merged_files
 
     if not files_to_process:
         print("[ERROR] No data files found to perform background subtraction.")
@@ -1064,10 +1475,10 @@ def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=
 
     for file_short_name in files_to_process:
         plt.close('all')
-        base_name = file_short_name.replace('_merged.dat', '').replace('_interp.dat', '')
+        base_name = file_short_name.replace('_sample_bg_subtracted.dat', '').replace('_merged.dat', '')
         file_path_data = os.path.join(path_merged_txt, file_short_name)
 
-        print(f"\n[STEP 4] Subtracting background from: {file_short_name}")
+        print(f"\n[STEP 4] Subtracting residual incoherent signal from: {file_short_name}")
 
         try:
             data = np.genfromtxt(file_path_data, delimiter=',', skip_header=1)
@@ -1099,7 +1510,7 @@ def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=
             subtracted_I = I_pos - incoherent_fit
 
             # --- SAVE RESULTS ---
-            header = f'q (A-1), I_subtracted (1/cm), error (BG Subtracted: {incoherent_fit:.5f})'
+            header = f'q (A-1), I_subtracted (1/cm), error (Residual incoherent subtracted: {incoherent_fit:.5f})'
             suffix = "_subtracted.dat"
             file_out = os.path.join(path_merged_txt, f"{base_name}{suffix}")
             np.savetxt(file_out, np.column_stack((q_pos, subtracted_I, e_pos)), delimiter=',', header=header)
@@ -1124,3 +1535,4 @@ def subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=
             print(f"  [ERROR] Fit failed for {base_name}: {err}")
 
     print("Background subtraction process completed.")
+    return True

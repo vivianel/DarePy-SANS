@@ -2,7 +2,8 @@
 """
 DarePy-SANS: Post-Processing & Merging Caller
 Orchestrates a 4-step modular pipeline:
-1. Overlay/Noise Analysis, 2. Stitched Merging, 3. Interpolation, 4. Background Subtraction
+1. Overlay/Noise Analysis, 2. Stitched Merging,
+3. Scaled Sample-Background Subtraction, 4. Incoherent Subtraction
 """
 
 import sys
@@ -84,28 +85,54 @@ if m_set.get('run_step_2_merging', True):
 else:
     print(f"\n[SKIP] Step 2: Raw merging disabled.")
 # ==========================================
-# FUNCTION 3: OPTIONAL INTERPOLATION / REBINNING
+# FUNCTION 3: AUTOMATIC MERGED-SAMPLE BACKGROUND SUBTRACTION
 # ==========================================
-if m_set.get('run_step_3_interpolation', False):
-    i_type = m_set.get('interp_type', 'log')
-    i_pts = m_set.get('interp_points', 150)
-    s_win = m_set.get('smooth_window', 1)
+sample_background_applied = False
+step_3_requested = m_set.get('run_step_3_sample_background', False)
 
-    print(f"\n[STEP 3] Interpolating data (Type: {i_type}, Points: {i_pts})...")
-    pp.interpolate_data(path_dir_an, interp_type=i_type, interp_points=i_pts, smooth_window=s_win)
+if step_3_requested:
+    background_sample = m_set.get('background_sample', None)
+    background_scale_region = str(m_set.get('background_scale_region', 'low_q')).strip().lower()
+    background_scale_points = int(m_set.get('background_scale_points', 10))
+
+    if not background_sample:
+        print("\n[ERROR] Step 3 enabled but 'background_sample' is not defined in merging_settings.")
+    else:
+        print(
+            f"\n[STEP 3] Subtracting merged background '{background_sample}' "
+            f"with automatic per-sample scaling from the {background_scale_region} "
+            f"region ({background_scale_points} points)..."
+        )
+        sample_background_applied = pp.subtract_merged_background(
+            path_dir_an,
+            background_sample=background_sample,
+            background_scale_region=background_scale_region,
+            background_scale_points=background_scale_points,
+        )
 else:
-    print(f"\n[SKIP] Step 3: Interpolation/Rebinning disabled.")
+    print("\n[SKIP] Step 3: Sample-background subtraction disabled.")
 
 # ==========================================
-# FUNCTION 4: INCOHERENT BACKGROUND SUBTRACTION
+# FUNCTION 4: RESIDUAL INCOHERENT SUBTRACTION
 # ==========================================
 if m_set.get('run_step_4_incoherent', False):
-    last_points = m_set.get('last_points_to_fit', 10)
-    scale_subtraction = m_set.get('scale_subtraction', 1)
-    print(f"\n[STEP 4] Subtracting incoherent background (Last {last_points} pts)...")
-    pp.subtract_incoherent(path_dir_an, scale_subtraction, initial_last_points_fit=last_points)
+    if step_3_requested and not sample_background_applied:
+        print(
+            "\n[SKIP] Step 4: Step 3 was requested but did not complete successfully. "
+            "Residual incoherent subtraction was not run on uncorrected data."
+        )
+    else:
+        last_points = int(m_set.get('last_points_to_fit', 10))
+        scale_subtraction = float(m_set.get('scale_subtraction', 1.0))
+        print(f"\n[STEP 4] Subtracting residual incoherent background (Last {last_points} pts)...")
+        pp.subtract_incoherent(
+            path_dir_an,
+            scale_subtraction,
+            initial_last_points_fit=last_points,
+            use_sample_background=sample_background_applied,
+        )
 else:
-    print(f"\n[SKIP] Step 4: Background subtraction disabled.")
+    print("\n[SKIP] Step 4: Incoherent subtraction disabled.")
 
 print("\n" + "="*60)
 print("PROCESSING COMPLETE. Check the 'merged' folder.")
