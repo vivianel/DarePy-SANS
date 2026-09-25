@@ -196,8 +196,3 @@ Contributions to DarePy-SANS are welcome! If you find a bug or have a feature re
 
 ## Acknowledgments
 I acknowledgment my colleagues, users, and contributors, for reporting bugs and help me test.
-
-## License
-This project is licensed under PSI.
-
-"""
