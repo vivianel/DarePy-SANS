@@ -20,7 +20,7 @@
 
 Before you begin, ensure you have the following installed on your system:
 * **Git**: [Download and install Git](https://git-scm.com/) if you haven't already.
-* **Python**: Version 3.9 or higher is highly recommended.
+* **Python**: Version 3.11 or higher is highly recommended.
 
 ---
 
