@@ -267,3 +267,46 @@ Run all regression tests from the repository root:
 ```bash
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
+
+
+## Interactive detector browser
+
+The **3. Detector Browser** tab replaces the former 2D Visualization form. It
+lists `.hdf`, `.h5` and `.hdf5` files recursively in the configured `raw_data`
+directory. Sample names are shown beside filenames and are searchable.
+Sample names are indexed independently in the background. Select a file to display its main detector
+and HDF metadata. For multi-frame scans, select a frame using the frame control.
+Metadata arrays larger than 16 entries are summarized by shape and type rather
+than loaded in full; the searchable metadata table shows up to 2,000 fields.
+
+Color-limit entries and sliders redraw the current image interactively. **lin**
+shows counts; **log** shows base-10 logarithms of counts. **Auto limits** uses
+the 1st and 99.7th percentiles and runs automatically whenever a different file
+is selected or the linear/logarithmic scale is changed. Manual adjustments remain
+available for the current file. Action buttons follow the blue scheme of the
+other GUI tabs. The
+Matplotlib toolbar supports zoom, pan and resetting the view.
+
+Background subtraction uses the selected reference scan's first frame, matching
+the existing exporter. Missing or ambiguous background scans and incompatible
+detector shapes produce an explanatory message instead of silently displaying
+an unsubtracted image. Files are opened read-only and closed after each read.
+
+**Save settings** writes the last `plot_2d` color limits, scale and export options
+to the experiment configuration through the normal GUI save path. Interactive
+changes do not rewrite the file until settings are saved. **Save displayed
+image** saves the current detector view as PNG or PDF and saves the last settings.
+The original scan/range list, background toggle and reference, PNG/GIF export
+mode, GIF speed and play-once options remain available in the batch export area.
+**Use selected scan** copies the current scan number to the batch export list.
+
+File discovery and frame reads run in a worker thread. Only the requested frame
+is loaded from multi-frame files; a bounded cache holds recent frames, so changes
+to color limits and scale do not reread HDF data. Refresh the file list after new
+measurements arrive. Refreshing or closing the GUI cancels pending viewer work.
+
+The viewer saves `plot_2d.log_base: '10'` with its limits so PNG/GIF batch exports
+use the same base-10 display convention. Older configurations without `log_base`
+keep their historical natural-log interpretation in batch exports. The viewer
+converts those old limits in memory, and saves base-10 limits only when you save
+settings. Raw counts and processing corrections are unchanged by display scale.

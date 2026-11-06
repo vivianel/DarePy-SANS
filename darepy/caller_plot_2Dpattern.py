@@ -2,6 +2,7 @@
 import sys
 import os
 import numpy as np
+from io import BytesIO
 import matplotlib
 
 
@@ -23,6 +24,8 @@ codes_dir = os.path.join(parent_dir, "darepy/codes")
 if codes_dir not in sys.path:
     sys.path.insert(0, codes_dir)
 
+from darepy.detector_data import display_image
+
 from utils import load_hdf, find_hdf_filename, load_config, parse_scan_list
 
 # Catch the YAML path sent by the GUI (sys.argv[1])
@@ -42,7 +45,6 @@ except ImportError:
 matplotlib.use('Agg')  # <--- Change to 'TkAgg' ONLY if you want pop-up windows in Spyder
 
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 from PIL import Image
 
 
@@ -51,6 +53,9 @@ cfg_2d = config['plot_2d']
 LIST_SCAN = parse_scan_list(config['plot_2d']['list_scan'])
 clim = cfg_2d['clim']
 plot_scale = cfg_2d['plot_scale']
+# Unmarked files retain the historical natural-log meaning of their limits.
+LOG_BASE = cfg_2d.get('log_base', 'e')
+COLOR_LABEL = 'Counts' if plot_scale == 'lin' else ('log10(counts)' if str(LOG_BASE) in ('10', '10.0') else 'ln(counts)')
 ENABLE_BACKGROUND_SUBTRACTION = cfg_2d['enable_bg_subtraction']
 BACKGROUND_SCAN_NR = cfg_2d['background_scan_nr']
 OUTPUT_MODE = cfg_2d['output_mode']
@@ -139,8 +144,8 @@ def save_individual_frames(processed_data, output_folder, output_format, dpi, cl
         if plot_scale == 'lin':
             imgplot_frame = ax_frame.imshow(img_data, origin='lower', cmap='jet', clim = clim)
         elif plot_scale == 'log':
-            imgplot_frame = ax_frame.imshow(np.log(img_data), origin='lower', cmap='jet', clim = clim)
-        fig_frame.colorbar(imgplot_frame, ax=ax_frame, fraction=0.046, pad=0.04)
+            imgplot_frame = ax_frame.imshow(display_image(img_data, 'log', log_base=LOG_BASE), origin='lower', cmap='jet', clim = clim)
+        fig_frame.colorbar(imgplot_frame, ax=ax_frame, fraction=0.046, pad=0.04).set_label(COLOR_LABEL)
         ax_frame.set_title(plot_title)
 
         # Use a consistent filename pattern for individual frames
@@ -158,100 +163,38 @@ def save_individual_frames(processed_data, output_folder, output_format, dpi, cl
 
 def create_and_save_gif_animation(processed_data, raw_image_data_for_clim, output_folder,
                                   list_scan_info, fps, loop, dpi, clim):
-    """
-    Handles the creation and saving of the GIF animation.
-    This function will still close its internal figure after saving,
-    as it's designed for headless rendering for reliable animation saving.
-    """
+    """Save GIF frames with the same scale as PNG/preview; loop is play_once."""
     if not processed_data:
-        print("No valid scan data processed to create an animation. Skipping GIF creation.")
+        print("No valid scan data to animate.")
         return
-
-    # When creating GIF, we still want to use a non-interactive approach for stability.
-    # This means the figure created here will be for rendering to GIF, not for display.
-    # If the user has an interactive backend active, this might still interact with it.
-
-    # We explicitly create a figure for the animation, which FuncAnimation manages.
-    # This figure is intended for rendering to file, not for interactive display.
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-
-    initial_img_data, initial_plot_title = processed_data[0]
-    if plot_scale == 'lin':
-        img_plot = ax.imshow(initial_img_data, origin='lower', cmap='jet', clim = clim)
-    elif plot_scale == 'log':
-        img_plot = ax.imshow(np.log(initial_img_data), origin='lower', cmap='jet', clim = clim)
-    title_obj = ax.set_title(initial_plot_title)
-
-    def update_frame(frame_index):
-        img_data, plot_title = processed_data[frame_index]
-        img_plot.set_array(img_data)
-        title_obj.set_text(plot_title)
-        return [img_plot, title_obj]
-
-    name_file = 'scan_' + str(list_scan_info[0]) + '_' + str(list_scan_info[-1]) + '.gif'
-    animation_file_name = os.path.join(output_folder, name_file)
-
+    if not np.isfinite(fps) or fps <= 0:
+        raise ValueError('GIF frames per second must be positive.')
+    path = os.path.join(output_folder, f'scan_{list_scan_info[0]}_{list_scan_info[-1]}.gif')
+    frames = []
     try:
-        writer = 'pillow'
-        print(f"Attempting to save GIF animation to {animation_file_name} using Matplotlib's Pillow writer...")
-
-        ani = FuncAnimation(fig, update_frame, frames=len(processed_data),
-                            interval=60/fps, blit=False, # blit=False is safer for saving
-                            repeat=True if loop == True else False, repeat_delay=1000)
-
-        ani.save(animation_file_name, writer=writer, dpi=dpi, fps=fps, extra_args=['--loop', '0' if loop else '-1'])
-        print(f"GIF animation saved successfully to: {animation_file_name}")
-
-    except Exception as e:
-        print(f"\n--- ERROR DURING MATPLOTLIB ANIMATION SAVE ---")
-        print(f"Error: {e}")
-        print(f"This often indicates an issue with Matplotlib's animation backend or configuration in an interactive environment.")
-        print("Falling back to manual GIF creation via Pillow (more robust for troubleshooting).")
-        print(f"--- END ERROR ---\n")
-
-        # Fallback: Manual GIF creation with PIL (Pillow) by saving frames
-        temp_frames_dir = os.path.join(output_folder, 'temp_animation_frames_for_gif')
-        os.makedirs(temp_frames_dir, exist_ok=True)
-
-        print("Saving individual frames to temporary directory for manual GIF creation...")
-        frames_for_pil = []
-        for idx, (img_data, plot_title) in enumerate(processed_data):
-            fig_frame, ax_frame = plt.subplots(figsize=(8, 6))
-            if plot_scale == 'lin':
-                imgplot_frame = ax_frame.imshow(img_data, origin='lower', cmap='jet', clim = clim)
-            elif plot_scale == 'log':
-                imgplot_frame = ax_frame.imshow(np.log(img_data), origin='lower', cmap='jet', clim = clim)
-            fig_frame.colorbar(imgplot_frame, ax=ax_frame, fraction=0.046, pad=0.04)
-            ax_frame.set_title(plot_title)
-
-            frame_path = os.path.join(temp_frames_dir, f'frame_{idx:03d}.png')
-            plt.savefig(frame_path, dpi=dpi, bbox_inches='tight')
-            plt.close(fig_frame) # Close these temp figures
-            frames_for_pil.append(Image.open(frame_path))
-
-        if frames_for_pil:
-            print(f"Combining {len(frames_for_pil)} frames into GIF using Pillow directly...")
-            frame_duration_ms = int(1000 / fps)
-            frames_for_pil[0].save(
-                animation_file_name,
-                format='GIF',
-                append_images=frames_for_pil[1:],
-                save_all=True,
-                duration=frame_duration_ms,
-                loop=loop
-            )
-            print(f"Manual GIF animation saved to: {animation_file_name}")
-        else:
-            print("No frames were generated for manual GIF creation.")
-
-        if os.path.exists(temp_frames_dir):
-            for f in os.listdir(temp_frames_dir):
-                os.remove(os.path.join(temp_frames_dir, f))
-            os.rmdir(temp_frames_dir)
-            print("Temporary frames cleaned up.")
-
-    plt.close(fig) # Always close the animation figure to avoid memory leaks.
+        for data, title in processed_data:
+            figure, axes = plt.subplots(figsize=(8, 6))
+            try:
+                image = axes.imshow(display_image(data, plot_scale, log_base=LOG_BASE),
+                                    origin='lower', cmap='jet', vmin=clim[0], vmax=clim[1])
+                figure.colorbar(image, ax=axes, fraction=0.046, pad=0.04).set_label(COLOR_LABEL)
+                axes.set_title(title)
+                with BytesIO() as buffer:
+                    figure.savefig(buffer, format='png', dpi=dpi)
+                    buffer.seek(0)
+                    with Image.open(buffer) as rendered:
+                        frames.append(rendered.convert('RGB'))
+            finally:
+                plt.close(figure)
+        options = dict(format='GIF', save_all=True, append_images=frames[1:],
+                       duration=max(1, round(1000 / fps)))
+        if not loop:  # YAML play_once=false means repeat indefinitely.
+            options['loop'] = 0
+        frames[0].save(path, **options)
+    finally:
+        for frame in frames:
+            frame.close()
+    print(f'GIF animation saved successfully to: {path}')
 
 
 # --- Main Script Execution ---

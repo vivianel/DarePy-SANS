@@ -111,6 +111,10 @@ class DarePyGUI:
         if not getattr(self, '_config_load_ok', False):
             self.log_to_console("[CONFIG ERROR] Load a valid configuration before saving or running.")
             return False
+        viewer = getattr(self, 'detector_browser', None)
+        if viewer is not None and not viewer.validate_settings():
+            self.log_to_console("[CONFIG ERROR] Check the detector browser color limits, background scan and GIF speed.")
+            return False
         try:
             # Update the dictionary from UI entries
             for s_key, keys in self.entries.items():
@@ -365,11 +369,12 @@ class DarePyGUI:
                   command=lambda: self.run_script("caller_rename_samples.py")).pack(fill="x")
         self.build_config_area(s3, "Rename Settings", "rename_samples")
 
-        # --- TAB 3: 2D VISUALIZATION ---
-        s4, f4 = self.create_scrollable_tab(self.notebook, "3. 2D Visualization")
-        tk.Button(f4, text="GENERATE 2D PLOTS/GIF", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
-                  command=lambda: self.run_script("caller_plot_2Dpattern.py")).pack(fill="x")
-        self.build_config_area(s4, "Plot 2D Settings", "plot_2d")
+        # --- TAB 3: INTERACTIVE DETECTOR BROWSER ---
+        from darepy.detector_browser import DetectorBrowser
+        s4 = ttk.Frame(self.notebook)
+        self.notebook.add(s4, text="3. Detector Browser")
+        self.detector_browser = DetectorBrowser(s4, self)
+        self.detector_browser.pack(fill="both", expand=True)
 
         # --- TAB 4: MASK & CENTER ---
         s5, f5 = self.create_scrollable_tab(self.notebook, "4. Mask & Center")
