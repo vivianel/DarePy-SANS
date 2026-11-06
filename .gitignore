@@ -10,3 +10,6 @@
 
 # 4. CRITICAL: Allow everything INSIDE the folder recursively
 !/experiments/default_exp/**
+__pycache__/
+
+*.py[cod]

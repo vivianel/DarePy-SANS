@@ -12,6 +12,8 @@ root_dir = os.path.dirname(script_dir)
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
+from darepy.config_compat import backup_config, load_config_file
+
 yaml = YAML()
 yaml.preserve_quotes = True
 
@@ -79,6 +81,7 @@ class DarePyGUI:
         c_frame.pack(fill="x", side="bottom", padx=10, pady=5)
         self.console = tk.Text(c_frame, height=8, bg="#1e1e1e", fg="#4CAF50",
                                font=("Consolas", 9), wrap="word")
+        self.console.tag_configure("config_added", foreground="#ff8585")
         self.console.pack(side="left", fill="x", expand=True)
         scrollbar = ttk.Scrollbar(c_frame, command=self.console.yview)
         scrollbar.pack(side="right", fill="y")
@@ -86,20 +89,28 @@ class DarePyGUI:
         self.log_to_console(f"System Ready. Loaded: {os.path.basename(self.config_file)}")
 
     def log_to_console(self, msg):
-        self.console.insert(tk.END, f"{msg}\n")
+        tag = "config_added" if msg.startswith("[CONFIG ADDED]") else ""
+        self.console.insert(tk.END, f"{msg}\n", tag)
         self.console.see(tk.END)
         self.root.update()
 
     def load_data(self):
         try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                self.config_dict = yaml.load(f)
+            self._config_load_ok = False
+            self.config_completion = load_config_file(self.config_file, reporter=self.log_to_console)
+            self.config_dict = self.config_completion.data
+            self.config_added_paths = {item.path for item in self.config_completion.additions}
+            self.config_completion_pending = bool(self.config_completion.additions)
+            self._config_load_ok = True
             return True
         except Exception as e:
             self.log_to_console(f"[YAML LOAD ERROR] {e}")
             return False
 
     def save_data(self):
+        if not getattr(self, '_config_load_ok', False):
+            self.log_to_console("[CONFIG ERROR] Load a valid configuration before saving or running.")
+            return False
         try:
             # Update the dictionary from UI entries
             for s_key, keys in self.entries.items():
@@ -120,10 +131,16 @@ class DarePyGUI:
                     else:
                         target[last_key] = actual
 
+            # Preserve the original experiment before first persisting added settings.
+            if self.config_completion_pending:
+                backup = backup_config(self.config_file)
+                self.log_to_console(f"[CONFIG BACKUP] {backup}")
+
             # Write the current file
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(self.config_dict, f)
 
+            self.config_completion_pending = False
             self.log_to_console(f"✅ Settings saved to: {os.path.basename(self.config_file)}")
 
             # Trigger the smart archiving
@@ -284,7 +301,11 @@ class DarePyGUI:
             self.entries[config_key][path] = var
 
         # Pack the word/label next to the checkbox
-        tk.Label(label_frame, text=label, font=("Arial", 9, "bold"), bg=bg).pack(side="left")
+        full_path = '.'.join([config_key] + [str(part) for part in path])
+        is_added = full_path in getattr(self, 'config_added_paths', set())
+        tk.Label(label_frame, text=label + (" (new)" if is_added else ""),
+                 fg="#b00020" if is_added else "#000000",
+                 font=("Arial", 9, "bold"), bg=bg).pack(side="left")
 
         # Pack the comment safely next to the label
         if comment:
@@ -618,6 +639,35 @@ class DarePyGUI:
                 comment=cmt
             )
 
+
+        self._build_config_review()
+
+    def _build_config_review(self):
+        """Show all additions, including settings rendered by custom GUI editors."""
+        plan = self.config_completion
+        if not plan.additions and not plan.warnings:
+            return
+        tab = ttk.Frame(self.notebook, padding=12)
+        self.notebook.add(tab, text="Config additions")
+        ttk.Label(tab, text="New settings are red. Review defaults before processing; Save Settings persists them with a backup.",
+                  wraplength=900).pack(anchor="w", pady=(0, 8))
+        frame = ttk.Frame(tab)
+        frame.pack(fill="both", expand=True)
+        rows = ttk.Treeview(frame, columns=('path', 'value', 'source'), show='headings')
+        for key, title, width in [('path', 'New setting', 350), ('value', 'Value', 220), ('source', 'Source', 300)]:
+            rows.heading(key, text=title)
+            rows.column(key, width=width)
+        rows.tag_configure('added', foreground='#b00020', background='#fff0f1')
+        rows.pack(side='left', fill='both', expand=True)
+        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=rows.yview)
+        scrollbar.pack(side='right', fill='y')
+        rows.configure(yscrollcommand=scrollbar.set)
+        for item in plan.additions:
+            rows.insert('', 'end', values=(item.path, repr(item.value), item.source), tags=('added',))
+        notes = tk.Text(tab, height=8, wrap='word')
+        notes.pack(fill='x', pady=8)
+        notes.insert('1.0', '\n'.join(plan.warnings) or 'No review notes.')
+        notes.configure(state='disabled')
 
     def _build_merging_table(self, parent, title, m_key):
         bg = self.root.cget('bg')

@@ -417,10 +417,10 @@ ACTIVE_CONFIG_CACHE = os.path.join(CURRENT_DIR, ".active_config.txt")
 
 # In utils.py
 def load_config(filepath=None):
-    """Loads the YAML, reading the folder path from the active pointer."""
+    """Load YAML and complete missing settings using the repository reference."""
 
     # 1. Did the GUI pass a path directly?
-    if filepath is None and len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+    if filepath is None and len(sys.argv) > 1 and sys.argv[1].lower().endswith(('.yaml', '.yml')):
         filepath = sys.argv[1]
 
     # 2. If not, check the pointer file we made with set_experiment.py!
@@ -431,21 +431,21 @@ def load_config(filepath=None):
                 exp_folder = f.read().strip()
                 filepath = os.path.join(exp_folder, "config_experiment.yaml")
 
-    # 3. Load it
+    # 3. Complete missing settings in memory; never rewrite an experiment on load.
+    from darepy.config_compat import load_config_file
+    if filepath is None:
+        filepath = os.path.join(os.getcwd(), "config_experiment.yaml")
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
+        return load_config_file(filepath).data
     except FileNotFoundError:
-        print(f"\n[ERROR] Configuration file not found at: {filepath}")
-        sys.exit(1)
-    # ... inside the function ...
-    print(f"DEBUG: Looking for registry in: {os.getcwd()}")
+        print(f"\n[ERROR] Configuration or reference file not found while loading: {filepath}")
+        raise
 
 def load_instrument_registry(filepath=None):
     """Loads the YAML, reading the folder path from the active pointer or GUI."""
 
     # 1. Handle GUI Handoff: Get the DIR of the passed config file
-    if filepath is None and len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+    if filepath is None and len(sys.argv) > 1 and sys.argv[1].lower().endswith(('.yaml', '.yml')):
         # Extract the folder from C:\...\config_experiment.yaml
         config_dir = os.path.dirname(os.path.abspath(sys.argv[1]))
         filepath = os.path.join(config_dir, "instrument_registry.yaml")

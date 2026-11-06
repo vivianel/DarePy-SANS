@@ -196,3 +196,49 @@ Contributions to DarePy-SANS are welcome! If you find a bug or have a feature re
 
 ## Acknowledgments
 I acknowledgment my colleagues, users, and contributors, for reporting bugs and help me test.
+
+
+## Configuration compatibility
+
+The pipeline and GUI complete missing settings automatically when an experiment
+configuration is loaded. Defaults come from
+`experiments/default_exp/config_experiment.yaml` in the same checkout, so adding
+an optional setting to this reference makes it available to older experiments.
+No network connection is used during normal loading.
+
+Existing values (including false, zero, empty strings, nulls and lists), comments,
+custom keys, sample calibrations and detector distances are preserved. Known
+renamed settings are copied to their current locations without deleting the old
+keys. Renames need an explicit entry in `ALIASES` in `darepy/config_compat.py`;
+experiment-specific dictionaries should be listed in `DYNAMIC`.
+
+Loading only completes settings in memory. The command line prints additions and
+review notes. The GUI marks new fields in red and lists all additions in a
+**Config additions** tab. Saving settings (also performed by existing Run buttons)
+persists the completed configuration and makes a timestamped `.bak` copy before
+the first save that contains newly completed defaults.
+
+To preview or save a configuration separately from processing, run from the
+repository root:
+
+```bash
+python -m darepy.config_compat old_config.yaml
+python -m darepy.config_compat old_config.yaml --output completed.yaml
+python -m darepy.config_compat old_config.yaml --gui
+```
+
+The optional `--github` flag fetches the latest main-branch reference for this
+standalone tool; ordinary pipeline loads always use the local reference matching
+the installed code.
+
+Review added scientific settings before reduction. The reference includes real
+experiment choices, so its slit dimensions, correction toggles and background
+defaults are not universally appropriate. Completion does not validate scientific
+inputs or convert arbitrary obsolete option values. Incompatible section shapes
+fail clearly rather than silently replacing saved values.
+
+Run the compatibility tests from the repository root:
+
+```bash
+python -m unittest discover -s tests -p "test_config*.py" -v
+```
