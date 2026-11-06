@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-import os, ast, shutil
+import os, ast, shutil, subprocess, threading
 from datetime import datetime
 from ruamel.yaml import YAML
 import sys
@@ -24,6 +24,8 @@ class DarePyGUI:
         self.root.geometry("1100x1000") # Slightly widened to comfortably hold dual buttons
 
         self.config_file = None
+        self.radial_process = None
+        self.radial_stop_file = None
 
         # 1. Check for command line argument (passed by Spyder %run)
         if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
@@ -79,7 +81,7 @@ class DarePyGUI:
     def setup_console(self):
         c_frame = tk.LabelFrame(self.root, text="Console Output", padx=5, pady=5)
         c_frame.pack(fill="x", side="bottom", padx=10, pady=5)
-        self.console = tk.Text(c_frame, height=8, bg="#1e1e1e", fg="#4CAF50",
+        self.console = tk.Text(c_frame, height=16, bg="#1e1e1e", fg="#4CAF50",
                                font=("Consolas", 9), wrap="word")
         self.console.tag_configure("config_added", foreground="#ff8585")
         self.console.pack(side="left", fill="x", expand=True)
@@ -360,9 +362,6 @@ class DarePyGUI:
         self.build_config_area(s1, "Instrument", "instrument_setup")
         self.build_config_area(s1, "Sample Environment", "sample_environment")
 
-        s2, f2 = self.create_scrollable_tab(self.notebook, "2. Pipeline control")
-        self.build_config_area(s2, "Pipeline Control", "pipeline_control")
-
         # --- TAB 2: RENAME SAMPLES ---
         s3, f3 = self.create_scrollable_tab(self.notebook, "2. Rename Samples")
         tk.Button(f3, text="RENAME SAMPLES", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
@@ -455,8 +454,16 @@ class DarePyGUI:
         # --- TAB 6: RADIAL INTEGRATION ---
         t7_main = ttk.Frame(self.notebook); self.notebook.add(t7_main, text="6. Radial Integration")
         f7 = tk.Frame(t7_main, bg=bg); f7.pack(side="bottom", fill="x", padx=20, pady=15)
-        tk.Button(f7, text="RUN FULL INTEGRATION PIPELINE", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
-                  pady=10, command=lambda: self.run_script("caller_radial_integration.py")).pack(fill="x")
+        tk.Label(f7, text="Run mode follows Pipeline Control → Live monitoring. The latest scan is always reintegrated.",
+                 bg=bg, fg="#3b5268", font=("Arial", 9)).pack(fill="x", pady=(0, 6))
+        radial_buttons = tk.Frame(f7, bg=bg)
+        radial_buttons.pack(fill="x")
+        tk.Button(radial_buttons, text="RUN RADIAL INTEGRATION", bg="#2196F3", fg="white",
+                  font=("Arial", 10, "bold"), pady=10,
+                  command=self.run_radial_integration).pack(side="left", fill="x", expand=True, padx=(0, 3))
+        tk.Button(radial_buttons, text="STOP RADIAL INTEGRATION", bg="#1976D2", fg="white",
+                  font=("Arial", 10, "bold"), pady=10,
+                  command=self.stop_radial_integration).pack(side="left", fill="x", expand=True, padx=(3, 0))
 
         self.sub_nb = ttk.Notebook(t7_main); self.sub_nb.pack(expand=True, fill="both", padx=10, pady=5)
 
@@ -509,7 +516,8 @@ class DarePyGUI:
         self._build_dict_editor(sc, "Empty Cell Mapping", "calibration_samples", "empty_cell")
         self._build_dict_editor(sc, "Sample Thickness (cm)", "calibration_samples", "thickness")
 
-
+        s_pipeline, _ = self.create_scrollable_tab(self.sub_nb, "Pipeline Control")
+        self.build_config_area(s_pipeline, "Pipeline Control", "pipeline_control")
 
         s_combined, _ = self.create_scrollable_tab(self.sub_nb, "Physics Settings")
         self.build_config_area(s_combined, "Physics Corrections", "physics_corrections")
@@ -879,39 +887,98 @@ class DarePyGUI:
             self.log_to_console(f"🗑️ REMOVED from {s_key}: {item_name}")
             self.refresh_ui()
 
+    def run_radial_integration(self):
+        """Run radial integration in a separate process; config controls live mode."""
+        if self.radial_process is not None and self.radial_process.poll() is None:
+            self.log_to_console("[RADIAL] Integration is already running.")
+            return
+        if not self.save_data():
+            return
+
+        script_path = os.path.join(script_dir, "caller_radial_integration.py")
+        if not os.path.exists(script_path):
+            messagebox.showerror("Error", f"Radial integration script not found:\n{script_path}")
+            return
+
+        self.radial_stop_file = os.path.join(
+            os.path.dirname(os.path.abspath(self.config_file)), ".darepy_stop_radial"
+        )
+        try:
+            if os.path.exists(self.radial_stop_file):
+                os.remove(self.radial_stop_file)
+            mode = "continuous monitoring" if self.config_dict.get('pipeline_control', {}).get('live_monitoring', False) else "one-time run"
+            self.radial_process = self._launch_script_process(script_path, f"radial integration ({mode})")
+        except Exception as error:
+            self.log_to_console(f"[RADIAL ERROR] Could not start integration: {error}")
+
+    def _launch_script_process(self, script_path, script_name):
+        """Run a GUI action asynchronously and stream its output to the console."""
+        experiment_dir = os.path.dirname(os.path.abspath(self.config_file))
+        process_env = os.environ.copy()
+        process_env["PYTHONIOENCODING"] = "utf-8"
+        process_env["DAREPY_GUI_MODE"] = "1"
+        existing_pythonpath = process_env.get("PYTHONPATH", "")
+        process_env["PYTHONPATH"] = os.pathsep.join(
+            path for path in (root_dir, existing_pythonpath) if path
+        )
+        process = subprocess.Popen(
+            [sys.executable, "-u", script_path, self.config_file],
+            cwd=experiment_dir,
+            env=process_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1
+        )
+        self.log_to_console(f"🚀 RUNNING: {script_name}")
+        threading.Thread(
+            target=self._stream_process_output,
+            args=(process,),
+            daemon=True
+        ).start()
+        self.root.after(500, lambda: self.check_process_status(process, script_name))
+        return process
+
+    def _stream_process_output(self, process):
+        """Forward a worker process's output to the GUI console without blocking it."""
+        try:
+            for line in iter(process.stdout.readline, ''):
+                message = line.rstrip()
+                if message:
+                    try:
+                        self.root.after(0, lambda text=message: self.log_to_console(text))
+                    except RuntimeError:
+                        break
+        finally:
+            if process.stdout is not None:
+                process.stdout.close()
+
+    def stop_radial_integration(self):
+        """Ask a one-time or live integration process to stop after its current pass."""
+        if self.radial_process is None or self.radial_process.poll() is not None:
+            self.log_to_console("[RADIAL] No radial integration is running.")
+            return
+        try:
+            with open(self.radial_stop_file, "w", encoding="utf-8") as stop_request:
+                stop_request.write("stop\n")
+            self.log_to_console("[RADIAL] Stop requested; the current processing pass will finish first.")
+        except OSError as error:
+            self.log_to_console(f"[RADIAL ERROR] Could not request a clean stop: {error}")
+
     def run_script(self, name):
-        """Runs scripts safely using Spyder's native workspace context runner or an observed background subprocess."""
+        """Run a script asynchronously and stream its output into the GUI console."""
         if self.save_data():
             script_path = os.path.normpath(os.path.join(script_dir, "codes", name))
             if not os.path.exists(script_path):
                 script_path = os.path.normpath(os.path.join(script_dir, name))
 
             if os.path.exists(script_path):
-                self.log_to_console(f"🚀 RUNNING: {name}")
                 try:
-                    from IPython import get_ipython
-                    ipy = get_ipython()
-                    if ipy:
-                        # Runs inside Spyder's console context cleanly (Blocking execution)
-                        ipy.run_line_magic('run', f'\"{script_path}\" \"{self.config_file}\"')
-                        self.refresh_ui()  # Refreshes right after execution finishes
-                        return
-                except:
-                    pass
-
-                # Asynchronous subprocess context execution loop
-                import subprocess
-                experiment_dir = os.path.dirname(os.path.abspath(self.config_file))
-
-                # Capture the process object instead of discarding it
-                process = subprocess.Popen(
-                    [sys.executable, script_path, self.config_file],
-                    cwd=experiment_dir,
-                    env=os.environ.copy()
-                )
-
-                # Start non-blocking polling sequence to see when the window closes
-                self.check_process_status(process, name)
+                    self._launch_script_process(script_path, name)
+                except Exception as error:
+                    self.log_to_console(f"[ERROR] Could not start {name}: {error}")
             else:
                 messagebox.showerror("Error", f"Target execution path module not found:\n{script_path}")
                 self.refresh_ui()
@@ -923,8 +990,11 @@ class DarePyGUI:
             # Not finished yet; re-check again in 500ms (keeps main UI responsive)
             self.root.after(500, lambda: self.check_process_status(process, script_name))
         else:
-            # Process finished! Trigger layout reload engine
-            self.log_to_console(f"🏁 FINISHED: {script_name}. Reloading parameters...")
+            return_code = process.poll()
+            if return_code == 0:
+                self.log_to_console(f"🏁 FINISHED: {script_name}. Reloading parameters...")
+            else:
+                self.log_to_console(f"[ERROR] {script_name} exited with code {return_code}.")
             self.refresh_ui()
 
 if __name__ == "__main__":

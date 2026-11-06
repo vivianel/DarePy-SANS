@@ -2,12 +2,18 @@
 from pathlib import Path
 import sys
 import os
+import pickle
 
 # ==========================================
 # %% DYNAMIC PATH INJECTION
 # ==========================================
 # 1. Get the current directory (darepy/)
 current_dir = os.path.dirname(os.path.abspath(__file__))
+# Add the repository root so package imports work when launched from an
+# experiment folder rather than Spyder or the repository directory.
+repo_dir = os.path.dirname(current_dir)
+if repo_dir not in sys.path:
+    sys.path.insert(0, repo_dir)
 # 2. Point to the codes/ subfolder where utils.py lives
 codes_dir = os.path.join(current_dir, 'codes')
 
@@ -16,7 +22,7 @@ if codes_dir not in sys.path:
     sys.path.insert(0, codes_dir)
 
 # Now we can safely import your tools from the codes/ folder
-from utils import load_config, load_instrument_registry
+from utils import load_config, load_instrument_registry, create_analysis_folder
 import prepare_input as org
 
 # 4. Catch the YAML path sent by the GUI
@@ -123,8 +129,22 @@ if __name__ == "__main__":
             # KEEP GOING if paths are correct
             print("\n✨ Dry Run Successful! Path validation passed. Proceeding to scan...")
     else:
-        # Initialize result container
-        result = {'overview': {}}
+        # Preserve cached transmission and integration data while refreshing
+        # the raw-file inventory and its interactive HTML summary.
+        listing_config = {
+            'analysis': {
+                'path_dir': str(path_dir),
+                'add_id': ext_cfg['analysis_flags'].get('add_id', '')
+            }
+        }
+        analysis_folder = create_analysis_folder(listing_config)
+        result_file = os.path.join(analysis_folder, 'result.npy')
+        if os.path.isfile(result_file):
+            with open(result_file, 'rb') as handle:
+                result = pickle.load(handle)
+            result.setdefault('overview', {})
+        else:
+            result = {'overview': {}}
 
         # This will now run regardless of whether Dry Run was checked,
         # as long as the validation didn't fail.

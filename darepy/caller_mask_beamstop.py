@@ -22,6 +22,7 @@ if codes_dir not in sys.path:
     sys.path.insert(0, codes_dir)
 
 from utils import load_hdf, find_hdf_filename, load_config
+from gui_prompts import confirm_update
 
 # ==========================================
 # %% Configuration & Path Resolution
@@ -337,21 +338,21 @@ def save_masks_to_yaml(yaml_path, distance_val, manager_obj):
         if sec not in config_dict['detector_geometry']:
             config_dict['detector_geometry'][sec] = {}
 
-    while True:
-        choice = input(f"Save these updated mask coordinates to config file for {dist_key}m? (y/n): ").strip().lower()
-        if choice in ['y', 'yes']:
-            config_dict['detector_geometry']['beamstopper_coordinates'][dist_key] = new_bs
-            if manager_obj.saved_trans:
-                config_dict['detector_geometry']['transmission_coordinates'][dist_key] = manager_obj.saved_trans
-            with open(yaml_path, 'w') as f:
-                if yaml_parser == 'ruamel':
-                    ryaml.dump(config_dict, f)
-                else:
-                    yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
-            print("[SUCCESS] Mask rules successfully saved.")
-            break
-        elif choice in ['n', 'no']:
-            break
+    if confirm_update(
+        f"Save the updated detector mask for {dist_key} m?\n\n"
+        f"Beamstop mask: {new_bs}\n"
+        f"Transmission area: {manager_obj.saved_trans if manager_obj.saved_trans else 'Skipped'}",
+        title="Save detector mask"
+    ):
+        config_dict['detector_geometry']['beamstopper_coordinates'][dist_key] = new_bs
+        if manager_obj.saved_trans:
+            config_dict['detector_geometry']['transmission_coordinates'][dist_key] = manager_obj.saved_trans
+        with open(yaml_path, 'w') as f:
+            if yaml_parser == 'ruamel':
+                ryaml.dump(config_dict, f)
+            else:
+                yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
+        print("[SUCCESS] Mask rules successfully saved.")
 
 # ==========================================
 # %% Main Execution Loop

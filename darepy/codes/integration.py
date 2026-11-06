@@ -5,7 +5,7 @@ import csv
 from pathlib import Path
 from tabulate import tabulate
 import matplotlib.pyplot as plt
-from utils import load_hdf, create_analysis_folder, get_flexible_value, parse_pixel_ranges
+from utils import load_hdf, create_analysis_folder, get_flexible_value, parse_pixel_ranges, parse_scan_list
 from image_corrections import (load_standards, load_and_normalize,
                         correct_EC, correct_flat_field, correct_dark, process_empty_cell)
 from setup_integrator import(generate_beamstop_mask, setup_integration)
@@ -89,6 +89,7 @@ def integrate(config, result, det_str, path_rad_int, path_det):
     force_reintegrate = config['analysis'].get('force_reintegrate', False)
     physics = config.get('physics_corrections', {})
     calib_map = result['overview'].get(f'calibration_map_{det_str}', {})
+    excluded_scans = set(parse_scan_list(config['analysis'].get('exclude_files', [])))
 
     # Log Book Setup
     reduction_log = []
@@ -102,19 +103,33 @@ def integrate(config, result, det_str, path_rad_int, path_det):
         hdf_name = class_file['name_hdf'][ii]
         frame_nr_total = class_file['frame_nr'][ii]
 
-        # Check for skip logic
+        if scanNr in excluded_scans:
+            print(f"  -> Exclude: Scan {scanNr} ('{sample_name}') is marked in the config.")
+            continue
+
+        # Check for skip logic. In live mode, always revisit the most recent
+        # file: beamline acquisitions can continue adding counts to its
+        # existing frame for several minutes.
         flux_monit = load_hdf(path_hdf_raw, hdf_name, 'flux_monit')
         time_s = load_hdf(path_hdf_raw, hdf_name, 'time')
         preset = load_hdf(path_hdf_raw, hdf_name, 'moni')
 
         if force_reintegrate == 0:
-            # is the measurement finished?
-            if flux_monit == preset * 1e4 or time_s == preset:
-                #check the folder
-                path_det_save = path_det + '/integration/'
+            path_det_save = path_det + '/integration/'
+            is_latest_file = ii == len(class_file['sample_name']) - 1
+            if is_latest_file:
+                print(f"  -> Reintegrate latest scan {scanNr} ('{sample_name}').")
+            elif config['analysis'].get('live_monitoring', False):
+                expected_outputs = [
+                    Path(make_file_name(path_det_save, 'radial_integ', 'dat', sample_name, det_str, scanNr, ff))
+                    for ff in range(frame_nr_total)
+                ]
+                if all(path.is_file() for path in expected_outputs):
+                    print(f"  -> Skip: Scan {scanNr} ('{sample_name}') already integrated.")
+                    continue
+            elif flux_monit == preset * 1e4 or time_s == preset:
                 file_name_1 = make_file_name(path_det_save, 'radial_integ', 'dat', sample_name, det_str, scanNr, 0)
-                file_path = Path(file_name_1)
-                if file_path.is_file():
+                if Path(file_name_1).is_file():
                     print(f"  -> Skip: Scan {scanNr} ('{sample_name}') already integrated or incomplete.")
                     continue
 

@@ -22,7 +22,7 @@ def list_files(config, result):
                    'end_time': [], 'att': [],
         'beamstop_y': [], 'coll_m': [], 'wl_A': [], 'detx_m': [],
         'dety_m': [],  'moni_e4': [], 'time_s': [], 'thickness_cm': [],
-        'frame_nr': [], 'sum_counts': []}
+        'frame_nr': [], 'sum_counts': [], 'excluded': []}
     if config['experiment']['sample_environment']['electromagnet']:
         class_files['B_T'] = []
     if config['experiment']['sample_environment']['water_bath']:
@@ -68,49 +68,60 @@ def list_files(config, result):
     for file in files:
         scan_nr = int(re.findall(r"\D(\d{6})\D", file)[0])
 
-        if scan_nr not in exclude_files:
-            class_files['name_hdf'].append(file)
-            class_files['scan'].append(scan_nr)
-            class_files['date'].append(load_hdf(path_hdf_raw, file, 'date'))
-            class_files['start_time'].append(load_hdf(path_hdf_raw, file, 'start_time'))
-            class_files['end_time'].append(load_hdf(path_hdf_raw, file, 'end_time'))
-            class_files['att'].append(load_hdf(path_hdf_raw, file, 'att'))
-            class_files['beamstop_y'].append(load_hdf(path_hdf_raw, file, 'beamstop_y'))
-            class_files['coll_m'].append(load_hdf(path_hdf_raw, file, 'coll'))
-            class_files['time_s'].append(load_hdf(path_hdf_raw, file, 'time'))
-            class_files['moni_e4'].append(load_hdf(path_hdf_raw, file, 'moni'))
-            class_files['detx_m'].append(load_hdf(path_hdf_raw, file, 'detx'))
-            class_files['dety_m'].append(load_hdf(path_hdf_raw, file, 'dety'))
-            class_files['wl_A'].append(round(load_hdf(path_hdf_raw, file, 'wl')))
+        class_files['name_hdf'].append(file)
+        class_files['scan'].append(scan_nr)
+        class_files['excluded'].append(scan_nr in exclude_files)
+        class_files['date'].append(load_hdf(path_hdf_raw, file, 'date'))
+        class_files['start_time'].append(load_hdf(path_hdf_raw, file, 'start_time'))
+        class_files['end_time'].append(load_hdf(path_hdf_raw, file, 'end_time'))
+        class_files['att'].append(load_hdf(path_hdf_raw, file, 'att'))
+        class_files['beamstop_y'].append(load_hdf(path_hdf_raw, file, 'beamstop_y'))
+        class_files['coll_m'].append(load_hdf(path_hdf_raw, file, 'coll'))
+        class_files['time_s'].append(load_hdf(path_hdf_raw, file, 'time'))
+        class_files['moni_e4'].append(load_hdf(path_hdf_raw, file, 'moni'))
+        class_files['detx_m'].append(load_hdf(path_hdf_raw, file, 'detx'))
+        class_files['dety_m'].append(load_hdf(path_hdf_raw, file, 'dety'))
+        class_files['wl_A'].append(round(load_hdf(path_hdf_raw, file, 'wl')))
 
 
-            sample_name = load_hdf(path_hdf_raw, file, 'sample_name')
-            class_files['sample_name'].append(sample_name)
+        sample_name = load_hdf(path_hdf_raw, file, 'sample_name')
+        class_files['sample_name'].append(sample_name)
 
-            if config['experiment']['sample_environment']['electromagnet']:
-                class_files['B_T'].append(load_hdf(path_hdf_raw, file, 'mag_field'))
-            if config['experiment']['sample_environment']['water_bath']:
-                class_files['temp_WB'].append(load_hdf(path_hdf_raw, file, 'temp_WB'))
-                class_files['temp_S'].append(load_hdf(path_hdf_raw, file, 'temp_S'))
-            if config['experiment']['sample_environment']['syringe_pumps']:
-                class_files['flow_S1_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_S1'))
-                class_files['flow_S2_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_S2'))
-                class_files['flow_conti_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_conti'))
+        if config['experiment']['sample_environment']['electromagnet']:
+            class_files['B_T'].append(load_hdf(path_hdf_raw, file, 'mag_field'))
+        if config['experiment']['sample_environment']['water_bath']:
+            class_files['temp_WB'].append(load_hdf(path_hdf_raw, file, 'temp_WB'))
+            class_files['temp_S'].append(load_hdf(path_hdf_raw, file, 'temp_S'))
+        if config['experiment']['sample_environment']['syringe_pumps']:
+            class_files['flow_S1_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_S1'))
+            class_files['flow_S2_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_S2'))
+            class_files['flow_conti_ulps'].append(load_hdf(path_hdf_raw, file, 'flow_conti'))
 
 
-            res = load_hdf(path_hdf_raw, file, 'counts')
-            class_files['frame_nr'].append(res.shape[0] if (res is not None and res.ndim > 2) else 1)
-            class_files['sum_counts'].append(np.sum(res))
+        res = load_hdf(path_hdf_raw, file, 'counts')
+        class_files['frame_nr'].append(res.shape[0] if (res is not None and res.ndim > 2) else 1)
+        class_files['sum_counts'].append(np.sum(res))
 
-            thickness = load_thickness(file, sample_name, config)
-            class_files['thickness_cm'].append(thickness)
+        thickness = load_thickness(file, sample_name, config)
+        class_files['thickness_cm'].append(thickness)
 
 
 
     path_dir_an = create_analysis_folder(config)
+    previous_all_files = result.get('overview', {}).get('all_files', {})
+    previous_names = previous_all_files.get('name_hdf', [])
+    previous_transmissions = previous_all_files.get('transmission')
+    if previous_transmissions is not None:
+        transmission_by_name = dict(zip(previous_names, previous_transmissions))
+        class_files['transmission'] = [
+            transmission_by_name.get(name, '--') for name in class_files['name_hdf']
+        ]
     result['overview']['all_files'] = class_files
     save_results(path_dir_an, result)
-    save_list_files(path_dir_an, path_dir_an, class_files, 'all_files')
+    save_list_files(
+        path_dir_an, path_dir_an, class_files, 'all_files',
+        configured_exclusions=sorted(exclude_files)
+    )
 
     save_file = os.path.join(path_dir_an, 'config.npy')
     with open(save_file, 'wb') as handle:
@@ -151,7 +162,7 @@ def _write_metadata_csv(save_file, keys, rows):
     return save_file
 
 
-def save_list_files(path_save, path_dir_an, class_files, name):
+def save_list_files(path_save, path_dir_an, class_files, name, configured_exclusions=None):
     """Export the beamtime summary as HTML and detector tables as CSV.
 
     Return the actual output path; processing uses the in-memory metadata.
@@ -160,7 +171,9 @@ def save_list_files(path_save, path_dir_an, class_files, name):
     rows = zip(*[class_files[k] for k in keys])
     if name == 'all_files':
         save_file = os.path.join(path_save, 'all_files.html')
-        actual_file = write_metadata_html(save_file, keys, rows)
+        actual_file = write_metadata_html(
+            save_file, keys, rows, configured_exclusions=configured_exclusions
+        )
     else:
         save_file = os.path.join(path_save, f"{name}.csv")
         actual_file = _write_metadata_csv(save_file, keys, rows)

@@ -11,7 +11,7 @@ import csv
 from tabulate import tabulate
 
 # Importing unified flexible logic directly from utils (Removed load_thickness)
-from utils import load_hdf, create_analysis_folder, save_results, get_flexible_value, find_hdf_by_identifier
+from utils import load_hdf, create_analysis_folder, save_results, get_flexible_value, find_hdf_by_identifier, parse_scan_list
 from prepare_input import save_list_files
 import normalize_counts as norm
 
@@ -270,7 +270,10 @@ def trans_calc_sample(config, result):
         writer.writerows(trans_log)
     print(f"\n[INFO] Transmission log saved directly to: {log_file_path}")
 
-    save_list_files(path_dir_an, path_dir_an, class_all, 'all_files')
+    save_list_files(
+        path_dir_an, path_dir_an, class_all, 'all_files',
+        configured_exclusions=parse_scan_list(config.get('analysis', {}).get('exclude_files', []))
+    )
     return result
 
 

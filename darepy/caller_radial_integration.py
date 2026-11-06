@@ -40,6 +40,9 @@ INSTRUMENT_REGISTRY = load_instrument_registry()
 sample_environment = ext_cfg.get('sample_environment', {})
 selected_inst = ext_cfg['instrument_setup']['which_instrument']
 transmission_setup = ext_cfg.get('transmission_setup', {})
+ctrl = ext_cfg.get('pipeline_control', {})
+live_monitoring = bool(ctrl.get('live_monitoring', False))
+stop_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[1])), '.darepy_stop_radial') if len(sys.argv) > 1 and sys.argv[1].lower().endswith(('.yaml', '.yml')) else os.path.join(os.getcwd(), '.darepy_stop_radial')
 
 
 # ==========================================
@@ -65,6 +68,7 @@ configuration = {
         'add_id': ext_cfg['analysis_flags'].get('add_id', ''),
         'exclude_files': ext_cfg['pipeline_control'].get('exclude_files', []),
         'force_reintegrate': ext_cfg['pipeline_control']['force_reintegrate'],
+        'live_monitoring': live_monitoring,
         'add_plot_azimuthal': ext_cfg['analysis_flags']['add_plot_azimuthal'],
         'save_plot_radial': ext_cfg['analysis_flags']['save_plot_radial'],
         'save_data_azimuthal': ext_cfg['analysis_flags']['save_data_azimuthal'],
@@ -198,7 +202,7 @@ else:
 
     print("Step 0: Indexing files to guarantee the correct results structure...")
     class_files = org.list_files(configuration, result)
-    if not class_files:
+    if not class_files and not live_monitoring:
         print("❌ ERROR: No valid HDF5 files found in the raw data directory.")
         sys.exit(1)
 
@@ -242,7 +246,7 @@ if apply_transmission and beamstop == 'semitransparent':
 # ==========================================================
 # PRE-REQUISITE: AUTOMATICALLY RUN TRANSMISSION SCRIPT
 # ==========================================================
-if should_run_transmission:
+if should_run_transmission and result.get('overview', {}).get('all_files', {}).get('name_hdf'):
     current_script_dir = os.path.dirname(os.path.abspath(__file__))
     transmission_script = os.path.join(current_script_dir, "caller_transmission.py")
 
@@ -292,14 +296,90 @@ else:
 # ==========================================
 # STEP 4: EXECUTION PIPELINE
 # ==========================================
-ctrl = ext_cfg.get('pipeline_control', {})
 iteration = 1
+last_raw_signature = None
+
+
+def _raw_folder_signature():
+    """Quickly detect added or still-changing HDF files without opening them."""
+    signature = []
+    raw_folder = configuration['analysis']['path_hdf_raw']
+    for root, _dirs, files in os.walk(raw_folder):
+        for filename in files:
+            if filename.lower().endswith('.hdf'):
+                path = os.path.join(root, filename)
+                try:
+                    stat = os.stat(path)
+                    signature.append((os.path.relpath(path, raw_folder), stat.st_size, stat.st_mtime_ns))
+                except OSError:
+                    # A file may be in the middle of being created. The next
+                    # poll will see it once the filesystem reports it normally.
+                    continue
+    return tuple(sorted(signature))
+
+
+def _stop_requested():
+    return os.path.exists(stop_file)
+
+
+def _clear_stop_request():
+    try:
+        os.remove(stop_file)
+    except OSError:
+        pass
 
 while True:
+    if _stop_requested():
+        _clear_stop_request()
+        print("⏹ Radial integration stopped by request.")
+        break
+
     pipeline_start_time = time.time()
     print("\n" + "=" * 50)
     print(f"   STARTING RADIAL INTEGRATION (Iteration {iteration})")
     print("=" * 50)
+
+    inventory_changed = False
+    if live_monitoring:
+        raw_signature = _raw_folder_signature()
+        inventory_changed = raw_signature != last_raw_signature
+        if inventory_changed:
+            last_raw_signature = raw_signature
+            print("[LIVE] Raw-data folder changed; refreshing the file index.")
+            previous_all_files = result.get('overview', {}).get('all_files', {})
+            previous_names = list(previous_all_files.get('name_hdf', []))
+            previous_transmissions = previous_all_files.get('transmission')
+            class_files = org.list_files(configuration, result)
+            new_names = list(class_files.get('name_hdf', []))
+            if class_files and apply_transmission and (
+                set(new_names) != set(previous_names) or previous_transmissions is None
+            ):
+                # Use the existing transmission pipeline so new scans receive
+                # the same transmission treatment as in a regular run.
+                transmission_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "caller_transmission.py")
+                cmd = [sys.executable, transmission_script]
+                if len(sys.argv) > 1 and sys.argv[1].lower().endswith(('.yaml', '.yml')):
+                    cmd.append(os.path.abspath(sys.argv[1]))
+                subprocess.run(cmd, check=True)
+                with open(result_file, 'rb') as f:
+                    result = pickle.load(f)
+            elif class_files and apply_transmission and previous_transmissions is not None:
+                # Counts can change while a scan is active. Keep the previously
+                # calculated transmission values for the same scans; only a
+                # changed file inventory needs the transmission stage rerun.
+                old_transmission_by_name = dict(zip(previous_names, previous_transmissions))
+                class_files['transmission'] = [
+                    old_transmission_by_name.get(name, '--') for name in new_names
+                ]
+                result['overview']['all_files'] = class_files
+            elif class_files:
+                result = org.select_detector_distances(configuration, result)
+
+        if not result.get('overview', {}).get('all_files', {}).get('name_hdf'):
+            print("[LIVE] No valid HDF files yet; waiting for acquisition.")
+            time.sleep(max(1, float(ctrl.get('monitor_interval', 60))))
+            iteration += 1
+            continue
 
     if ctrl.get('run_reduction', True):
         # Let prepare_input update the result structure, then explicitly filter
@@ -334,13 +414,24 @@ while True:
     analysis_folder = create_analysis_folder(configuration)
     save_results(analysis_folder, result)
 
+    # A configured forced run is honored for the initial live pass. Later
+    # passes only pick up missing outputs and revisit the newest scan.
+    if live_monitoring and configuration['analysis'].get('force_reintegrate', False):
+        configuration['analysis']['force_reintegrate'] = False
+        print("[LIVE] Initial forced pass complete; later passes will process new scans and revisit the newest scan only.")
+
+    if _stop_requested():
+        _clear_stop_request()
+        print("⏹ Radial integration stopped by request after the current processing pass.")
+        break
+
     elapsed_time = time.time() - pipeline_start_time
     print(f"\nIteration {iteration} finished in {elapsed_time:.2f} seconds.")
 
-    if not ext_cfg.get('pipeline_control', {}).get('live_monitoring', False):
+    if not live_monitoring:
         break
 
-    time.sleep(ext_cfg.get('pipeline_control', {}).get('monitor_interval', 60))
+    time.sleep(max(1, float(ctrl.get('monitor_interval', 60))))
     iteration += 1
 
 print("\nPipeline Complete.")

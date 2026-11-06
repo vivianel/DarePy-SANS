@@ -15,6 +15,10 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import pyFAI.azimuthalIntegrator as pyFAI_ai
+try:
+    from gui_prompts import confirm_update
+except ImportError:
+    from darepy.codes.gui_prompts import confirm_update
 
 # ----------------------------------------------------------------------
 # %% Plotting Function
@@ -359,23 +363,23 @@ def confirm_and_save_to_yaml(yaml_path, distance_val, manager):
     print(f"\n--- Transmission Area ---\n  OLD: {old_trans}\n  NEW: {new_trans if new_trans is not None else 'Skipped'}")
     print(f"\n--- Beam Center ---\n  OLD: {old_center}\n  NEW: {new_center}\n")
 
-    while True:
-        choice = input("Overwrite these values in config_experiment.yaml? (y/n): ").strip().lower()
-        if choice in ['y', 'yes']:
-            config['detector_geometry']['beamstopper_coordinates'][dist_key] = new_bs
-            if new_trans is not None:
-                config['detector_geometry']['transmission_coordinates'][dist_key] = new_trans
-            config['detector_geometry']['beam_center_guess'][dist_key] = new_center
+    if confirm_update(
+        f"Save the proposed detector geometry for {dist_key} m?\n\n"
+        f"Beamstop mask: {new_bs}\n"
+        f"Transmission area: {new_trans if new_trans is not None else 'Skipped'}\n"
+        f"Beam center: {new_center}",
+        title="Save detector geometry"
+    ):
+        config['detector_geometry']['beamstopper_coordinates'][dist_key] = new_bs
+        if new_trans is not None:
+            config['detector_geometry']['transmission_coordinates'][dist_key] = new_trans
+        config['detector_geometry']['beam_center_guess'][dist_key] = new_center
 
-            with open(yaml_path, 'w') as f:
-                if yaml_parser == 'ruamel':
-                    ryaml.dump(config, f)
-                else:
-                    yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-            print("\n[SUCCESS] YAML file successfully updated!")
-            break
-        elif choice in ['n', 'no']:
-            print("\n[CANCELLED] Update aborted.")
-            break
-        else:
-            print("Invalid input. Please type 'y' or 'n'.")
+        with open(yaml_path, 'w') as f:
+            if yaml_parser == 'ruamel':
+                ryaml.dump(config, f)
+            else:
+                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        print("\n[SUCCESS] YAML file successfully updated!")
+    else:
+        print("\n[CANCELLED] Update aborted.")

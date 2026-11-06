@@ -21,6 +21,7 @@ if codes_dir not in sys.path:
     sys.path.insert(0, codes_dir)
 
 from utils import load_hdf, find_hdf_filename, load_config, load_instrument_registry
+from gui_prompts import confirm_update
 
 # ==========================================
 # %% Configuration & Path Resolution
@@ -308,8 +309,10 @@ def save_center_to_yaml(yaml_path, distance_val, manager):
         else:
             config_dict = yaml.safe_load(f) or {}
 
-    choice = input(f"Overwrite Center configuration for distance {dist_key}m with {new_center}? (y/n): ").strip().lower()
-    if choice in ['y', 'yes']:
+    if confirm_update(
+        f"Overwrite the beam center for {dist_key} m with {new_center}?",
+        title="Save beam center"
+    ):
         if 'detector_geometry' not in config_dict:
             config_dict['detector_geometry'] = {}
         if 'beam_center_guess' not in config_dict['detector_geometry']:
