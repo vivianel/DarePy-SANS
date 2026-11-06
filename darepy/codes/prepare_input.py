@@ -19,7 +19,7 @@ def list_files(config, result):
                    'end_time': [], 'att': [],
         'beamstop_y': [], 'coll_m': [], 'wl_A': [], 'detx_m': [],
         'dety_m': [],  'moni_e4': [], 'time_s': [], 'thickness_cm': [],
-        'frame_nr': []}
+        'frame_nr': [], 'sum_counts': []}
     if config['experiment']['sample_environment']['electromagnet']:
         class_files['B_T'] = []
     if config['experiment']['sample_environment']['water_bath']:
@@ -97,6 +97,7 @@ def list_files(config, result):
 
             res = load_hdf(path_hdf_raw, file, 'counts')
             class_files['frame_nr'].append(res.shape[0] if (res is not None and res.ndim > 2) else 1)
+            class_files['sum_counts'].append(np.sum(res))
 
             thickness = load_thickness(file, sample_name, config)
             class_files['thickness_cm'].append(thickness)
