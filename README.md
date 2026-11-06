@@ -242,3 +242,28 @@ Run the compatibility tests from the repository root:
 ```bash
 python -m unittest discover -s tests -p "test_config*.py" -v
 ```
+
+
+## Viewing the beamtime summary
+
+DarePy writes the complete beamtime table to **all_files.html** in the analysis
+folder. Open it in Chrome, Edge or Firefox and keep it open during processing.
+Click **Refresh summary** (or refresh the browser) after a run to see the latest
+saved data. Search across all columns and click any column heading to sort.
+The page works offline and requires no additional dependencies.
+
+Each run updates the same HTML file; no dated beamtime summary copies are
+created. An existing `all_files.csv` is left untouched as a historical export;
+the pipeline now writes `all_files.html` instead. Existing CSVs are not deleted.
+Processing continues using its current metadata in memory and in `result.npy`.
+
+Detector-specific tables (`det_files_*.csv`) remain CSV files. If Excel prevents
+replacement of one of those tables, DarePy keeps a uniquely named updated CSV
+and reports its location. Browser display avoids this Excel locking behavior
+for the all-files beamtime summary.
+
+Run all regression tests from the repository root:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+```

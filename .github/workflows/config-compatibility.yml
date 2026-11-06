@@ -1,4 +1,4 @@
-name: Configuration compatibility
+name: DarePy regression tests
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install configuration test dependencies
-        run: python -m pip install numpy h5py PyYAML==6.0.3 ruamel.yaml==0.18.0
-      - name: Test configuration completion and pipeline loading
-        run: python -m unittest discover -s tests -p "test_config*.py" -v
+      - name: Install test dependencies
+        run: python -m pip install numpy h5py PyYAML==6.0.3 ruamel.yaml==0.18.0 tabulate==0.9.0
+      - name: Test configuration compatibility and CSV exports
+        run: python -m unittest discover -s tests -p "test_*.py" -v

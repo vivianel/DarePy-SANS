@@ -8,9 +8,12 @@ import os
 import re
 import sys
 import csv  # Replaced pandas with native csv
+import tempfile
+from datetime import datetime
 import numpy as np
 import pickle
 from tabulate import tabulate
+from metadata_html import write_metadata_html
 from utils import find_hdf_by_identifier, parse_scan_list, load_hdf, create_analysis_folder, save_results, load_thickness
 
 def list_files(config, result):
@@ -115,34 +118,62 @@ def list_files(config, result):
 
     return class_files
 
+def _write_metadata_csv(save_file, keys, rows):
+    """Publish a complete CSV, retaining a uniquely named copy if Excel locks it.
+
+    The temporary file is in the output directory so replacement stays on the
+    same filesystem. It already has a useful CSV name if replacement is blocked.
+    Other I/O failures still propagate instead of silently losing output.
+    """
+    directory = os.path.dirname(os.path.abspath(save_file))
+    stem = os.path.splitext(os.path.basename(save_file))[0]
+    prefix = f"{stem}_{datetime.now():%Y%m%d_%H%M%S}_"
+    descriptor, snapshot = tempfile.mkstemp(prefix=prefix, suffix='.csv', dir=directory)
+    try:
+        with os.fdopen(descriptor, 'w', newline='') as stream:
+            writer = csv.writer(stream)
+            writer.writerow(keys)
+            writer.writerows(rows)
+        try:
+            os.replace(snapshot, save_file)
+        except PermissionError:
+            print(f"\n[WARNING] Cannot replace {save_file}; it may be open in Excel.")
+            print(f"[INFO] The open file is unchanged. The updated table is saved to: {snapshot}")
+            print("[INFO] Processing continues. Close the original CSV before a later run to update its usual filename.")
+            return snapshot
+    except BaseException:
+        # Do not leave an incomplete CSV if writing or replacement fails.
+        try:
+            os.unlink(snapshot)
+        except OSError:
+            pass
+        raise
+    return save_file
+
+
 def save_list_files(path_save, path_dir_an, class_files, name):
-    """Saves metadata to CSV and prints a table WITHOUT pandas."""
+    """Export the beamtime summary as HTML and detector tables as CSV.
 
-    save_file = os.path.join(path_save, f"{name}.csv")
-
-    # Get keys for the header
-    keys = class_files.keys()
-    # Transpose dictionary of lists into a list of rows
+    Return the actual output path; processing uses the in-memory metadata.
+    """
+    keys = list(class_files.keys())
     rows = zip(*[class_files[k] for k in keys])
+    if name == 'all_files':
+        save_file = os.path.join(path_save, 'all_files.html')
+        actual_file = write_metadata_html(save_file, keys, rows)
+    else:
+        save_file = os.path.join(path_save, f"{name}.csv")
+        actual_file = _write_metadata_csv(save_file, keys, rows)
 
-    # 1. Write the FULL table to CSV using native 'csv' module
-    with open(save_file, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(keys)
-        writer.writerows(rows)
-
-    # 2. Print TRUNCATED table for the console
-    # Re-generating rows for tabulate (it only needs the first 20)
+    # Print only the first 20 rows. The complete table is already on disk.
     truncated_rows = list(zip(*[class_files[k] for k in keys]))[:20]
     data_console = tabulate(truncated_rows, headers=keys, tablefmt='psql')
-
-    print(f"\n[INFO] Saving file list: {name}.csv")
+    print(f"\n[INFO] Saved file list: {actual_file}")
     print(data_console)
-
     if len(class_files['name_hdf']) > 20:
-        print(f"... (Showing first 20 of {len(class_files['name_hdf'])} files. Check {name}.csv!)")
-
+        print(f"... (Showing first 20 of {len(class_files['name_hdf'])} files. Check {os.path.basename(actual_file)}!)")
     print("-" * 20)
+    return actual_file
 
 
 def select_detector_distances(config, result):
